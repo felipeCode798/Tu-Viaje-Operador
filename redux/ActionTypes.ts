@@ -1,0 +1,30 @@
+export const SET_SESSION: string = "SET_SESSION";
+export const CLEAR_SESION: string = "CLEAR_SESION";
+export const SET_USER: string = "SET_USER";
+export const SET_NAVPAGES: string = "SET_NAVPAGES";
+export const CLEAR_NAVPAGES: string = "CLEAR_NAVPAGES";
+export const SET_INFOROUTES: string = "SET_INFOROUTES";
+export const CLEAR_INFOROUTES: string = "CLEAR_INFOROUTES";
+export const SET_TRAVEL: string = "SET_TRAVEL";
+export const CLEAR_TRAVEL: string = "CLEAR_TRAVEL";
+export const SET_INFODEVICE: string = "SET_INFODEVICE";
+export const CLEAR_INFODEVICE: string = "CLEAR_INFODEVICE";
+export const SET_INFOCHAT: string = "SET_INFOCHAT";
+export const CLEAR_INFOCHAT: string = "CLEAR_INFOCHAT";
+export const SET_LOCATION: string = "SET_LOCATION";
+export const CLEAR_LOCATION: string = "CLEAR_LOCATION";
+export const SET_ID: string = "SET_ID";
+export const CLEAR_ID: string = "CLEAR_ID";
+export const SET_INFO_ITEMS: string = "SET_INFO_ITEMS";
+export const CLEAR_INFO_ITEMS: string = "CLEAR_INFO_ITEMS";
+export const SET_PERMISSION: string = "SET_PERMISSION";
+export const CLEAR_PERMISSION: string = "CLEAR_PERMISSION";
+
+export const SET_INFOPROGRAMMINGBYENTERPRISE: string = "SET_INFOPROGRAMMINGBYENTERPRISE";
+export const CLEAR_INFOPROGRAMMINGBYENTERPRISE: string = "CLEAR_INFOPROGRAMMINGBYENTERPRISE";
+
+export const SET_INFOPROGRAMMINGBYDRIVER: string = "SET_INFOPROGRAMMINGBYDRIVER";
+export const CLEAR_INFOPROGRAMMINGBYDRIVER: string = "CLEAR_INFOPROGRAMMINGBYDRIVER";
+
+export const SET_INFO_PROGRAMMING_STATUS_PROGRESS: string = "SET_INFO_PROGRAMMING_STATUS_PROGRESS";
+export const CLEAR_INFO_PROGRAMMING_STATUS_PROGRESS: string = "CLEAR_INFO_PROGRAMMING_STATUS_PROGRESS";
