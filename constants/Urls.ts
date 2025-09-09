@@ -1,6 +1,6 @@
 //PRODUCCION-------------------------------------------------------------
 // export const server = "https://graph.tuviajeapp.co/";
-// eport const imageUrl = `https://files.tuviajeapp.co/test/`;
+// export const imageUrl = `https://files.tuviajeapp.co/test/`;
 // export const clientUrl = `${server}graphql`;
 
 //-----------------------------------------------------------------------

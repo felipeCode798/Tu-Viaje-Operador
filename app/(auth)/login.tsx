@@ -80,14 +80,24 @@ const LoginScreen: React.FC = () => {
         userType: formData.userType as UserType
       });
       
-      // Ya no necesitas router.replace aquí - el AuthContext maneja la navegación automáticamente
       console.log('Login exitoso - navegación automática activada');
       
     } catch (error: any) {
       console.error('Error en handleLogin:', error);
-      Alert.alert('Error', error.message || 'Error al iniciar sesión');
+      
+      // Mensajes de error más específicos
+      let errorMessage = error.message || 'Error al iniciar sesión';
+      
+      if (errorMessage.includes('incorrectas') || errorMessage.includes('incorrectos')) {
+        errorMessage = 'Correo o contraseña incorrectos';
+      } else if (errorMessage.includes('conexión') || errorMessage.includes('network')) {
+        errorMessage = 'Error de conexión. Verifica tu internet e intenta nuevamente.';
+      }
+      
+      Alert.alert('Error', errorMessage);
     }
   };
+
   const handleOpenForgotPassword = (): void => {
     setRecoveryEmail(formData.email); // Prellenar con el email del formulario
     setShowForgotPasswordModal(true);

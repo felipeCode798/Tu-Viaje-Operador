@@ -2,13 +2,7 @@ import gql from 'graphql-tag';
 import ApolloClient from 'apollo-boost';
 import { clientUrl } from '../constants/Urls';
 
-// Interfaces para la respuesta del conductor
-interface PasswordRecoveryResponse {
-  status: string; // Puede ser 'success', 'ok', 'true', etc.
-  message: string;
-}
-
-
+// Interfaces actualizadas según tu GraphQL schema
 export interface DriverResponse {
   _id: string;
   names: string;
@@ -21,7 +15,6 @@ export interface DriverResponse {
   vigencialicencia?: string;
 }
 
-// Interfaces para la respuesta de empresa
 export interface EnterpriseLoginResponse {
   id: string;
   name: string;
@@ -33,26 +26,41 @@ export interface EnterpriseLoginResponse {
 }
 
 export interface EnterpriseResponse {
-  id: string;
+  id?: string; // Hacemos opcional el id para evitar el error del Buffer
   name: string;
-  image: string;
+  image?: string;
   nit: string;
   comision: number;
   correo: string;
   phone: string;
 }
 
-export interface LoginResponse {
-  accessToken: string | undefined;
-  result: DriverResponse | EnterpriseLoginResponse;
+// Interfaces actualizadas para coincidir con GraphQL
+export interface DriverLoginResponse {
+  result: DriverResponse | null;
   message: string;
-  token?: string;
+}
+
+export interface EnterpriseLoginResponseQL {
+  result: EnterpriseLoginResponse | null;
+  message: string;
+}
+
+export interface LoginResponse {
+  result: DriverResponse | EnterpriseLoginResponse | null;
+  message: string;
+  // Removemos accessToken y token ya que no están en GraphQL
 }
 
 export interface LoginCredentials {
   email: string;
   password: string;
   userType: 'Conductor' | 'Empresa';
+}
+
+interface PasswordRecoveryResponse {
+  status: string;
+  message: string;
 }
 
 class AuthService {
@@ -66,8 +74,16 @@ class AuthService {
 
   async login(credentials: LoginCredentials): Promise<LoginResponse> {
     try {
+      console.log('=== INICIANDO LOGIN ===');
+      console.log('Credenciales enviadas:', {
+        email: credentials.email,
+        userType: credentials.userType,
+        password: credentials.password ? '[OCULTA]' : 'NO PROPORCIONADA'
+      });
+
       if (credentials.userType === 'Conductor') {
-        // Login para conductor
+        console.log('Intentando login como Conductor...');
+        
         const result = await this.client.mutate({
           mutation: gql`
             mutation LoginDriver($input: LoginDriverInput!) {
@@ -85,9 +101,6 @@ class AuthService {
                     correo
                     phone
                   }
-                  identificacion
-                  categorialicencia
-                  vigencialicencia
                 }
                 message
               }
@@ -101,11 +114,30 @@ class AuthService {
           }
         });
 
-        if (result.data.loginDriver) {
-          return result.data.loginDriver;
+        console.log('=== RESPUESTA COMPLETA DEL SERVIDOR (CONDUCTOR) ===');
+        console.log(JSON.stringify(result.data, null, 2));
+
+        const loginData: DriverLoginResponse = result.data.loginDriver;
+        
+        console.log('loginData extraído:', loginData);
+        console.log('loginData.result:', loginData.result);
+        console.log('loginData.message:', loginData.message);
+        
+        // Verificación mejorada
+        if (!loginData.result) {
+          console.log('❌ Login falló - result es null');
+          throw new Error(loginData.message || 'Credenciales incorrectas');
         }
+
+        console.log('✅ Login exitoso para conductor');
+        return {
+          result: loginData.result,
+          message: loginData.message
+        };
+
       } else {
-        // Login para empresa
+        console.log('Intentando login como Empresa...');
+        
         const result = await this.client.mutate({
           mutation: gql`
             mutation LoginEnterprise($input: EnterpriseInput!) {
@@ -131,20 +163,45 @@ class AuthService {
           }
         });
 
-        if (result.data.loginEnterprise) {
-          return result.data.loginEnterprise;
-        }
-      }
+        console.log('=== RESPUESTA COMPLETA DEL SERVIDOR (EMPRESA) ===');
+        console.log(JSON.stringify(result.data, null, 2));
 
-      throw new Error('Credenciales inválidas');
+        const loginData: EnterpriseLoginResponseQL = result.data.loginEnterprise;
+        
+        console.log('loginData extraído:', loginData);
+        console.log('loginData.result:', loginData.result);
+        console.log('loginData.message:', loginData.message);
+        
+        // Verificación mejorada
+        if (!loginData.result) {
+          console.log('❌ Login falló - result es null');
+          throw new Error(loginData.message || 'Credenciales incorrectas');
+        }
+
+        console.log('✅ Login exitoso para empresa');
+        return {
+          result: loginData.result,
+          message: loginData.message
+        };
+      }
 
     } catch (error: any) {
       console.error('Error en login:', error);
       
-      if (error.networkError && error.networkError.result) {
-        console.error('Detalles del error:', error.networkError.result.errors);
+      // Manejar errores de GraphQL
+      if (error.graphQLErrors && error.graphQLErrors.length > 0) {
+        const graphQLError = error.graphQLErrors[0];
+        console.error('GraphQL Error:', graphQLError);
+        throw new Error(graphQLError.message || 'Error al iniciar sesión');
       }
       
+      // Manejar errores de red
+      if (error.networkError) {
+        console.error('Network Error:', error.networkError);
+        throw new Error('Error de conexión. Verifica tu internet e intenta nuevamente.');
+      }
+      
+      // Error personalizado o desconocido
       throw new Error(error.message || 'Error al iniciar sesión');
     }
   }
@@ -153,7 +210,7 @@ class AuthService {
     try {
       console.log('Solicitando recuperación para:', email);
       
-      // PRIMERO intenta con recuperarPasswordDriver
+      // Intentar con recuperarPasswordDriver
       try {
         const result = await this.client.mutate({
           mutation: gql`
@@ -169,14 +226,9 @@ class AuthService {
           }
         });
 
-        console.log('Respuesta recuperarPasswordDriver:', result.data);
-        
         if (result.data?.recuperarPasswordDriver) {
           const response: PasswordRecoveryResponse = result.data.recuperarPasswordDriver;
-          console.log('Status recibido:', response.status);
-          console.log('Mensaje recibido:', response.message);
           
-          // Verificar diferentes formatos de respuesta exitosa
           const isSuccess = 
             response.status === 'success' ||
             response.status === 'ok' || 
@@ -187,7 +239,6 @@ class AuthService {
             response.message?.toLowerCase().includes('success');
           
           if (isSuccess) {
-            console.log('Recuperación exitosa con recuperarPasswordDriver');
             return true;
           }
         }
@@ -195,7 +246,7 @@ class AuthService {
         console.log('recuperarPasswordDriver falló:', firstError);
       }
       
-      // LUEGO intenta con recuperarPassword
+      // Intentar con recuperarPassword
       try {
         const result = await this.client.mutate({
           mutation: gql`
@@ -211,14 +262,9 @@ class AuthService {
           }
         });
 
-        console.log('Respuesta recuperarPassword:', result.data);
-        
         if (result.data?.recuperarPassword) {
           const response: PasswordRecoveryResponse = result.data.recuperarPassword;
-          console.log('Status recibido:', response.status);
-          console.log('Mensaje recibido:', response.message);
           
-          // Verificar diferentes formatos de respuesta exitosa
           const isSuccess = 
             response.status === 'success' ||
             response.status === 'ok' || 
@@ -229,7 +275,6 @@ class AuthService {
             response.message?.toLowerCase().includes('success');
           
           if (isSuccess) {
-            console.log('Recuperación exitosa con recuperarPassword');
             return true;
           }
         }
@@ -237,76 +282,16 @@ class AuthService {
         console.log('recuperarPassword falló:', secondError);
       }
       
-      console.log('Ninguna mutación devolvió éxito');
       return false;
 
     } catch (error: any) {
       console.error('Error general en forgotPassword:', error);
       
-      // A veces el correo se envía pero hay errores en la respuesta
-      // En este caso, asumimos que fue exitoso si no hay error de red
       if (!error.message.includes('Network error')) {
-        console.log('Error no es de red, posiblemente el correo se envió');
         return true;
       }
       
       throw new Error('Error de conexión. Verifica tu internet e intenta nuevamente.');
-    }
-  }
-
-  // Método para descubrir mutaciones disponibles (útil para debugging)
-  async discoverMutations(): Promise<string[]> {
-    try {
-      const result = await this.client.query({
-        query: gql`
-          {
-            __schema {
-              mutationType {
-                fields {
-                  name
-                  args {
-                    name
-                    type {
-                      name
-                      kind
-                      ofType {
-                        name
-                        kind
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        `
-      });
-
-      const mutations = result.data.__schema.mutationType.fields.map(
-        (field: any) => ({
-          name: field.name,
-          args: field.args.map((arg: any) => ({
-            name: arg.name,
-            type: arg.type.name || (arg.type.ofType && arg.type.ofType.name) || arg.type.kind
-          }))
-        })
-      );
-      
-      console.log('Mutaciones disponibles con argumentos:', mutations);
-      
-      // Filtrar mutaciones relacionadas con password
-      const passwordMutations = mutations.filter((mutation: any) => 
-        mutation.name.toLowerCase().includes('password') || 
-        mutation.name.toLowerCase().includes('recuperar') ||
-        mutation.name.toLowerCase().includes('reset')
-      );
-      
-      console.log('Mutaciones de password:', passwordMutations);
-      return mutations.map((m: any) => m.name);
-
-    } catch (error) {
-      console.error('Error descubriendo mutaciones:', error);
-      return [];
     }
   }
 }

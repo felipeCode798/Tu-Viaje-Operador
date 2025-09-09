@@ -13,6 +13,7 @@ import { router } from 'expo-router';
 // Interface unificada para el usuario
 interface User {
   _id: string;
+  id: string;
   names: string;
   lastName: string;
   email: string;
@@ -29,6 +30,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   isLoading: boolean;
+  userType: 'Conductor' | 'Empresa' | null;
   login: (credentials: LoginCredentials) => Promise<void>;
   logout: () => Promise<void>;
   forgotPassword: (email: string) => Promise<boolean>;
@@ -52,6 +54,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [userType, setUserType] = useState<'Conductor' | 'Empresa' | null>(null);
 
   useEffect(() => {
     loadStoredAuth();
@@ -61,10 +64,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const storedToken = await AsyncStorage.getItem('authToken');
       const storedUser = await AsyncStorage.getItem('authUser');
+      const storedUserType = await AsyncStorage.getItem('userType');
 
       if (storedToken && storedUser) {
         setToken(storedToken);
         setUser(JSON.parse(storedUser));
+        setUserType(storedUserType as 'Conductor' | 'Empresa');
       }
     } catch (error) {
       console.error('Error loading stored auth:', error);
@@ -78,13 +83,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       const response = await authService.login(credentials);
       
+      console.log('Response del login:', response);
+      
+      // Verificar si el login fue exitoso
+      if (!response.result) {
+        throw new Error('Credenciales incorrectas');
+      }
+      
       let user: User;
+      setUserType(credentials.userType);
 
       if (credentials.userType === 'Conductor') {
-        // Para conductor
         const userData = response.result as DriverResponse;
+        
         user = {
           _id: userData._id,
+          id: userData._id,
           names: userData.names,
           lastName: userData.lastName,
           email: userData.email,
@@ -93,12 +107,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           type: 'Conductor'
         };
       } else {
-        // Para empresa
         const userData = response.result as EnterpriseLoginResponse;
+        
         user = {
           _id: userData.id,
+          id: userData.id,
           names: userData.name,
-          lastName: '', // Las empresas no tienen lastName
+          lastName: '',
           email: userData.correo,
           phone: userData.phone,
           type: 'Empresa',
@@ -108,16 +123,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         };
       }
       
+      console.log('User creado:', user);
+      
       // Guardar en estado
       setUser(user);
+      // Como no hay token real, usamos un token dummy o el ID del usuario
+      const authToken = `user_${user.id}_${Date.now()}`;
+      setToken(authToken);
       
       // Guardar en AsyncStorage
       await AsyncStorage.setItem('authUser', JSON.stringify(user));
+      await AsyncStorage.setItem('authToken', authToken);
+      await AsyncStorage.setItem('userType', credentials.userType);
 
-      router.replace('/(tabs)/home');
+      router.replace('/(tabs)/HomeScreen');
       
     } catch (error: any) {
-      throw error;
+      console.error('Error en login:', error);
+      throw error; // Re-lanzar el error sin modificar
     } finally {
       setIsLoading(false);
     }
@@ -127,8 +150,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setUser(null);
       setToken(null);
+      setUserType(null);
       await AsyncStorage.removeItem('authToken');
       await AsyncStorage.removeItem('authUser');
+      await AsyncStorage.removeItem('userType');
+      router.replace('/login');
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
     }
@@ -146,6 +172,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     token,
     isLoading,
+    userType,
     login,
     logout,
     forgotPassword,
