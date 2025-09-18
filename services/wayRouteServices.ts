@@ -1,4 +1,6 @@
-import { ApolloClient, gql, InMemoryCache } from '@apollo/client';
+import { ApolloClient } from '@apollo/client/core/ApolloClient';
+import { InMemoryCache } from '@apollo/client/cache/inmemory/inMemoryCache';
+import { gql } from '@apollo/client/core/index.js';
 import { clientUrl } from '../constants/Urls';
 import { store } from '../redux/store';
 

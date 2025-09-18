@@ -1,7 +1,6 @@
-import { gql } from '@apollo/client';
-import { ApolloClient, InMemoryCache } from '@apollo/client';
-import { clientUrl } from '@/constants/Urls'
-import { Programming, StatusChangeResponse, Tourism } from '@/types';
+import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
+import { clientUrl } from '../constants/Urls';
+import { Programming, StatusChangeResponse, Tourism } from '../types';
 
 const createApolloClient = () => {
   return new ApolloClient({
@@ -85,7 +84,7 @@ export default class HomeServices {
         },
       });
 
-      return result.data.getTourismByDriver.result || [];
+      return result.data.getTourismByDriver?.result || [];
     } catch (error) {
       console.error('Error fetching tourisms for driver:', error);
       return [];
@@ -95,7 +94,7 @@ export default class HomeServices {
   /**
    * Obtiene las programaciones asignadas a un conductor para una fecha específica
    */
-  static async getProgrammingDriver(idDriver: string, dateTime: string, tipoUser: any): Promise<Programming[]> {
+  static async getProgrammingDriver(idDriver: string, dateTime: string): Promise<Programming[]> {
     const client = createApolloClient();
     
     try {
@@ -166,7 +165,7 @@ export default class HomeServices {
         },
       });
 
-      return result.data.getProgrammingByDriver.result || [];
+      return result.data.getProgrammingByDriver?.result || [];
     } catch (error) {
       console.error('Error fetching programming for driver:', error);
       return [];
@@ -176,19 +175,14 @@ export default class HomeServices {
   /**
    * Obtiene las programaciones de una empresa para una fecha específica
    */
-  static async getProgrammingsEnterprise(idEnterprise: string, dateTime: number): Promise<Programming[]> {
+  static async getProgrammingsEnterprise(idEnterprise: string, dateTime: string): Promise<Programming[]> {
     const client = createApolloClient();
     
     try {
       const result = await client.query({
         query: gql`
-          query getProgrammingsByEnterprise($driver: String!, $start: String!) {
-            getProgrammingsByEnterprise(
-              input: {
-                driver: $driver
-                start: $start
-              }
-            ) {
+          query getProgrammingsByEnterprise($input: programmingInputEnterprise) {
+            getProgrammingsByEnterprise(input: $input) {
               result {
                 _id
                 start
@@ -231,12 +225,14 @@ export default class HomeServices {
           }
         `,
         variables: {
-          driver: idEnterprise,
-          start: dateTime.toString(),
+          input: {
+            driver: idEnterprise,
+            start: dateTime,
+          },
         },
       });
 
-      return result.data.getProgrammingsByEnterprise.result || [];
+      return result.data.getProgrammingsByEnterprise?.result || [];
     } catch (error) {
       console.error('Error fetching enterprise programmings:', error);
       return [];
@@ -246,7 +242,7 @@ export default class HomeServices {
   /**
    * Obtiene los turismos de una empresa para una fecha específica
    */
-  static async getTourismByEnterprises(idEnterprise: string, dateTime: number): Promise<Tourism[]> {
+  static async getTourismByEnterprises(idEnterprise: string, dateTime: string): Promise<Tourism[]> {
     const client = createApolloClient();
     
     try {
@@ -286,7 +282,7 @@ export default class HomeServices {
         variables: {
           input: {
             id: idEnterprise,
-            start: dateTime.toString(),
+            start: dateTime,
           },
         },
       });
@@ -327,7 +323,7 @@ export default class HomeServices {
         },
       });
 
-      return result.data.changesStatusByProgramming;
+      return result.data?.changesStatusByProgramming || null;
     } catch (error) {
       console.error('Error changing programming status:', error);
       return null;
@@ -363,7 +359,7 @@ export default class HomeServices {
         },
       });
 
-      return result.data.changeStatusTourism;
+      return result.data?.changeStatusTourism || null;
     } catch (error) {
       console.error('Error changing tourism status:', error);
       return null;

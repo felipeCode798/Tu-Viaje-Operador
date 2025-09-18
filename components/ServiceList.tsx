@@ -7,6 +7,7 @@ import {
   FlatList,
   ActivityIndicator,
   Alert,
+  RefreshControl
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Programming, Tourism } from '../types';
@@ -18,6 +19,8 @@ interface ServiceListProps {
   loading: boolean;
   onStatusChange: (id: string, newStatus: string, type: 'programming' | 'tourism') => void;
   userType: 'Conductor' | 'Empresa' | null;
+  refreshing?: boolean;
+  onRefresh?: () => void;
 }
 
 interface ServiceItemProps {
@@ -103,10 +106,19 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
   const getTime = () => {
     if (type === 'tourism') {
       const tourism = item as Tourism;
-      return moment(tourism.ida).format('h:mm a');
+      // Convierte el timestamp a número y luego a fecha
+      const timestamp = Number(tourism.ida);
+      if (isNaN(timestamp)) {
+        return 'Hora no disponible';
+      }
+      return moment(timestamp).format('h:mm a');
     } else {
       const programming = item as Programming;
-      return moment(programming.start).format('h:mm a');
+      const timestamp = Number(programming.start);
+      if (isNaN(timestamp)) {
+        return 'Hora no disponible';
+      }
+      return moment(timestamp).format('h:mm a');
     }
   };
 
@@ -222,20 +234,27 @@ const ServiceList: React.FC<ServiceListProps> = ({
   tourisms,
   loading,
   onStatusChange,
-  userType
+  userType,
+  refreshing = false,
+  onRefresh
 }) => {
   // Combinar y ordenar servicios por hora
   const allServices = [
     ...programmings.map(item => ({ ...item, type: 'programming' as const })),
     ...tourisms.map(item => ({ ...item, type: 'tourism' as const }))
   ].sort((a, b) => {
-    const timeA = a.type === 'tourism' 
-      ? moment((a as Tourism).ida).valueOf() 
-      : moment((a as Programming).start).valueOf();
-    
-    const timeB = b.type === 'tourism' 
-      ? moment((b as Tourism).ida).valueOf() 
-      : moment((b as Programming).start).valueOf();
+    const getTimestamp = (item: any, itemType: string) => {
+      if (itemType === 'tourism') {
+        const timestamp = Number(item.ida);
+        return isNaN(timestamp) ? 0 : timestamp;
+      } else {
+        const timestamp = Number(item.start);
+        return isNaN(timestamp) ? 0 : timestamp;
+      }
+    };
+
+    const timeA = getTimestamp(a, a.type);
+    const timeB = getTimestamp(b, b.type);
     
     return timeA - timeB;
   });
@@ -272,6 +291,16 @@ const ServiceList: React.FC<ServiceListProps> = ({
       )}
       contentContainerStyle={styles.listContainer}
       showsVerticalScrollIndicator={false}
+      refreshControl={
+        onRefresh ? (
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#FF9500']}
+            tintColor="#FF9500"
+          />
+        ) : undefined
+      }
     />
   );
 };

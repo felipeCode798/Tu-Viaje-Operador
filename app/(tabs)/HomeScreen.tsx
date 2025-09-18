@@ -82,7 +82,7 @@ const HomeScreen: React.FC = () => {
 
         if (userType === 'Conductor') {
           const [programmingsData, tourismsData] = await Promise.all([
-              HomeServices.getProgrammingDriver(userId, dateString, userType),
+              HomeServices.getProgrammingDriver(userId, dateString),
               HomeServices.getTourismsDriver(userId, dateString)
           ]);
           
@@ -90,8 +90,8 @@ const HomeScreen: React.FC = () => {
           setTourisms(tourismsData);
         } else {
           const [programmingsData, tourismsData] = await Promise.all([
-              HomeServices.getProgrammingsEnterprise(userId, timestamp),
-              HomeServices.getTourismByEnterprises(userId, timestamp)
+              HomeServices.getProgrammingsEnterprise(userId, dateString),
+              HomeServices.getTourismByEnterprises(userId, dateString)
           ]);
           
           setProgrammings(programmingsData);
@@ -126,6 +126,13 @@ const HomeScreen: React.FC = () => {
 
   // Filtrar datos
   const getFilteredData = useCallback(() => {
+    console.log('=== DEBUG FILTRO ===');
+    console.log('Programmings originales:', programmings.map(p => ({id: p._id, status: p.status, statusService: p.statusService})));
+    console.log('Tourisms originales:', tourisms.map(t => ({id: t._id, status: t.status, statusService: t.statusService})));
+    console.log('Filtro activo:', activeFilter);
+    console.log('Estado activo:', activeStatus);
+    console.log('Confirmación:', confirmationFilter);
+      
     let filteredProgrammings = [...programmings];
     let filteredTourisms = [...tourisms];
 
@@ -150,14 +157,31 @@ const HomeScreen: React.FC = () => {
       filteredTourisms = filteredTourisms.filter(t => t.statusService === targetStatus);
     }
 
+    // Filtrar por confirmación - DEBUG
+    console.log('Antes de filtrar por confirmación - Programmings:', filteredProgrammings.map(p => ({id: p._id, status: p.status})));
+    console.log('Antes de filtrar por confirmación - Tourisms:', filteredTourisms.map(t => ({id: t._id, status: t.status})));
+
     // Filtrar por confirmación
     if (confirmationFilter === 'Confirmados') {
-      filteredProgrammings = filteredProgrammings.filter(p => p.status === 'confirmed');
-      filteredTourisms = filteredTourisms.filter(t => t.status === 'confirmed');
+      // Cambiar 'confirmed' por 'Progreso' o 'Activo' según tu schema
+      filteredProgrammings = filteredProgrammings.filter(p => 
+        p.status === 'Progreso' || p.status === 'Activo' || p.status === 'Progreso'
+      );
+      filteredTourisms = filteredTourisms.filter(t => 
+        t.status === 'Progreso' || t.status === 'Activo' || t.status === 'Progreso'
+      );
     } else {
-      filteredProgrammings = filteredProgrammings.filter(p => p.status !== 'confirmed');
-      filteredTourisms = filteredTourisms.filter(t => t.status !== 'confirmed');
+      filteredProgrammings = filteredProgrammings.filter(p => 
+        p.status !== 'Progreso' && p.status !== 'Activo' && p.status !== 'Progreso'
+      );
+      filteredTourisms = filteredTourisms.filter(t => 
+        t.status !== 'Progreso' && t.status !== 'Activo' && t.status !== 'Progreso'
+      );
     }
+
+    console.log('Después de filtrar - Programmings:', filteredProgrammings.length);
+    console.log('Después de filtrar - Tourisms:', filteredTourisms.length);
+    console.log('=== FIN DEBUG ===');
 
     return { programmings: filteredProgrammings, tourisms: filteredTourisms };
   }, [programmings, tourisms, activeFilter, activeStatus, confirmationFilter]);
@@ -266,6 +290,8 @@ const HomeScreen: React.FC = () => {
           loading={loading}
           onStatusChange={handleStatusChange}
           userType={userType}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
         />
       </ScrollView>
     </View>
