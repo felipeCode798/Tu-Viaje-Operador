@@ -12,8 +12,8 @@
   },
   "dependencies": {
     "@apollo/client": "^3.6.0",
-    "@expo/vector-icons": "^15.0.2",
-    "@react-native-async-storage/async-storage": "^2.2.0",
+    "@expo/vector-icons": "14.1.0",
+    "@react-native-async-storage/async-storage": "2.1.2",
     "@react-navigation/bottom-tabs": "^7.3.10",
     "@react-navigation/elements": "^2.3.8",
     "@react-navigation/native": "^7.1.6",
@@ -40,7 +40,7 @@
     "moment": "^2.30.1",
     "react": "19.0.0",
     "react-dom": "19.0.0",
-    "react-native": "0.79.6",
+    "react-native": "0.79.5",
     "react-native-calendar-strip": "^2.2.6",
     "react-native-calendars": "^1.1313.0",
     "react-native-elements": "^3.4.3",
@@ -48,7 +48,7 @@
     "react-native-paper": "^5.14.5",
     "react-native-push-notification-popup": "^1.7.0",
     "react-native-reanimated": "~3.17.4",
-    "react-native-safe-area-context": "^5.4.0",
+    "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
     "react-native-stars": "^1.2.2",
     "react-native-toaster": "^1.2.2",
@@ -71,8 +71,31 @@
     "eslint": "^9.25.0",
     "eslint-config-expo": "~9.2.0",
     "install": "^0.13.0",
-    "npm": "^11.6.0",
     "typescript": "~5.8.3"
+  },
+  "expo": {
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "exclude": [
+          "react-native-calendar-strip",
+          "react-native-push-notification-popup",
+          "redux-persist",
+          "@apollo/client",
+          "@tighten/react-native-time-input",
+          "apollo-boost",
+          "expo-barcode-scanner",
+          "graphql",
+          "graphql-tag",
+          "moment",
+          "react-native-elements",
+          "react-native-stars",
+          "react-native-toaster",
+          "redux-logger",
+          "rxjs"
+        ],
+        "listUnknownPackages": false
+      }
+    }
   },
   "private": true
 }
