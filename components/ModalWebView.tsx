@@ -9,7 +9,7 @@ import { ButtonOpenWebView } from "./webView/ButtonOpenWebView";
 import { server } from "./../constants/Urls";
 import { Loader } from "./Loader";
 import { Icon } from "react-native-elements";
-import CreateTourisms from "../screens/CreateTourisms";
+import CreateTourisms from "../app/(tabs)/CreateTourisms";
 
 const { height, width } = Dimensions.get("window");
 

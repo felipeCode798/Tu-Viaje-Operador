@@ -25,3 +25,120 @@ declare module '@codler/react-native-keyboard-aware-scroll-view' {
     scrollToFocusedInput: (event: any) => void;
   }
 }
+
+declare module 'expo-image-manipulator' {
+  export enum SaveFormat {
+    JPEG = 'jpeg',
+    PNG = 'png',
+  }
+
+  export interface ImageResult {
+    uri: string;
+    width: number;
+    height: number;
+    base64?: string;
+  }
+
+  export interface ResizeOptions {
+    width: number;
+    height: number;
+  }
+
+  export interface ManipulateOptions {
+    compress?: number;
+    format?: SaveFormat;
+  }
+
+  export function manipulateAsync(
+    uri: string,
+    actions: Array<{ resize: ResizeOptions }>,
+    options: ManipulateOptions
+  ): Promise<ImageResult>;
+}
+
+// declarations.d.ts
+declare module 'react-native-image-picker' {
+  export interface Asset {
+    uri?: string;
+    width?: number;
+    height?: number;
+    base64?: string;
+    fileName?: string;
+    type?: string;
+    fileSize?: number;
+  }
+
+  export interface ImagePickerResponse {
+    didCancel?: boolean;
+    errorCode?: string;
+    errorMessage?: string;
+    assets?: Asset[];
+  }
+
+  export interface ImageLibraryOptions {
+    mediaType?: 'photo' | 'video' | 'mixed';
+    selectionLimit?: number;
+    quality?: number;
+    maxWidth?: number;
+    maxHeight?: number;
+    allowsMultipleSelection?: boolean;
+    includeBase64?: boolean;
+    aspect?: [number, number];
+  }
+
+  export function launchImageLibrary(options: ImageLibraryOptions): Promise<ImagePickerResponse>;
+  export function launchCamera(options: ImageLibraryOptions): Promise<ImagePickerResponse>;
+}
+
+declare module 'react-native-fs' {
+  const RNFS: {
+    readFile(filePath: string, encoding: 'base64' | 'utf8' | 'ascii'): Promise<string>;
+    writeFile(filePath: string, contents: string, encoding?: 'base64' | 'utf8' | 'ascii'): Promise<void>;
+    unlink(filePath: string): Promise<void>;
+    exists(filePath: string): Promise<boolean>;
+    mkdir(filePath: string): Promise<void>;
+    DocumentDirectoryPath: string;
+    TemporaryDirectoryPath: string;
+    // Agrega otros métodos que uses
+  };
+  export default RNFS;
+}
+
+declare module 'form-data' {
+  class FormData {
+    append(name: string, value: any, filename?: string): void;
+    getHeaders(): { [key: string]: string };
+    // Agrega otros métodos que necesites
+  }
+  export = FormData;
+}
+
+declare module 'expo-image-manipulator' {
+  export enum SaveFormat {
+    JPEG = 'jpeg',
+    PNG = 'png',
+  }
+
+  export interface ImageResult {
+    uri: string;
+    width: number;
+    height: number;
+    base64?: string;
+  }
+
+  export interface ResizeOptions {
+    width: number;
+    height: number;
+  }
+
+  export interface ManipulateOptions {
+    compress?: number;
+    format?: SaveFormat;
+  }
+
+  export function manipulateAsync(
+    uri: string,
+    actions: Array<{ resize: ResizeOptions }>,
+    options: ManipulateOptions
+  ): Promise<ImageResult>;
+}

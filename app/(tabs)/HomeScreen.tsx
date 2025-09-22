@@ -17,7 +17,6 @@ import CalendarComponent from '../../components/CalendarComponent';
 import FilterButtons from '../../components/FilterButtons';
 import StatusFilters from '../../components/StatusFilters';
 import ServiceList from '../../components/ServiceList';
-import HomeServices from '../../services/homeServices';
 import { Programming, Tourism } from '../../types';
 import moment from 'moment';
 
@@ -25,15 +24,130 @@ type FilterType = 'Todos' | 'Viajes' | 'Paquetes';
 type StatusType = 'Todos' | 'Pendientes' | 'Iniciados' | 'Finalizados' | 'Cancelados';
 type ConfirmationType = 'Confirmados' | 'No confirmados';
 
+// DATOS QUEMADOS PARA PRUEBAS
+const MOCK_PROGRAMMINGS: Programming[] = [
+  {
+    _id: '1',
+    start: '2025-09-20T13:30:00.000Z',
+    end: '2025-09-20T14:30:00.000Z',
+    status: 'Progreso', // Confirmado
+    statusService: 'pending',
+    tour: {
+      origin: { 
+        name: 'CALI',
+        latitude: 3.4516,
+        longitude: -76.5320
+      },
+      destination: { 
+        name: 'AEROPUERTO ALFONSO BONILLA',
+        latitude: 3.5432,
+        longitude: -76.3816
+      }
+    },
+    enterprise: {
+      name: 'Prueba Tem',
+      nit: '102949402'
+    },
+    driverInfo: {
+      names: 'Juan',
+      lastName: 'Lopez'
+    }
+  },
+  {
+    _id: '2',
+    start: '2025-09-20T09:00:00.000Z',
+    end: '2025-09-20T12:00:00.000Z',
+    status: 'Pendiente', // No confirmado
+    statusService: 'started',
+    tour: {
+      origin: { 
+        name: 'BOGOTÁ',
+        latitude: 4.7110,
+        longitude: -74.0721
+      },
+      destination: { 
+        name: 'MEDELLÍN',
+        latitude: 6.2442,
+        longitude: -75.5812
+      }
+    },
+    enterprise: {
+      name: 'Transportes Valle',
+      nit: '800123456'
+    },
+    driverInfo: {
+      names: 'Carlos',
+      lastName: 'Rodriguez'
+    }
+  },
+  {
+    _id: '3',
+    start: '2025-09-20T15:00:00.000Z',
+    end: '2025-09-20T18:00:00.000Z',
+    status: 'Progreso', // Confirmado
+    statusService: 'finished',
+    tour: {
+      origin: { 
+        name: 'PEREIRA',
+        latitude: 4.8133,
+        longitude: -75.6961
+      },
+      destination: { 
+        name: 'ARMENIA',
+        latitude: 4.5339,
+        longitude: -75.6811
+      }
+    },
+    enterprise: {
+      name: 'Rutas Express',
+      nit: '900456789'
+    },
+    driverInfo: {
+      names: 'Miguel',
+      lastName: 'Hernandez'
+    }
+  }
+];
+
+const MOCK_TOURISMS: Tourism[] = [
+  {
+    _id: '4',
+    start: '2025-09-20T08:00:00.000Z',
+    end: '2025-09-20T20:00:00.000Z',
+    status: 'Progreso', // Confirmado
+    statusService: 'pending',
+    tourism: {
+      origin: { 
+        name: 'CARTAGENA',
+        latitude: 10.3910,
+        longitude: -75.4794
+      },
+      destination: { 
+        name: 'BARRANQUILLA',
+        latitude: 10.9685,
+        longitude: -74.7813
+      }
+    },
+    enterprise: {
+      name: 'Turismo Caribe',
+      nit: '700987654'
+    },
+    driverInfo: {
+      names: 'Ana',
+      lastName: 'Martinez'
+    }
+  }
+];
+
 const HomeScreen: React.FC = () => {
   const { user, userType, logout } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [activeFilter, setActiveFilter] = useState<FilterType>('Todos');
   const [activeStatus, setActiveStatus] = useState<StatusType>('Todos');
   const [confirmationFilter, setConfirmationFilter] = useState<ConfirmationType>('Confirmados');
-  const [programmings, setProgrammings] = useState<Programming[]>([]);
-  const [tourisms, setTourisms] = useState<Tourism[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [programmings, setProgrammings] = useState<Programming[]>(MOCK_PROGRAMMINGS);
+  const [tourisms, setTourisms] = useState<Tourism[]>(MOCK_TOURISMS);
+  const [loading, setLoading] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
 
   console.log('User en HomeScreen:', user);
@@ -55,67 +169,19 @@ const HomeScreen: React.FC = () => {
     );
   }
 
-  // Cargar datos inicial
+  // Simular carga de datos
   const loadData = useCallback(async (showLoader = true) => {
-    // Verificar que user no sea null antes de acceder a sus propiedades
-    if (!user) {
-        console.log('Usuario no autenticado');
-        if (showLoader) setLoading(false);
-        return;
-    }
-    
     if (showLoader) setLoading(true);
     
-    try {
-        const dateString = moment(selectedDate).format('YYYY-MM-DD');
-        const timestamp = selectedDate.getTime();
-
-        // Usar user.id con validación
-        const userId = user.id || user._id;
-        if (!userId) {
-          console.error('ID de usuario no disponible');
-          Alert.alert('Error', 'ID de usuario no disponible');
-          return;
-        }
-
-        console.log('Cargando datos para usuario ID:', userId);
-
-        if (userType === 'Conductor') {
-          const [programmingsData, tourismsData] = await Promise.all([
-              HomeServices.getProgrammingDriver(userId, dateString),
-              HomeServices.getTourismsDriver(userId, dateString)
-          ]);
-          
-          setProgrammings(programmingsData);
-          setTourisms(tourismsData);
-        } else {
-          const [programmingsData, tourismsData] = await Promise.all([
-              HomeServices.getProgrammingsEnterprise(userId, dateString),
-              HomeServices.getTourismByEnterprises(userId, dateString)
-          ]);
-          
-          setProgrammings(programmingsData);
-          setTourisms(tourismsData);
-        }
-    } catch (error) {
-        console.error('Error loading data:', error);
-        Alert.alert('Error', 'No se pudieron cargar los datos');
-    } finally {
-        if (showLoader) setLoading(false);
-    }
-  }, [user, userType, selectedDate]);
-
-  // Recargar cuando cambie la fecha
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  // Recargar cuando la pantalla esté enfocada
-  useFocusEffect(
-    useCallback(() => {
-      loadData();
-    }, [loadData])
-  );
+    // Simular delay de red
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Los datos ya están cargados como mock data
+    setProgrammings(MOCK_PROGRAMMINGS);
+    setTourisms(MOCK_TOURISMS);
+    
+    if (showLoader) setLoading(false);
+  }, []);
 
   // Pull to refresh
   const onRefresh = useCallback(async () => {
@@ -157,25 +223,20 @@ const HomeScreen: React.FC = () => {
       filteredTourisms = filteredTourisms.filter(t => t.statusService === targetStatus);
     }
 
-    // Filtrar por confirmación - DEBUG
-    console.log('Antes de filtrar por confirmación - Programmings:', filteredProgrammings.map(p => ({id: p._id, status: p.status})));
-    console.log('Antes de filtrar por confirmación - Tourisms:', filteredTourisms.map(t => ({id: t._id, status: t.status})));
-
     // Filtrar por confirmación
     if (confirmationFilter === 'Confirmados') {
-      // Cambiar 'confirmed' por 'Progreso' o 'Activo' según tu schema
       filteredProgrammings = filteredProgrammings.filter(p => 
-        p.status === 'Progreso' || p.status === 'Activo' || p.status === 'Progreso'
+        p.status === 'Progreso' || p.status === 'Activo'
       );
       filteredTourisms = filteredTourisms.filter(t => 
-        t.status === 'Progreso' || t.status === 'Activo' || t.status === 'Progreso'
+        t.status === 'Progreso' || t.status === 'Activo'
       );
     } else {
       filteredProgrammings = filteredProgrammings.filter(p => 
-        p.status !== 'Progreso' && p.status !== 'Activo' && p.status !== 'Progreso'
+        p.status !== 'Progreso' && p.status !== 'Activo'
       );
       filteredTourisms = filteredTourisms.filter(t => 
-        t.status !== 'Progreso' && t.status !== 'Activo' && t.status !== 'Progreso'
+        t.status !== 'Progreso' && t.status !== 'Activo'
       );
     }
 
@@ -188,19 +249,22 @@ const HomeScreen: React.FC = () => {
 
   const handleStatusChange = async (id: string, newStatus: string, type: 'programming' | 'tourism') => {
     try {
-      let result;
+      // Simular cambio de estado
       if (type === 'programming') {
-        result = await HomeServices.changesStatusByProgramming(id, newStatus, 'statusService');
+        setProgrammings(prev => 
+          prev.map(p => 
+            p._id === id ? { ...p, statusService: newStatus as any } : p
+          )
+        );
       } else {
-        result = await HomeServices.changeStatusTourism(id, newStatus, 'statusService');
+        setTourisms(prev => 
+          prev.map(t => 
+            t._id === id ? { ...t, statusService: newStatus as any } : t
+          )
+        );
       }
-
-      if (result?.status) {
-        Alert.alert('Éxito', 'Estado actualizado correctamente');
-        await loadData(false); // Recargar datos sin mostrar loader
-      } else {
-        Alert.alert('Error', result?.message || 'No se pudo actualizar el estado');
-      }
+      
+      Alert.alert('Éxito', 'Estado actualizado correctamente');
     } catch (error) {
       console.error('Error changing status:', error);
       Alert.alert('Error', 'Error al cambiar el estado del servicio');
@@ -221,69 +285,8 @@ const HomeScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        style={styles.content}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={['#FF9500']}
-            tintColor="#FF9500"
-          />
-        }
-      >
-        {/* Calendar */}
-        <CalendarComponent
-          selectedDate={selectedDate}
-          onDateChange={setSelectedDate}
-        />
-
-        {/* Filter Buttons */}
-        <FilterButtons
-          activeFilter={activeFilter}
-          onFilterChange={setActiveFilter}
-        />
-
-        {/* Status Filters */}
-        <StatusFilters
-          activeStatus={activeStatus}
-          onStatusChange={setActiveStatus}
-        />
-
-        {/* Confirmation Filter */}
-        <View style={styles.confirmationContainer}>
-          <TouchableOpacity
-            style={[
-              styles.confirmationButton,
-              confirmationFilter === 'Confirmados' && styles.confirmationButtonActive
-            ]}
-            onPress={() => setConfirmationFilter('Confirmados')}
-          >
-            <Text style={[
-              styles.confirmationText,
-              confirmationFilter === 'Confirmados' && styles.confirmationTextActive
-            ]}>
-              Confirmados
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.confirmationButton,
-              confirmationFilter === 'No confirmados' && styles.confirmationButtonInactive
-            ]}
-            onPress={() => setConfirmationFilter('No confirmados')}
-          >
-            <Text style={[
-              styles.confirmationText,
-              confirmationFilter === 'No confirmados' && styles.confirmationTextInactive
-            ]}>
-              No confirmados
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Service List */}
+      {/* Content sin ScrollView para evitar anidación */}
+      <View style={styles.content}>
         <ServiceList
           programmings={filteredProgrammings}
           tourisms={filteredTourisms}
@@ -292,8 +295,62 @@ const HomeScreen: React.FC = () => {
           userType={userType}
           refreshing={refreshing}
           onRefresh={onRefresh}
+          headerComponent={
+            <View>
+              {/* Calendar */}
+              <CalendarComponent
+                selectedDate={selectedDate}
+                onDateChange={setSelectedDate}
+              />
+
+              {/* Filter Buttons */}
+              <FilterButtons
+                activeFilter={activeFilter}
+                onFilterChange={setActiveFilter}
+              />
+
+              {/* Status Filters */}
+              <StatusFilters
+                activeStatus={activeStatus}
+                onStatusChange={setActiveStatus}
+              />
+
+              {/* Confirmation Filter */}
+              <View style={styles.confirmationContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.confirmationButton,
+                    confirmationFilter === 'Confirmados' && styles.confirmationButtonActive
+                  ]}
+                  onPress={() => setConfirmationFilter('Confirmados')}
+                >
+                  <Text style={[
+                    styles.confirmationText,
+                    confirmationFilter === 'Confirmados' && styles.confirmationTextActive
+                  ]}>
+                    Confirmados
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.confirmationButton,
+                    confirmationFilter === 'No confirmados' && styles.confirmationButtonInactive
+                  ]}
+                  onPress={() => setConfirmationFilter('No confirmados')}
+                >
+                  <Text style={[
+                    styles.confirmationText,
+                    confirmationFilter === 'No confirmados' && styles.confirmationTextInactive
+                  ]}>
+                    No confirmados
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          }
         />
-      </ScrollView>
+      </View>
     </View>
   );
 };
