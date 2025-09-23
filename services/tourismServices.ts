@@ -1,6 +1,4 @@
-import { ApolloClient } from '@apollo/client/core/ApolloClient';
-import { InMemoryCache } from '@apollo/client/cache/inmemory/inMemoryCache';
-import { gql, HttpLink } from '@apollo/client/core/index.js';
+import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
 import { clientUrl } from '../constants/Urls';
 
 interface Destination {
@@ -45,29 +43,28 @@ interface TourismData {
   cuposPorDiaConfig: any[];
 }
 
-const httpLink = new HttpLink({
-  uri: clientUrl,
-});
-
-const client = new ApolloClient({
-  link: httpLink,
-  cache: new InMemoryCache(),
-});
+const createApolloClient = () => {
+  return new ApolloClient({
+    uri: clientUrl,
+    cache: new InMemoryCache(),
+  });
+};
 
 export default class TourismServices {
   static async getDestinationsWithoutPaginate(id: string): Promise<Destination[]> {
+    const client = createApolloClient();
+    
     try {
       const response = await client.query({
         query: gql`
           query {
-            getDestinationsWithoutPaginate(id: "${id}") {
-              result {
+            getDestinationsWithoutPaginate(id:"${id.toString()}"){
+              result{
                 id
                 name
               }
             }
-          }
-        `,
+           }`,
       });
 
       const data = response.data.getDestinationsWithoutPaginate;
@@ -83,8 +80,10 @@ export default class TourismServices {
   }
 
   static async createTourism(data: TourismData): Promise<any> {
-    console.log('Data que entra al servicio:', data);
-
+    console.log("<<<<<<<<<<<<<<<<<<<LO QUE ENTRO AL SERVICIO>>>>>>>>>>>>>>>>>>", data);
+    
+    const client = createApolloClient();
+    
     try {
       const response = await client.mutate({
         mutation: gql`
@@ -139,13 +138,13 @@ export default class TourismServices {
       });
 
       const responseData = response.data.createTourism;
-      if (responseData.message !== '') {
+      if (responseData.message !== "") {
         return responseData;
       } else {
         return null;
       }
     } catch (error) {
-      console.error('Error enviando la consulta:', error);
+      console.error("Error enviando la consulta:", error);
       throw error;
     }
   }

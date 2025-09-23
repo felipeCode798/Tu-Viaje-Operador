@@ -1,18 +1,148 @@
-import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
+import { ApolloClient, InMemoryCache, createHttpLink, gql } from '@apollo/client';
 import { clientUrl } from '../constants/Urls';
-import { Programming, StatusChangeResponse, Tourism } from '../types';
+
+// Interfaces para tipado
+interface Enterprise {
+  name: string;
+  nit?: string;
+  comision?: number;
+  correo?: string;
+  phone?: string;
+}
+
+interface Tourism {
+  _id: string;
+  empresa: Enterprise;
+  tipo: string;
+  nombre: string;
+  placa: string;
+  descripcion: string;
+  alimentacion: string;
+  descripcionAlimentacion: string;
+  tiquetes: string;
+  descripcionTiquetes: string;
+  hospedaje: string;
+  descripcionHospedaje: string;
+  traslado: string;
+  descripcionTraslado: string;
+  entradas: string;
+  descripcionEntradas: string;
+  origen: {
+    latitude: number;
+    longitude: number;
+    name: string;
+  };
+  destino: {
+    name: string;
+    tour?: string;
+    place: {
+      latitude: number;
+      longitude: number;
+      name: string;
+    };
+  };
+  ida: string;
+  vuelta: string;
+  cupos: number;
+  disponibles: number;
+  acomodacion: string;
+  dias: number;
+  noches: number;
+  precio: number;
+  dcto: boolean;
+  precioDcto: number;
+  nombreGuia: string;
+  imagen: string;
+  gallery: string[];
+  nombrepaq: string;
+  driver: string;
+  status: string;
+  statusService: string;
+}
+
+interface Programming {
+  _id: string;
+  available: number;
+  enterprise: Enterprise;
+  statusService: string;
+  bus: {
+    placa: string;
+    name: string;
+    capacity: number;
+  };
+  tour: {
+    origin: {
+      name: string;
+    };
+    destination: {
+      name: string;
+      place: {
+        latitude: number;
+        longitude: number;
+        name: string;
+      };
+    };
+  };
+  places: {
+    latitude: number;
+    longitude: number;
+    name: string;
+  }[];
+  puntoFin: {
+    latitude: number;
+    longitude: number;
+    name: string;
+  };
+  start: string;
+  end: string;
+  price: number;
+  pricedcto: number;
+  dcto: boolean;
+  status: string;
+  fuec: string;
+  driver: {
+    _id: string;
+  };
+  driverInfo: {
+    names: string;
+    lastName: string;
+    email: string;
+  };
+}
+
+interface StatusChangeResponse {
+  status: string;
+  message: string;
+}
 
 const createApolloClient = () => {
-  return new ApolloClient({
+  const httpLink = createHttpLink({
     uri: clientUrl,
-    cache: new InMemoryCache(),
+  });
+
+  return new ApolloClient({
+    link: httpLink,
+    cache: new InMemoryCache({
+      typePolicies: {
+        Query: {
+          fields: {
+            // Configuración para evitar problemas de cache
+          }
+        }
+      }
+    }),
+    defaultOptions: {
+      watchQuery: {
+        fetchPolicy: 'network-only',
+      },
+      query: {
+        fetchPolicy: 'network-only',
+      },
+    }
   });
 };
 
 export default class HomeServices {
-  /**
-   * Obtiene los turismos asignados a un conductor para una fecha específica
-   */
   static async getTourismsDriver(idDriver: string, dateTime: string): Promise<Tourism[]> {
     const client = createApolloClient();
     
@@ -84,16 +214,17 @@ export default class HomeServices {
         },
       });
 
-      return result.data.getTourismByDriver?.result || [];
+      if (result.data.getTourismByDriver.result !== null) {
+        return result.data.getTourismByDriver.result;
+      } else {
+        return [];
+      }
     } catch (error) {
       console.error('Error fetching tourisms for driver:', error);
       return [];
     }
   }
 
-  /**
-   * Obtiene las programaciones asignadas a un conductor para una fecha específica
-   */
   static async getProgrammingDriver(idDriver: string, dateTime: string): Promise<Programming[]> {
     const client = createApolloClient();
     
@@ -165,24 +296,30 @@ export default class HomeServices {
         },
       });
 
-      return result.data.getProgrammingByDriver?.result || [];
+      if (result.data.getProgrammingByDriver.result !== null) {
+        return result.data.getProgrammingByDriver.result;
+      } else {
+        return [];
+      }
     } catch (error) {
       console.error('Error fetching programming for driver:', error);
       return [];
     }
   }
 
-  /**
-   * Obtiene las programaciones de una empresa para una fecha específica
-   */
   static async getProgrammingsEnterprise(idEnterprise: string, dateTime: string): Promise<Programming[]> {
     const client = createApolloClient();
     
     try {
       const result = await client.query({
         query: gql`
-          query getProgrammingsByEnterprise($input: programmingInputEnterprise) {
-            getProgrammingsByEnterprise(input: $input) {
+          query {
+            getProgrammingsByEnterprise(
+              input: {
+                driver: "${idEnterprise}"
+                start: "${dateTime}"
+              }
+            ) {
               result {
                 _id
                 start
@@ -192,7 +329,7 @@ export default class HomeServices {
                   longitude
                   name
                 }
-                puntoFin {
+                puntoFin{
                   latitude
                   longitude
                   name
@@ -224,24 +361,19 @@ export default class HomeServices {
             }
           }
         `,
-        variables: {
-          input: {
-            driver: idEnterprise,
-            start: dateTime,
-          },
-        },
       });
 
-      return result.data.getProgrammingsByEnterprise?.result || [];
+      if (result.data.getProgrammingsByEnterprise.result !== null) {
+        return result.data.getProgrammingsByEnterprise.result;
+      } else {
+        return [];
+      }
     } catch (error) {
       console.error('Error fetching enterprise programmings:', error);
       return [];
     }
   }
 
-  /**
-   * Obtiene los turismos de una empresa para una fecha específica
-   */
   static async getTourismByEnterprises(idEnterprise: string, dateTime: string): Promise<Tourism[]> {
     const client = createApolloClient();
     
@@ -287,81 +419,85 @@ export default class HomeServices {
         },
       });
 
-      return result.data.getTourismByEnterprises || [];
+      if (result != null) {
+        return result.data.getTourismByEnterprises;
+      } else {
+        return [];
+      }
     } catch (error) {
       console.error('Error fetching enterprise tourisms:', error);
       return [];
     }
   }
 
-  /**
-   * Cambia el estado de una programación
-   */
-  static async changesStatusByProgramming(
-    id: string, 
-    newStatus: string, 
-    type: string
-  ): Promise<StatusChangeResponse | null> {
+  static async changesStatusByProgramming(id: string, newStatus: string, type: string): Promise<StatusChangeResponse | null> {
+    console.log('-------------Entro al servicio de cambio de ESTADO con estas props : ', 'ID', id, 'NUEVO ESTADO', newStatus, 'TIPO', type);
+    
     const client = createApolloClient();
     
     try {
       const result = await client.mutate({
         mutation: gql`
-          mutation changesStatusByProgramming($input: ChangeStatusInput!) {
-            changesStatusByProgramming(input: $input) {
+          mutation{
+            changesStatusByProgramming(
+              input : {
+                id :"${id}",
+                type : "${type}",
+                newStatus: "${newStatus}"
+              } 
+            ){
               status
               message
             }
           }
         `,
-        variables: {
-          input: {
-            id,
-            type,
-            newStatus,
-          },
-        },
       });
 
-      return result.data?.changesStatusByProgramming || null;
+      console.log('------HOLA ESTA ES LA REPUESTA DEL SERVICIO DE CAMBIO DE ESTADO EN PROGRAMACION!!!!!!!!!', result);
+      
+      if (result != null) {
+        return result.data.changesStatusByProgramming;
+      } else {
+        return null;
+      }
     } catch (error) {
-      console.error('Error changing programming status:', error);
+      console.error('ERROR EN EL SERVICIO PURO', error);
       return null;
     }
   }
 
-  /**
-   * Cambia el estado de un turismo
-   */
-  static async changeStatusTourism(
-    id: string, 
-    newStatus: string, 
-    type: string
-  ): Promise<StatusChangeResponse | null> {
+  static async changeStatusTourism(id: string, newStatus: string, type: string): Promise<StatusChangeResponse | null> {
+    console.log('entro al servicio de cambio de status con estas props : ', id, newStatus, type);
+    
     const client = createApolloClient();
     
     try {
       const result = await client.mutate({
         mutation: gql`
-          mutation changeStatusTourism($input: ChangeStatusInput!) {
-            changeStatusTourism(input: $input) {
+          mutation{
+            changeStatusTourism(
+              input : {
+                id :"${id}",
+                type : "${type}",
+                newStatus: "${newStatus}"
+              } 
+            ){
               status
               message
             }
           }
         `,
-        variables: {
-          input: {
-            id,
-            type,
-            newStatus,
-          },
-        },
       });
 
-      return result.data?.changeStatusTourism || null;
+      console.log('ESTA ES LA REPUESTA DEL SERVICIO DE CAMBIO DE ESTADO EN TURISMO!!!!!!!!!', result);
+      
+      if (result != null) {
+        return result.data.changeStatusTourism;
+      } else {
+        return null;
+      }
     } catch (error) {
-      console.error('Error changing tourism status:', error);
+      console.error('ERROR EN EL SERVICIO PURO', error);
       return null;
     }
   }

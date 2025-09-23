@@ -1,6 +1,7 @@
 import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
 import { clientUrl } from '../constants/Urls';
 
+// Interfaces para tipado
 export interface Passenger {
   _id: string;
   cel: string;
@@ -100,7 +101,11 @@ export default class ChatServices {
         `,
       });
 
-      return result.data.getServicesByProgramming?.result || [];
+      if (result.data.getServicesByProgramming?.result !== null) {
+        return result.data.getServicesByProgramming.result;
+      } else {
+        throw new Error(result.data.getServicesByProgramming.message);
+      }
     } catch (error) {
       console.log(error);
       throw new Error('Error fetching services for programming');
@@ -124,7 +129,11 @@ export default class ChatServices {
         `,
       });
 
-      return result.data.getMsgChat || [];
+      if (result.data.getMsgChat !== null) {
+        return result.data.getMsgChat;
+      } else {
+        throw new Error("HAY UN ERROR");
+      }
     } catch (error) {
       console.log(error);
       throw new Error('Error fetching chat history');
@@ -152,7 +161,11 @@ export default class ChatServices {
         },
       });
 
-      return result.data.sendMsgChat || { status: false };
+      if (result.data.sendMsgChat !== null) {
+        return result.data.sendMsgChat;
+      } else {
+        throw new Error("HAY UN ERROR");
+      }
     } catch (error) {
       console.log(error);
       return { status: false, message: 'Error sending message' };

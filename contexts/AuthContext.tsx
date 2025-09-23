@@ -1,14 +1,12 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { 
-  LoginResponse, 
-  LoginCredentials, 
-  EnterpriseResponse,
-  DriverResponse,
-  EnterpriseLoginResponse 
-} from '../services/authService';
-import authService from '../services/authService';
 import { router } from 'expo-router';
+import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import authService, {
+  DriverResponse,
+  EnterpriseLoginResponse,
+  EnterpriseResponse,
+  LoginCredentials
+} from '../services/authService';
 
 // Interface unificada para el usuario
 interface User {

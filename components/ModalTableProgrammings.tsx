@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import {
+  Dimensions,
   Modal,
+  ScrollView,
   StyleSheet,
   Text,
   View,
-  Dimensions,
-  ScrollView,
 } from 'react-native';
 import { ActivityIndicator, Button } from 'react-native-paper';
+import ChatServices from '../services/ChatServices'; // Servicio para obtener pasajeros
 import { Programming } from '../types';
 
 const { height, width } = Dimensions.get('window');
@@ -19,70 +20,73 @@ interface ModalTableProgrammingsProps {
 }
 
 interface Passenger {
+  _id: string;
   names: string;
   lastnames: string;
   numberId: string;
   phone: string;
   email: string;
+  cel?: string;
+  selectId?: string;
+  selectOrigen?: string;
 }
 
-// DATOS QUEMADOS DE PASAJEROS PARA PRUEBAS
-const MOCK_PASSENGERS: Passenger[] = [
-  {
-    names: 'María José',
-    lastnames: 'González Pérez',
-    numberId: '1234567890',
-    phone: '3001234567',
-    email: 'maria.gonzalez@email.com'
-  },
-  {
-    names: 'Carlos Andrés',
-    lastnames: 'Rodríguez López',
-    numberId: '0987654321',
-    phone: '3009876543',
-    email: 'carlos.rodriguez@email.com'
-  },
-  {
-    names: 'Ana Lucía',
-    lastnames: 'Martínez Silva',
-    numberId: '1122334455',
-    phone: '3011223344',
-    email: 'ana.martinez@email.com'
-  },
-  {
-    names: 'Diego Fernando',
-    lastnames: 'Hernández Castro',
-    numberId: '5544332211',
-    phone: '3055443322',
-    email: 'diego.hernandez@email.com'
-  },
-  {
-    names: 'Valentina',
-    lastnames: 'Morales Gómez',
-    numberId: '6677889900',
-    phone: '3066778899',
-    email: 'valentina.morales@email.com'
+// Función para formatear fechas CORREGIDA
+const formatDate = (timestamp: string | number): string => {
+  try {
+    // Si es un string numérico, convertirlo a número
+    const timestampNum = typeof timestamp === 'string' ? parseInt(timestamp, 10) : timestamp;
+    
+    // Verificar si el timestamp es válido
+    if (isNaN(timestampNum) || timestampNum <= 0) {
+      return 'Fecha no disponible';
+    }
+    
+    const date = new Date(timestampNum);
+    
+    // Verificar si la fecha es válida
+    if (isNaN(date.getTime())) {
+      return 'Fecha no disponible';
+    }
+    
+    return date.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  } catch (error) {
+    console.error('Error formateando fecha:', error);
+    return 'Fecha no disponible';
   }
-];
-
-// Función para formatear fechas (simulada)
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('es-ES', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  });
 };
 
-// Función para formatear hora (simulada)
-const formValidationDateHour12 = (dateString: string): string => {
-  const date = new Date(dateString);
-  return date.toLocaleTimeString('es-ES', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true
-  });
+// Función para formatear hora CORREGIDA
+const formatTime = (timestamp: string | number): string => {
+  try {
+    // Si es un string numérico, convertirlo a número
+    const timestampNum = typeof timestamp === 'string' ? parseInt(timestamp, 10) : timestamp;
+    
+    // Verificar si el timestamp es válido
+    if (isNaN(timestampNum) || timestampNum <= 0) {
+      return 'Hora no disponible';
+    }
+    
+    const date = new Date(timestampNum);
+    
+    // Verificar si la fecha es válida
+    if (isNaN(date.getTime())) {
+      return 'Hora no disponible';
+    }
+    
+    return date.toLocaleTimeString('es-ES', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  } catch (error) {
+    console.error('Error formateando hora:', error);
+    return 'Hora no disponible';
+  }
 };
 
 const ModalTableProgrammings: React.FC<ModalTableProgrammingsProps> = ({
@@ -92,19 +96,39 @@ const ModalTableProgrammings: React.FC<ModalTableProgrammingsProps> = ({
 }) => {
   const [data, setData] = useState<Passenger[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (visible) {
-      // Simular carga de datos
-      setTimeout(() => {
-        setData(MOCK_PASSENGERS);
-        setIsLoading(false);
-      }, 1000);
-    } else {
-      // Reset cuando se cierra el modal
-      setData([]);
-      setIsLoading(true);
-    }
+    const loadPassengers = async () => {
+      if (visible && item._id) {
+        try {
+          setIsLoading(true);
+          setError(null);
+          
+          console.log('🔄 Cargando pasajeros para programación:', item._id);
+          
+          // Obtener pasajeros del servicio real
+          const passengers = await ChatServices.getPassengers(item._id, 'Programming');
+          
+          console.log('📊 Pasajeros recibidos:', passengers);
+          
+          setData(passengers || []);
+        } catch (err) {
+          console.error('❌ Error cargando pasajeros:', err);
+          setError('Error al cargar los pasajeros');
+          setData([]);
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        // Reset cuando se cierra el modal
+        setData([]);
+        setIsLoading(true);
+        setError(null);
+      }
+    };
+
+    loadPassengers();
   }, [visible, item._id]);
 
   return (
@@ -154,16 +178,20 @@ const ModalTableProgrammings: React.FC<ModalTableProgrammingsProps> = ({
 
             <View style={styles.itemRow}>
               <Text style={styles.modalText}>
-                {formValidationDateHour12(item.start)}
+                {formatTime(item.start)}
               </Text>
               <Text style={styles.modalText}>
-                {formValidationDateHour12(item.end)}
+                {formatTime(item.end)}
               </Text>
             </View>
           </View>
 
           {isLoading ? (
             <ActivityIndicator size="large" color="#D88C0C" style={styles.loader} />
+          ) : error ? (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
           ) : (
             <View style={styles.tableContainer}>
               <View style={styles.tableHeader}>
@@ -175,17 +203,17 @@ const ModalTableProgrammings: React.FC<ModalTableProgrammingsProps> = ({
               <ScrollView style={styles.tableBody}>
                 {data && data.length > 0 ? (
                   data.map((passenger, index) => (
-                    <View key={index} style={styles.tableRow}>
+                    <View key={passenger._id || index} style={styles.tableRow}>
                       <Text style={styles.tableCell}>
                         {passenger.names} {passenger.lastnames}
                       </Text>
-                      <Text style={styles.tableCell}>{passenger.numberId}</Text>
-                      <Text style={styles.tableCell}>{passenger.phone}</Text>
-                      <Text style={styles.tableCell}>{passenger.email}</Text>
+                      <Text style={styles.tableCell}>{passenger.numberId || 'N/A'}</Text>
+                      <Text style={styles.tableCell}>{passenger.phone || passenger.cel || 'N/A'}</Text>
+                      <Text style={styles.tableCell}>{passenger.email || 'N/A'}</Text>
                     </View>
                   ))
                 ) : (
-                  <Text style={styles.TitleTatlecustom}>No hay pasajeros</Text>
+                  <Text style={styles.TitleTatlecustom}>No hay pasajeros registrados</Text>
                 )}
               </ScrollView>
             </View>
@@ -325,6 +353,16 @@ const styles = StyleSheet.create({
   },
   loader: {
     marginVertical: 40,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    color: '#FF6B6B',
+    fontSize: 16,
+    textAlign: 'center',
   },
 });
 

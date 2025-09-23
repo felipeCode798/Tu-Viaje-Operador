@@ -8,22 +8,7 @@
     "scheme": "tuviajeoperador",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "ios": {
-      "supportsTablet": true
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "edgeToEdgeEnabled": true,
-      "softwareKeyboardLayoutMode": "pan"
-    },
-    "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
-    },
+    
     "plugins": [
       "expo-router",
       [
@@ -34,10 +19,61 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Esta aplicación necesita acceso a tu ubicación para mostrar tu posición en el mapa y proporcionar navegación en tiempo real."
+        }
       ]
     ],
+    
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.tuviaje.operador",
+      "config": {
+        "googleMapsApiKey": "AIzaSyCL2-TDfkLj4BHxjICT211r8PVx5AGuAzc"
+      },
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Esta aplicación necesita acceso a tu ubicación para mostrar tu posición en el mapa.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Esta aplicación necesita acceso a tu ubicación para navegación en tiempo real."
+      }
+    },
+    
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "softwareKeyboardLayoutMode": "pan",
+      "package": "com.tuviaje.operador",
+      "versionCode": 1,
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyCL2-TDfkLj4BHxjICT211r8PVx5AGuAzc"
+        }
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
+    },
+    
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    
     "experiments": {
       "typedRoutes": true
+    },
+    
+    "extra": {
+      "eas": {
+        "projectId": "ec2c1ee7-6dfc-4eae-a12b-214988d256a2"
+      }
     }
   }
 }

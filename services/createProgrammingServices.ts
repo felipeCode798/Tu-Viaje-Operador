@@ -1,6 +1,4 @@
-import { ApolloClient } from '@apollo/client/core/ApolloClient';
-import { InMemoryCache } from '@apollo/client/cache/inmemory/inMemoryCache';
-import { gql, HttpLink } from '@apollo/client/core/index.js';
+import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
 import { clientUrl } from '../constants/Urls';
 
 // Interfaces para tipado
@@ -69,17 +67,17 @@ interface ProgrammingData {
   banner: string;
 }
 
-const httpLink = new HttpLink({
-  uri: clientUrl,
-});
-
-const client = new ApolloClient({
-  link: httpLink,
-  cache: new InMemoryCache(),
-});
+const createApolloClient = () => {
+  return new ApolloClient({
+    uri: clientUrl,
+    cache: new InMemoryCache(),
+  });
+};
 
 export default class CreateProgrammingServices {
   static async getRoutesEnabled(): Promise<Route[]> {
+    const client = createApolloClient();
+    
     try {
       const response = await client.query({
         query: gql`
@@ -114,25 +112,26 @@ export default class CreateProgrammingServices {
   }
 
   static async getBusesEnable(id: string): Promise<Bus[]> {
+    const client = createApolloClient();
+    
     try {
       const response = await client.query({
         query: gql`
           query {
-            getBusesByEnterpriseWithoutPaginate(id: "${id}") {
-              result {
+            getBusesByEnterpriseWithoutPaginate(id:"${id.toString()}"){
+              result{
                 id
                 name
-                images {
+                images{
                   id
                   url
                 }
-                capacity
-                placa
-                type
+               capacity
+               placa
+               type
               }
             }
-          }
-        `,
+           }`,
       });
 
       const data = response.data.getBusesByEnterpriseWithoutPaginate;
@@ -147,16 +146,18 @@ export default class CreateProgrammingServices {
   }
 
   static async getDriversEnable(id: string): Promise<Driver[]> {
+    const client = createApolloClient();
+    
     try {
       const response = await client.query({
         query: gql`
           query {
-            getDriversByEnterpriseWithoutPaginate(id: "${id}") {
-              pages {
+            getDriversByEnterpriseWithoutPaginate(id:"${id.toString()}"){
+              pages{
                 page
                 totalPages
               }
-              result {
+              result{
                 id
                 names
                 phone
@@ -167,8 +168,7 @@ export default class CreateProgrammingServices {
               }
               message
             }
-          }
-        `,
+          }`,
       });
 
       const data = response.data.getDriversByEnterpriseWithoutPaginate;
@@ -183,13 +183,15 @@ export default class CreateProgrammingServices {
   }
 
   static async createProgramming(data: ProgrammingData): Promise<any> {
-    console.log('Data enviada al servicio:', data);
+    console.log("ESTA ES LA DATA QUE LLEGA AL CONSUMO DEL SERVICIO", data);
 
     let precio = 0;
-    if (data.precio && data.precio !== 'null') {
+    if (data.precio && data.precio !== "null") {
       precio = parseFloat(data.precio);
     }
 
+    const client = createApolloClient();
+    
     try {
       const response = await client.mutate({
         mutation: gql`
@@ -226,7 +228,7 @@ export default class CreateProgrammingServices {
         },
       });
 
-      console.log('Respuesta del servicio:', response);
+      console.log("respuesta del subscribe", response);
       const responseData = response.data.createProgramming;
       if (responseData.result != null) {
         return responseData;
@@ -234,7 +236,7 @@ export default class CreateProgrammingServices {
         return null;
       }
     } catch (error) {
-      console.error('Error enviando la consulta:', error);
+      console.error("Error enviando la consulta:", error);
       throw error;
     }
   }

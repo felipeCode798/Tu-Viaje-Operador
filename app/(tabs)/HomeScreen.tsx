@@ -1,157 +1,45 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  StatusBar,
-  ScrollView,
-  RefreshControl,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-} from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useAuth } from '../../contexts/AuthContext';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  Alert,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
 import CalendarComponent from '../../components/CalendarComponent';
 import FilterButtons from '../../components/FilterButtons';
-import StatusFilters from '../../components/StatusFilters';
 import ServiceList from '../../components/ServiceList';
+import StatusFilters from '../../components/StatusFilters';
+import { useAuth } from '../../contexts/AuthContext';
+import HomeServices from '../../services/homeServices';
 import { Programming, Tourism } from '../../types';
-import moment from 'moment';
 
 type FilterType = 'Todos' | 'Viajes' | 'Paquetes';
 type StatusType = 'Todos' | 'Pendientes' | 'Iniciados' | 'Finalizados' | 'Cancelados';
 type ConfirmationType = 'Confirmados' | 'No confirmados';
-
-// DATOS QUEMADOS PARA PRUEBAS
-const MOCK_PROGRAMMINGS: Programming[] = [
-  {
-    _id: '1',
-    start: '2025-09-20T13:30:00.000Z',
-    end: '2025-09-20T14:30:00.000Z',
-    status: 'Progreso', // Confirmado
-    statusService: 'pending',
-    tour: {
-      origin: { 
-        name: 'CALI',
-        latitude: 3.4516,
-        longitude: -76.5320
-      },
-      destination: { 
-        name: 'AEROPUERTO ALFONSO BONILLA',
-        latitude: 3.5432,
-        longitude: -76.3816
-      }
-    },
-    enterprise: {
-      name: 'Prueba Tem',
-      nit: '102949402'
-    },
-    driverInfo: {
-      names: 'Juan',
-      lastName: 'Lopez'
-    }
-  },
-  {
-    _id: '2',
-    start: '2025-09-20T09:00:00.000Z',
-    end: '2025-09-20T12:00:00.000Z',
-    status: 'Pendiente', // No confirmado
-    statusService: 'started',
-    tour: {
-      origin: { 
-        name: 'BOGOTÁ',
-        latitude: 4.7110,
-        longitude: -74.0721
-      },
-      destination: { 
-        name: 'MEDELLÍN',
-        latitude: 6.2442,
-        longitude: -75.5812
-      }
-    },
-    enterprise: {
-      name: 'Transportes Valle',
-      nit: '800123456'
-    },
-    driverInfo: {
-      names: 'Carlos',
-      lastName: 'Rodriguez'
-    }
-  },
-  {
-    _id: '3',
-    start: '2025-09-20T15:00:00.000Z',
-    end: '2025-09-20T18:00:00.000Z',
-    status: 'Progreso', // Confirmado
-    statusService: 'finished',
-    tour: {
-      origin: { 
-        name: 'PEREIRA',
-        latitude: 4.8133,
-        longitude: -75.6961
-      },
-      destination: { 
-        name: 'ARMENIA',
-        latitude: 4.5339,
-        longitude: -75.6811
-      }
-    },
-    enterprise: {
-      name: 'Rutas Express',
-      nit: '900456789'
-    },
-    driverInfo: {
-      names: 'Miguel',
-      lastName: 'Hernandez'
-    }
-  }
-];
-
-const MOCK_TOURISMS: Tourism[] = [
-  {
-    _id: '4',
-    start: '2025-09-20T08:00:00.000Z',
-    end: '2025-09-20T20:00:00.000Z',
-    status: 'Progreso', // Confirmado
-    statusService: 'pending',
-    tourism: {
-      origin: { 
-        name: 'CARTAGENA',
-        latitude: 10.3910,
-        longitude: -75.4794
-      },
-      destination: { 
-        name: 'BARRANQUILLA',
-        latitude: 10.9685,
-        longitude: -74.7813
-      }
-    },
-    enterprise: {
-      name: 'Turismo Caribe',
-      nit: '700987654'
-    },
-    driverInfo: {
-      names: 'Ana',
-      lastName: 'Martinez'
-    }
-  }
-];
 
 const HomeScreen: React.FC = () => {
   const { user, userType, logout } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [activeFilter, setActiveFilter] = useState<FilterType>('Todos');
   const [activeStatus, setActiveStatus] = useState<StatusType>('Todos');
-  const [confirmationFilter, setConfirmationFilter] = useState<ConfirmationType>('Confirmados');
-  const [programmings, setProgrammings] = useState<Programming[]>(MOCK_PROGRAMMINGS);
-  const [tourisms, setTourisms] = useState<Tourism[]>(MOCK_TOURISMS);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [confirmationFilter, setConfirmationFilter] = useState<ConfirmationType>('No confirmados');
+  const [allProgrammings, setAllProgrammings] = useState<Programming[]>([]); // ← TODOS los datos
+  const [allTourisms, setAllTourisms] = useState<Tourism[]>([]); // ← TODOS los datos
+  const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [showFilters, setShowFilters] = useState<boolean>(true);
 
   console.log('User en HomeScreen:', user);
   console.log('UserType en HomeScreen:', userType);
+
+  // Cargar datos cuando cambie la fecha
+  useEffect(() => {
+    console.log('🔃 useEffect triggered - Loading data...');
+    loadData();
+  }, [selectedDate]);
 
   // Verificar si el usuario está autenticado
   if (!user) {
@@ -169,104 +57,325 @@ const HomeScreen: React.FC = () => {
     );
   }
 
-  // Simular carga de datos
+  // Función para formatear fechas
+  const formatDate = (timestamp: string | number): string => {
+    try {
+      const timestampNum = typeof timestamp === 'string' ? parseInt(timestamp, 10) : timestamp;
+      
+      if (isNaN(timestampNum) || timestampNum <= 0) {
+        return 'Fecha no disponible';
+      }
+      
+      const date = new Date(timestampNum);
+      
+      if (isNaN(date.getTime())) {
+        return 'Fecha no disponible';
+      }
+      
+      return date.toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      console.error('Error formateando fecha:', error);
+      return 'Fecha no disponible';
+    }
+  };
+
+  // Función para procesar los datos y formatear las fechas
+  const processData = (data: any[]) => {
+    if (!data || !Array.isArray(data)) return [];
+    
+    return data.map(item => {
+      const processedItem = { ...item };
+      
+      if (item.start) {
+        processedItem.startFormatted = formatDate(item.start);
+      }
+      if (item.end) {
+        processedItem.endFormatted = formatDate(item.end);
+      }
+      if (item.ida) {
+        processedItem.idaFormatted = formatDate(item.ida);
+      }
+      if (item.vuelta) {
+        processedItem.vueltaFormatted = formatDate(item.vuelta);
+      }
+      
+      return processedItem;
+    });
+  };
+
+  // Función para cargar datos desde los servicios
   const loadData = useCallback(async (showLoader = true) => {
+    console.log('🔄 loadData called', { 
+      userType, 
+      userId: user?.idUser || user?._id,
+      selectedDate: selectedDate.toISOString() 
+    });
+    
     if (showLoader) setLoading(true);
     
-    // Simular delay de red
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Los datos ya están cargados como mock data
-    setProgrammings(MOCK_PROGRAMMINGS);
-    setTourisms(MOCK_TOURISMS);
-    
-    if (showLoader) setLoading(false);
-  }, []);
+    try {
+      // Cargar datos para un rango de fechas más amplio (por ejemplo, una semana)
+      const startDate = new Date(selectedDate);
+      startDate.setDate(startDate.getDate() - 3); // 3 días antes
+      startDate.setHours(0, 0, 0, 0);
+      
+      const endDate = new Date(selectedDate);
+      endDate.setDate(endDate.getDate() + 3); // 3 días después
+      endDate.setHours(23, 59, 59, 999);
+      
+      console.log('📅 Rango de fechas para carga:', {
+        start: startDate.toISOString(),
+        end: endDate.toISOString()
+      });
+      
+      if (userType === 'Conductor') {
+        console.log('🚗 Loading data for Driver...');
+        
+        // Cargar programaciones para conductor para un rango de fechas
+        const programmingData = await HomeServices.getProgrammingDriver(
+          user.idUser || user._id, 
+          startDate.getTime().toString()
+        );
+        
+        console.log('📊 Programming data received:', programmingData);
+        
+        // Procesar y formatear los datos
+        const processedProgrammings = processData(programmingData || []);
+        setAllProgrammings(processedProgrammings); // ← Guardar TODOS los datos
+
+        // Cargar turismos para conductor
+        const tourismDate = `${selectedDate.getFullYear()}-${selectedDate.getMonth() + 1}-${selectedDate.getDate()}`;
+        console.log('🎯 Tourism date:', tourismDate);
+        
+        const tourismData = await HomeServices.getTourismsDriver(
+          user.idUser || user._id, 
+          tourismDate
+        );
+        
+        console.log('🏨 Tourism data received:', tourismData);
+        
+        // Procesar y formatear los datos de turismos
+        const processedTourisms = processData(tourismData || []);
+        setAllTourisms(processedTourisms);
+        
+      } else if (userType === 'Empresa') {
+        console.log('🏢 Loading data for Enterprise...');
+        
+        // Cargar programaciones para empresa para un rango de fechas
+        const programmingData = await HomeServices.getProgrammingsEnterprise(
+          user.idUser || user._id, 
+          startDate.getTime().toString()
+        );
+        
+        console.log('📊 Enterprise programming data:', programmingData);
+        
+        // Procesar y formatear los datos
+        const processedProgrammings = processData(programmingData || []);
+        setAllProgrammings(processedProgrammings);
+
+        // Cargar turismos para empresa
+        const tourismData = await HomeServices.getTourismByEnterprises(
+          user.idUser || user._id, 
+          startDate.getTime().toString()
+        );
+        
+        console.log('🏨 Enterprise tourism data:', tourismData);
+        
+        // Procesar y formatear los datos de turismos
+        const processedTourisms = processData(tourismData || []);
+        setAllTourisms(processedTourisms);
+      }
+      
+      console.log('✅ Data loaded successfully');
+      
+    } catch (error) {
+      console.error('❌ Error loading data:', error);
+      Alert.alert('Error', 'Error al cargar los datos: ' + error.message);
+    } finally {
+      if (showLoader) {
+        setLoading(false);
+        console.log('🏁 Loading finished');
+      }
+    }
+  }, [selectedDate, user, userType]);
 
   // Pull to refresh
   const onRefresh = useCallback(async () => {
+    console.log('🔄 Pull to refresh triggered');
     setRefreshing(true);
     await loadData(false);
     setRefreshing(false);
   }, [loadData]);
 
-  // Filtrar datos
+  // Filtrar datos según los filtros aplicados - CON FILTRADO POR FECHA
   const getFilteredData = useCallback(() => {
     console.log('=== DEBUG FILTRO ===');
-    console.log('Programmings originales:', programmings.map(p => ({id: p._id, status: p.status, statusService: p.statusService})));
-    console.log('Tourisms originales:', tourisms.map(t => ({id: t._id, status: t.status, statusService: t.statusService})));
+    console.log('Programmings originales:', allProgrammings.length);
+    console.log('Tourisms originales:', allTourisms.length);
     console.log('Filtro activo:', activeFilter);
     console.log('Estado activo:', activeStatus);
     console.log('Confirmación:', confirmationFilter);
+    console.log('Fecha seleccionada:', selectedDate.toISOString());
       
-    let filteredProgrammings = [...programmings];
-    let filteredTourisms = [...tourisms];
+    let filteredProgrammings = [...allProgrammings];
+    let filteredTourisms = [...allTourisms];
 
-    // Filtrar por tipo
+    // 1. PRIMERO FILTRAR POR FECHA SELECCIONADA - CORREGIDO
+    const selectedDateStart = new Date(selectedDate);
+    selectedDateStart.setHours(0, 0, 0, 0);
+    const selectedDateEnd = new Date(selectedDate);
+    selectedDateEnd.setHours(23, 59, 59, 999);
+
+    console.log('📅 Rango de fecha seleccionada:', {
+      start: selectedDateStart.getTime(),
+      end: selectedDateEnd.getTime()
+    });
+
+    // Filtrar programaciones por fecha exacta
+    filteredProgrammings = filteredProgrammings.filter(programming => {
+      if (!programming.start) return false;
+      
+      const programStartTime = parseInt(programming.start.toString(), 10);
+      
+      if (isNaN(programStartTime) || programStartTime <= 0) {
+        return false;
+      }
+      
+      const programDate = new Date(programStartTime);
+      
+      // Comparar solo el día, mes y año (ignorar hora)
+      const programDateOnly = new Date(programDate.getFullYear(), programDate.getMonth(), programDate.getDate());
+      const selectedDateOnly = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+      
+      const isSameDate = programDateOnly.getTime() === selectedDateOnly.getTime();
+      
+      console.log('📊 Programación fecha comparación:', {
+        id: programming._id,
+        programStartTime: programStartTime,
+        programDate: programDate.toISOString(),
+        programDateOnly: programDateOnly.toISOString(),
+        selectedDateOnly: selectedDateOnly.toISOString(),
+        isSameDate: isSameDate
+      });
+
+      return isSameDate;
+    });
+
+    // Filtrar turismos por fecha exacta
+    filteredTourisms = filteredTourisms.filter(tourism => {
+      if (!tourism.ida) return false;
+      
+      const tourismStartTime = parseInt(tourism.ida.toString(), 10);
+      
+      if (isNaN(tourismStartTime) || tourismStartTime <= 0) {
+        return false;
+      }
+      
+      const tourismDate = new Date(tourismStartTime);
+      
+      // Comparar solo el día, mes y año (ignorar hora)
+      const tourismDateOnly = new Date(tourismDate.getFullYear(), tourismDate.getMonth(), tourismDate.getDate());
+      const selectedDateOnly = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+      
+      return tourismDateOnly.getTime() === selectedDateOnly.getTime();
+    });
+
+    console.log('📅 Después de filtrar por fecha - Programmings:', filteredProgrammings.length);
+    console.log('📅 Después de filtrar por fecha - Tourisms:', filteredTourisms.length);
+
+    // 2. Filtrar por tipo
     if (activeFilter === 'Viajes') {
       filteredTourisms = [];
+      console.log('📍 Filtrado: Mostrando solo Viajes');
     } else if (activeFilter === 'Paquetes') {
       filteredProgrammings = [];
+      console.log('📍 Filtrado: Mostrando solo Paquetes');
     }
 
-    // Filtrar por estado
+    // 3. Filtrar por estado
     if (activeStatus !== 'Todos') {
       const statusMap = {
-        'Pendientes': 'pending',
-        'Iniciados': 'started',
-        'Finalizados': 'finished',
-        'Cancelados': 'cancelled'
+        'Pendientes': 'Pendiente',
+        'Iniciados': 'Progreso',
+        'Finalizados': 'Finalizado',
+        'Cancelados': 'Cancelado'
       };
       
       const targetStatus = statusMap[activeStatus];
-      filteredProgrammings = filteredProgrammings.filter(p => p.statusService === targetStatus);
-      filteredTourisms = filteredTourisms.filter(t => t.statusService === targetStatus);
+      console.log('🎯 Filtrando por estado:', targetStatus);
+      
+      filteredProgrammings = filteredProgrammings.filter(p => p.status === targetStatus);
+      filteredTourisms = filteredTourisms.filter(t => t.status === targetStatus);
     }
 
-    // Filtrar por confirmación
+    // 4. Filtrar por confirmación
     if (confirmationFilter === 'Confirmados') {
+      console.log('✅ Mostrando Confirmados');
       filteredProgrammings = filteredProgrammings.filter(p => 
-        p.status === 'Progreso' || p.status === 'Activo'
+        p.statusService === 'Confirmado'
       );
       filteredTourisms = filteredTourisms.filter(t => 
-        t.status === 'Progreso' || t.status === 'Activo'
+        t.statusService === 'Confirmado'
       );
     } else {
+      console.log('❌ Mostrando No Confirmados');
       filteredProgrammings = filteredProgrammings.filter(p => 
-        p.status !== 'Progreso' && p.status !== 'Activo'
+        p.statusService !== 'Confirmado'
       );
       filteredTourisms = filteredTourisms.filter(t => 
-        t.status !== 'Progreso' && t.status !== 'Activo'
+        t.statusService !== 'Confirmado'
       );
     }
 
-    console.log('Después de filtrar - Programmings:', filteredProgrammings.length);
-    console.log('Después de filtrar - Tourisms:', filteredTourisms.length);
+    console.log('📊 Después de todos los filtros - Programmings:', filteredProgrammings.length);
+    console.log('📊 Después de todos los filtros - Tourisms:', filteredTourisms.length);
+    
+    // Debug detallado de los datos
+    if (filteredProgrammings.length > 0) {
+      console.log('📋 Programmings filtrados:', filteredProgrammings.map(p => ({
+        id: p._id,
+        status: p.status,
+        statusService: p.statusService,
+        start: p.start,
+        startFormatted: p.startFormatted
+      })));
+    }
+    
     console.log('=== FIN DEBUG ===');
 
     return { programmings: filteredProgrammings, tourisms: filteredTourisms };
-  }, [programmings, tourisms, activeFilter, activeStatus, confirmationFilter]);
+  }, [allProgrammings, allTourisms, activeFilter, activeStatus, confirmationFilter, selectedDate]);
 
+  // Función para cambiar el estado de un servicio
   const handleStatusChange = async (id: string, newStatus: string, type: 'programming' | 'tourism') => {
     try {
-      // Simular cambio de estado
+      console.log('🔄 Changing status:', { id, newStatus, type });
+      
+      let result;
+      
       if (type === 'programming') {
-        setProgrammings(prev => 
-          prev.map(p => 
-            p._id === id ? { ...p, statusService: newStatus as any } : p
-          )
-        );
+        result = await HomeServices.changesStatusByProgramming(id, newStatus, 'programming');
       } else {
-        setTourisms(prev => 
-          prev.map(t => 
-            t._id === id ? { ...t, statusService: newStatus as any } : t
-          )
-        );
+        result = await HomeServices.changeStatusTourism(id, newStatus, 'tourism');
       }
       
-      Alert.alert('Éxito', 'Estado actualizado correctamente');
+      console.log('📩 Status change result:', result);
+      
+      if (result && result.status === 'success') {
+        // Recargar datos después del cambio
+        await loadData(false);
+        Alert.alert('Éxito', result.message || 'Estado actualizado correctamente');
+      } else {
+        Alert.alert('Error', result?.message || 'Error al cambiar el estado');
+      }
     } catch (error) {
-      console.error('Error changing status:', error);
+      console.error('❌ Error changing status:', error);
       Alert.alert('Error', 'Error al cambiar el estado del servicio');
     }
   };
@@ -280,29 +389,30 @@ const HomeScreen: React.FC = () => {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Programación</Text>
-        <TouchableOpacity style={styles.filterIcon}>
+        <TouchableOpacity 
+          style={styles.filterIcon}
+          onPress={() => setShowFilters(!showFilters)}
+        >
           <MaterialIcons name="tune" size={24} color="#FF9500" />
         </TouchableOpacity>
       </View>
 
-      {/* Content sin ScrollView para evitar anidación */}
+      {/* Content */}
       <View style={styles.content}>
-        <ServiceList
-          programmings={filteredProgrammings}
-          tourisms={filteredTourisms}
-          loading={loading}
-          onStatusChange={handleStatusChange}
-          userType={userType}
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          headerComponent={
-            <View>
-              {/* Calendar */}
-              <CalendarComponent
-                selectedDate={selectedDate}
-                onDateChange={setSelectedDate}
-              />
+        {/* Header component SIEMPRE VISIBLE - fuera del ServiceList */}
+        <View>
+          {/* Calendar - SIEMPRE VISIBLE */}
+          <CalendarComponent
+            selectedDate={selectedDate}
+            onDateChange={(newDate) => {
+              console.log('📅 Date changed to:', newDate);
+              setSelectedDate(newDate);
+            }}
+          />
 
+          {/* Filtros condicionales - se muestran/ocultan con el botón */}
+          {showFilters && (
+            <>
               {/* Filter Buttons */}
               <FilterButtons
                 activeFilter={activeFilter}
@@ -314,47 +424,59 @@ const HomeScreen: React.FC = () => {
                 activeStatus={activeStatus}
                 onStatusChange={setActiveStatus}
               />
+            </>
+          )}
 
-              {/* Confirmation Filter */}
-              <View style={styles.confirmationContainer}>
-                <TouchableOpacity
-                  style={[
-                    styles.confirmationButton,
-                    confirmationFilter === 'Confirmados' && styles.confirmationButtonActive
-                  ]}
-                  onPress={() => setConfirmationFilter('Confirmados')}
-                >
-                  <Text style={[
-                    styles.confirmationText,
-                    confirmationFilter === 'Confirmados' && styles.confirmationTextActive
-                  ]}>
-                    Confirmados
-                  </Text>
-                </TouchableOpacity>
+          {/* Confirmation Filter - SIEMPRE VISIBLE */}
+          <View style={styles.confirmationContainer}>
+            <TouchableOpacity
+              style={[
+                styles.confirmationButton,
+                confirmationFilter === 'Confirmados' && styles.confirmationButtonActive
+              ]}
+              onPress={() => setConfirmationFilter('Confirmados')}
+            >
+              <Text style={[
+                styles.confirmationText,
+                confirmationFilter === 'Confirmados' && styles.confirmationTextActive
+              ]}>
+                Confirmados
+              </Text>
+            </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={[
-                    styles.confirmationButton,
-                    confirmationFilter === 'No confirmados' && styles.confirmationButtonInactive
-                  ]}
-                  onPress={() => setConfirmationFilter('No confirmados')}
-                >
-                  <Text style={[
-                    styles.confirmationText,
-                    confirmationFilter === 'No confirmados' && styles.confirmationTextInactive
-                  ]}>
-                    No confirmados
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          }
+            <TouchableOpacity
+              style={[
+                styles.confirmationButton,
+                confirmationFilter === 'No confirmados' && styles.confirmationButtonInactive
+              ]}
+              onPress={() => setConfirmationFilter('No confirmados')}
+            >
+              <Text style={[
+                styles.confirmationText,
+                confirmationFilter === 'No confirmados' && styles.confirmationTextInactive
+              ]}>
+                No confirmados
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* ServiceList SOLO para la lista de servicios */}
+        <ServiceList
+          programmings={filteredProgrammings}
+          tourisms={filteredTourisms}
+          loading={loading}
+          onStatusChange={handleStatusChange}
+          userType={userType}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
         />
       </View>
     </View>
   );
 };
 
+// Los estilos se mantienen igual
 const styles = StyleSheet.create({
   container: {
     flex: 1,

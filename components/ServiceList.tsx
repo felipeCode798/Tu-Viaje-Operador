@@ -1,18 +1,20 @@
+import { MaterialIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
   ActivityIndicator,
-  RefreshControl,
   Alert,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
 import { Programming, Tourism } from '../types';
-import ModalTableProgrammings from './ModalTableProgrammings';
+import { MapUtils } from '../utils/mapUtils';
 import ModalMaps from './ModalMaps';
+import ModalTableProgrammings from './ModalTableProgrammings';
 
 interface ServiceListProps {
   programmings: Programming[];
@@ -31,38 +33,173 @@ interface ServiceItemProps {
   onStatusChange: (id: string, newStatus: string, type: 'programming' | 'tourism') => void;
 }
 
-const ServiceItem: React.FC<ServiceItemProps> = ({ item, type, onStatusChange }) => {
-  const [expanded, setExpanded] = useState(false);
-  const [showPlanillaModal, setShowPlanillaModal] = useState(false);
-  const [showMapModal, setShowMapModal] = useState(false);
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending': return '#FF9500';
-      case 'started': return '#4CAF50';
-      case 'finished': return '#2196F3';
-      case 'cancelled': return '#F44336';
-      default: return '#999';
+// Función para formatear fechas - CORREGIDA
+const formatDate = (timestamp: string | number): string => {
+  try {
+    const timestampNum = typeof timestamp === 'string' ? parseInt(timestamp, 10) : timestamp;
+    
+    if (isNaN(timestampNum) || timestampNum <= 0) {
+      return 'Fecha no disponible';
     }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'pending': return 'Pendiente';
-      case 'started': return 'Iniciado';
-      case 'finished': return 'Finalizado';
-      case 'cancelled': return 'Cancelado';
-      default: return status;
+    
+    const date = new Date(timestampNum);
+    
+    if (isNaN(date.getTime())) {
+      return 'Fecha no disponible';
     }
-  };
+    
+    return date.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch (error) {
+    console.error('Error formateando fecha:', error);
+    return 'Fecha no disponible';
+  }
+};
 
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
+// Función para formatear solo la hora - CORREGIDA
+const formatTime = (dateString: string | number): string => {
+  try {
+    let date: Date;
+    
+    if (typeof dateString === 'string' && !isNaN(Number(dateString))) {
+      const timestamp = parseInt(dateString, 10);
+      if (isNaN(timestamp) || timestamp <= 0) {
+        return 'Hora no disponible';
+      }
+      date = new Date(timestamp);
+    } else if (typeof dateString === 'number') {
+      if (dateString <= 0) {
+        return 'Hora no disponible';
+      }
+      date = new Date(dateString);
+    } else {
+      date = new Date(dateString);
+    }
+    
+    if (isNaN(date.getTime())) {
+      return 'Hora no disponible';
+    }
+    
     return date.toLocaleTimeString('es-ES', {
       hour: '2-digit',
       minute: '2-digit',
       hour12: true
     });
+  } catch (error) {
+    console.error('Error formateando hora:', error);
+    return 'Hora no disponible';
+  }
+};
+
+// Función para formatear solo la fecha - CORREGIDA
+const formatDateOnly = (dateString: string | number): string => {
+  try {
+    let date: Date;
+    
+    if (typeof dateString === 'string' && !isNaN(Number(dateString))) {
+      const timestamp = parseInt(dateString, 10);
+      if (isNaN(timestamp) || timestamp <= 0) {
+        return 'Fecha no disponible';
+      }
+      date = new Date(timestamp);
+    } else if (typeof dateString === 'number') {
+      if (dateString <= 0) {
+        return 'Fecha no disponible';
+      }
+      date = new Date(dateString);
+    } else {
+      date = new Date(dateString);
+    }
+    
+    if (isNaN(date.getTime())) {
+      return 'Fecha no disponible';
+    }
+    
+    return date.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  } catch (error) {
+    console.error('Error formateando fecha:', error);
+    return 'Fecha no disponible';
+  }
+};
+
+const ServiceItem: React.FC<ServiceItemProps> = ({ item, type, onStatusChange }) => {
+  const navigation = useNavigation();
+  const [expanded, setExpanded] = useState(false);
+  const [showPlanillaModal, setShowPlanillaModal] = useState(false);
+  const [showMapModal, setShowMapModal] = useState(false);
+
+  // ✅ Función para ir al chat grupal
+  const handleGoToChat = () => {
+    console.log('🚀 Navegando a MessagesScreen desde ServiceList...');
+    try {
+      navigation.navigate('MessagesScreen' as never);
+      console.log('✅ Navegación ejecutada correctamente');
+    } catch (error) {
+      console.error('❌ Error en navegación:', error);
+      // Fallback con diferentes opciones de navegación
+      try {
+        navigation.jumpTo('MessagesScreen' as never);
+      } catch (error2) {
+        console.error('❌ Error en navegación alternativa:', error2);
+        Alert.alert('Navegación', 'Redirigiendo al chat...');
+      }
+    }
+  };
+
+  // ✅ Función para mostrar detalles
+  const handleViewDetails = () => {
+    console.log('📋 Mostrando detalles del viaje desde ServiceList...');
+    if (type === 'programming') {
+      setShowPlanillaModal(true);
+    } else {
+      Alert.alert('Detalles', 'Información del paquete turístico disponible próximamente');
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'pending':
+      case 'pendiente':
+        return '#FF9500';
+      case 'started':
+      case 'iniciado':
+      case 'progreso':
+        return '#4CAF50';
+      case 'finished':
+      case 'finalizado':
+        return '#2196F3';
+      case 'cancelled':
+      case 'cancelado':
+        return '#F44336';
+      default:
+        return '#999';
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'pending':
+        return 'Pendiente';
+      case 'started':
+        return 'Iniciado';
+      case 'finished':
+        return 'Finalizado';
+      case 'cancelled':
+        return 'Cancelado';
+      case 'confirmado':
+        return 'Confirmado';
+      default:
+        return status || 'Sin estado';
+    }
   };
 
   const handleStatusPress = () => {
@@ -83,31 +220,40 @@ const ServiceItem: React.FC<ServiceItemProps> = ({ item, type, onStatusChange })
     );
   };
 
-  // Función para obtener las coordenadas del item para el mapa
-  const getCoordinatesForMap = (): any[] => {
-    if ('tour' in item && item.tour) {
-      const coords = [];
-      if (item.tour.origin) {
-        coords.push({
-          name: item.tour.origin.name,
-          latitude: item.tour.origin.latitude || 0,
-          longitude: item.tour.origin.longitude || 0,
-        });
-      }
-      if (item.tour.destination) {
-        coords.push({
-          name: item.tour.destination.name,
-          latitude: item.tour.destination.latitude || 0,
-          longitude: item.tour.destination.longitude || 0,
-        });
-      }
-      return coords;
+  // Función mejorada para obtener las coordenadas del item para el mapa
+  const getCoordinatesForMap = () => {
+    if (type === 'programming') {
+      return MapUtils.extractCoordinatesFromProgramming(item as Programming);
+    } else {
+      return MapUtils.extractCoordinatesFromTourism(item as Tourism);
     }
-    return [];
   };
 
-  const origin = 'tour' in item ? item.tour?.origin?.name : 'tourism' in item ? item.tourism?.origin?.name : 'N/A';
-  const destination = 'tour' in item ? item.tour?.destination?.name : 'tourism' in item ? item.tourism?.destination?.name : 'N/A';
+  // Función para obtener información de la ruta
+  const getRouteInfo = () => {
+    const coords = getCoordinatesForMap();
+    return MapUtils.getRouteInfo(coords);
+  };
+
+  // Obtener nombres de origen y destino
+  const getRouteNames = () => {
+    if (type === 'programming') {
+      const programming = item as Programming;
+      return {
+        origin: programming.tour?.origin?.name || 'N/A',
+        destination: programming.tour?.destination?.name || 'N/A'
+      };
+    } else {
+      const tourism = item as Tourism;
+      return {
+        origin: tourism.origen?.name || 'N/A',
+        destination: tourism.destino?.name || 'N/A'
+      };
+    }
+  };
+
+  const { origin, destination } = getRouteNames();
+  const routeInfo = getRouteInfo();
 
   return (
     <View>
@@ -117,24 +263,35 @@ const ServiceItem: React.FC<ServiceItemProps> = ({ item, type, onStatusChange })
       >
         <View style={styles.serviceHeader}>
           <View style={styles.serviceIcon}>
-            <MaterialIcons name="directions-bus" size={24} color="#FF9500" />
+            <MaterialIcons 
+              name={type === 'programming' ? "directions-bus" : "tour"} 
+              size={24} 
+              color="#FF9500" 
+            />
           </View>
           
           <View style={styles.serviceInfo}>
-            <Text style={styles.routeText}>
-              {origin} - {destination}
+            <Text style={styles.routeText} numberOfLines={1}>
+              {origin} → {destination}
             </Text>
-            <Text style={styles.timeText}>
-              {formatTime(item.start)}
-            </Text>
+            <View style={styles.serviceMetrics}>
+              <Text style={styles.timeText}>
+                {formatTime(type === 'programming' ? item.start : (item as Tourism).ida)}
+              </Text>
+              {routeInfo.totalDistance > 0 && (
+                <Text style={styles.distanceText}>
+                  • {routeInfo.totalDistance}km • {routeInfo.estimatedTime}min
+                </Text>
+              )}
+            </View>
           </View>
           
           <TouchableOpacity
-            style={[styles.statusBadge, { backgroundColor: getStatusColor(item.statusService || 'pending') }]}
+            style={[styles.statusBadge, { backgroundColor: getStatusColor(item.statusService || item.status) }]}
             onPress={handleStatusPress}
           >
             <Text style={styles.statusText}>
-              {getStatusText(item.statusService || 'pending')}
+              {getStatusText(item.statusService || item.status)}
             </Text>
           </TouchableOpacity>
         </View>
@@ -142,15 +299,83 @@ const ServiceItem: React.FC<ServiceItemProps> = ({ item, type, onStatusChange })
         {expanded && (
           <View style={styles.expandedContent}>
             <View style={styles.detailsContainer}>
-              <Text style={styles.detailText}>
-                Empresa: {'enterprise' in item ? item.enterprise?.name : 'N/A'}
-              </Text>
-              <Text style={styles.detailText}>
-                Conductor: {'driverInfo' in item ? `${item.driverInfo?.names} ${item.driverInfo?.lastName}` : 'N/A'}
-              </Text>
-              <Text style={styles.detailText}>
-                Fecha: {new Date(item.start).toLocaleDateString('es-ES')}
-              </Text>
+              {/* Información básica */}
+              <View style={styles.detailRow}>
+                <MaterialIcons name="business" size={16} color="#999" />
+                <Text style={styles.detailText}>
+                  Empresa: {type === 'programming' 
+                    ? (item as Programming).enterprise?.name 
+                    : (item as Tourism).empresa?.name || 'N/A'}
+                </Text>
+              </View>
+              
+              {type === 'programming' && (item as Programming).driverInfo && (
+                <View style={styles.detailRow}>
+                  <MaterialIcons name="person" size={16} color="#999" />
+                  <Text style={styles.detailText}>
+                    Conductor: {(item as Programming).driverInfo.names} {(item as Programming).driverInfo.lastName}
+                  </Text>
+                </View>
+              )}
+              
+              <View style={styles.detailRow}>
+                <MaterialIcons name="calendar-today" size={16} color="#999" />
+                <Text style={styles.detailText}>
+                  Fecha: {formatDateOnly(type === 'programming' ? item.start : (item as Tourism).ida)}
+                </Text>
+              </View>
+              
+              <View style={styles.detailRow}>
+                <MaterialIcons name="schedule" size={16} color="#999" />
+                <Text style={styles.detailText}>
+                  Inicio: {formatTime(type === 'programming' ? item.start : (item as Tourism).ida)} • 
+                  Fin: {formatTime(type === 'programming' ? item.end : (item as Tourism).vuelta)}
+                </Text>
+              </View>
+
+              {type === 'programming' && (item as Programming).bus && (
+                <View style={styles.detailRow}>
+                  <MaterialIcons name="directions-bus" size={16} color="#999" />
+                  <Text style={styles.detailText}>
+                    Vehículo: {(item as Programming).bus.name} - {(item as Programming).bus.placa}
+                  </Text>
+                </View>
+              )}
+
+              {routeInfo.pointCount > 0 && (
+                <View style={styles.detailRow}>
+                  <MaterialIcons name="route" size={16} color="#999" />
+                  <Text style={styles.detailText}>
+                    Ruta: {routeInfo.pointCount} puntos • {routeInfo.totalDistance}km • {routeInfo.estimatedTime}min
+                  </Text>
+                </View>
+              )}
+
+              {type === 'programming' && (item as Programming).available !== undefined && (
+                <View style={styles.detailRow}>
+                  <MaterialIcons name="airline-seat-recline-normal" size={16} color="#999" />
+                  <Text style={styles.detailText}>
+                    Cupos disponibles: {(item as Programming).available}
+                  </Text>
+                </View>
+              )}
+
+              {type === 'tourism' && (
+                <>
+                  <View style={styles.detailRow}>
+                    <MaterialIcons name="group" size={16} color="#999" />
+                    <Text style={styles.detailText}>
+                      Cupos: {(item as Tourism).disponibles}/{(item as Tourism).cupos}
+                    </Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <MaterialIcons name="attach-money" size={16} color="#999" />
+                    <Text style={styles.detailText}>
+                      Precio: ${(item as Tourism).precio.toLocaleString()}
+                    </Text>
+                  </View>
+                </>
+              )}
             </View>
             
             {/* Botones Planilla y Mapa */}
@@ -169,6 +394,11 @@ const ServiceItem: React.FC<ServiceItemProps> = ({ item, type, onStatusChange })
               >
                 <MaterialIcons name="map" size={20} color="white" />
                 <Text style={styles.actionButtonText}>Mapa</Text>
+                {routeInfo.pointCount > 0 && (
+                  <Text style={styles.actionButtonSubtext}>
+                    {routeInfo.pointCount} puntos
+                  </Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -184,11 +414,18 @@ const ServiceItem: React.FC<ServiceItemProps> = ({ item, type, onStatusChange })
         />
       )}
 
-      {/* Modal para Mapa */}
+      {/* ✅ Modal para Mapa - CORREGIDO CON LAS FUNCIONES */}
       <ModalMaps
         showModal={showMapModal}
-        closeModal={() => setShowMapModal(false)}
+        closeModal={() => {
+          console.log('🔒 Cerrando modal de mapa desde ServiceList');
+          setShowMapModal(false);
+        }}
         coords={getCoordinatesForMap()}
+        programmingId={type === 'programming' ? item._id : undefined}
+        itemData={item}
+        onGoToChat={handleGoToChat}        // ← LÍNEA AGREGADA
+        onViewDetails={handleViewDetails}  // ← LÍNEA AGREGADA
       />
     </View>
   );
@@ -203,14 +440,44 @@ const ServiceList: React.FC<ServiceListProps> = ({
   onRefresh,
   headerComponent,
 }) => {
-  // Combinar programmings y tourisms en una sola lista
+  // Combinar programmings y tourisms en una sola lista con mapeo mejorado
   const combinedData = [
-    ...programmings.map(item => ({ ...item, type: 'programming' as const })),
-    ...tourisms.map(item => ({ ...item, type: 'tourism' as const })),
+    ...programmings.map(item => ({ 
+      ...item, 
+      type: 'programming' as const,
+      // Asegurar que tenga campos start y end para ordenamiento
+      start: item.start,
+      end: item.end
+    })),
+    ...tourisms.map(item => ({ 
+      ...item, 
+      type: 'tourism' as const,
+      // Mapear ida/vuelta a start/end para compatibilidad
+      start: item.ida,
+      end: item.vuelta
+    })),
   ];
 
-  // Ordenar por fecha de inicio
-  combinedData.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
+  // Ordenar por fecha de inicio - MEJORADO
+  combinedData.sort((a, b) => {
+    try {
+      const getTimestamp = (dateValue: string | number) => {
+        if (typeof dateValue === 'string') {
+          const parsed = parseInt(dateValue, 10);
+          return isNaN(parsed) ? 0 : parsed;
+        }
+        return typeof dateValue === 'number' ? dateValue : 0;
+      };
+
+      const dateA = getTimestamp(a.start);
+      const dateB = getTimestamp(b.start);
+      
+      return dateA - dateB;
+    } catch (error) {
+      console.error('Error sorting services:', error);
+      return 0;
+    }
+  });
 
   const renderItem = ({ item }: { item: any }) => (
     <ServiceItem
@@ -229,22 +496,12 @@ const ServiceList: React.FC<ServiceListProps> = ({
     );
   }
 
-  if (combinedData.length === 0) {
-    return (
-      <View style={styles.emptyContainer}>
-        <MaterialIcons name="event-busy" size={50} color="#666" />
-        <Text style={styles.emptyText}>No hay servicios programados</Text>
-        <Text style={styles.emptySubText}>para la fecha seleccionada</Text>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
       <FlatList
         data={combinedData}
         renderItem={renderItem}
-        keyExtractor={(item) => item._id}
+        keyExtractor={(item) => `${item.type}-${item._id}`}
         ListHeaderComponent={() => headerComponent ? <>{headerComponent}</> : null}
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
@@ -277,6 +534,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   flatListContent: {
+    paddingHorizontal: 20,
     paddingBottom: 100,
   },
   emptyContentStyle: {
@@ -339,11 +597,20 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 2,
+    marginBottom: 4,
+  },
+  serviceMetrics: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   timeText: {
     color: '#CCC',
     fontSize: 14,
+  },
+  distanceText: {
+    color: '#999',
+    fontSize: 12,
+    marginLeft: 4,
   },
   statusBadge: {
     paddingHorizontal: 12,
@@ -363,11 +630,17 @@ const styles = StyleSheet.create({
   },
   detailsContainer: {
     marginBottom: 15,
+    gap: 8,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   detailText: {
     color: '#CCC',
     fontSize: 14,
-    marginBottom: 5,
+    marginLeft: 8,
+    flex: 1,
   },
   actionButtons: {
     flexDirection: 'row',
@@ -375,10 +648,10 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   actionButton: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderRadius: 25,
     minWidth: 120,
     justifyContent: 'center',
@@ -387,13 +660,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF9500',
   },
   mapButton: {
-    backgroundColor: '#666',
+    backgroundColor: '#4CAF50',
   },
   actionButtonText: {
     color: 'white',
     fontSize: 14,
     fontWeight: 'bold',
-    marginLeft: 8,
+    marginTop: 4,
+  },
+  actionButtonSubtext: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 10,
+    marginTop: 2,
   },
 });
 

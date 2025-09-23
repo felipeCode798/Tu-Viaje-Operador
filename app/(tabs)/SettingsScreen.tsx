@@ -1,25 +1,29 @@
+import { MaterialIcons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  StatusBar,
-  TouchableOpacity,
-  Image,
-  Switch,
   Alert,
+  Dimensions,
+  Image,
+  Modal,
   ScrollView,
-  Linking,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { POLITICAS } from '../../constants/politicas'; // Asegúrate de que la ruta sea correcta
+import { imageUrl } from '../../constants/Urls';
 import { useAuth } from '../../contexts/AuthContext';
+
+const { height, width } = Dimensions.get('window');
 
 const SettingsScreen: React.FC = () => {
   const { user, logout } = useAuth();
-  const [pushNotifications, setPushNotifications] = useState(false);
-  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [viewTerms, setViewTerms] = useState(false);
 
-  const handleLogout = () => {
+  // Función mejorada para cerrar sesión
+  const handleLogout = async () => {
     Alert.alert(
       'Cerrar Sesión',
       '¿Estás seguro que deseas cerrar sesión?',
@@ -31,26 +35,84 @@ const SettingsScreen: React.FC = () => {
         {
           text: 'Cerrar Sesión',
           style: 'destructive',
-          onPress: logout,
+          onPress: async () => {
+            try {
+              await logout();
+            } catch (error) {
+              console.error('Error al cerrar sesión:', error);
+              Alert.alert('Error', 'No se pudo cerrar sesión. Intenta nuevamente.');
+            }
+          },
         },
       ]
     );
   };
 
   const handleTermsAndConditions = () => {
-    // Aquí puedes abrir un modal, navegar a otra pantalla o abrir un enlace web
-    Alert.alert(
-      'Términos y Condiciones',
-      'Esta función abrirá los términos y condiciones de la aplicación.',
-      [
-        { text: 'OK' }
-      ]
-    );
+    setViewTerms(true);
   };
 
   const formatUserType = (type: string) => {
     return type === 'Conductor' ? 'Conductor' : 'Empresa';
   };
+
+  // Función para obtener la URL correcta de la imagen de perfil
+  const getProfileImageUrl = () => {
+    // Primero intenta con la imagen de la empresa
+    if (user?.enterprise?.image) {
+      return { uri: user.enterprise.image };
+    }
+    
+    // Luego intenta con la lógica del archivo antiguo
+    if (user?.id) {
+      return { uri: `${imageUrl}${user.id}.png` };
+    }
+    
+    // Si no hay imagen, usa un placeholder
+    return { uri: 'https://via.placeholder.com/120x120/FF9500/FFFFFF?text=Usuario' };
+  };
+
+  // Modal de Términos y Condiciones
+  const renderTermsModal = () => (
+    <Modal
+      animationType="fade"
+      transparent={true}
+      visible={viewTerms}
+      onRequestClose={() => setViewTerms(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.termsModal}>
+          {/* Header del Modal */}
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Términos y Condiciones</Text>
+            <TouchableOpacity 
+              style={styles.closeButton}
+              onPress={() => setViewTerms(false)}
+            >
+              <MaterialIcons name="close" size={24} color="#000" />
+            </TouchableOpacity>
+          </View>
+          
+          {/* Contenido del Modal */}
+          <ScrollView style={styles.modalContent}>
+            <Text style={styles.termsText}>
+              {POLITICAS.politicas || 'Términos y condiciones no disponibles.'}
+            </Text>
+          </ScrollView>
+          
+          {/* Footer del Modal */}
+          <View style={styles.modalFooter}>
+            <TouchableOpacity 
+              style={styles.acceptButton}
+              onPress={() => setViewTerms(false)}
+            >
+              <Text style={styles.acceptButtonText}>Aceptar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
 
   return (
     <View style={styles.container}>
@@ -69,10 +131,9 @@ const SettingsScreen: React.FC = () => {
         <View style={styles.profileSection}>
           <View style={styles.profileImageContainer}>
             <Image
-              source={{
-                uri: user?.enterprise?.image || 'https://via.placeholder.com/120x120/FF9500/FFFFFF?text=Usuario'
-              }}
+              source={getProfileImageUrl()}
               style={styles.profileImage}
+              onError={() => console.log('Error cargando imagen de perfil')}
             />
           </View>
           
@@ -104,34 +165,6 @@ const SettingsScreen: React.FC = () => {
 
         {/* Settings Section */}
         <View style={styles.settingsSection}>
-          {/* Notifications */}
-          <View style={styles.settingItem}>
-            <View style={styles.settingLeft}>
-              <MaterialIcons name="notifications" size={24} color="#fff" />
-              <Text style={styles.settingLabel}>Notificaciones</Text>
-            </View>
-            <Switch
-              value={pushNotifications}
-              onValueChange={setPushNotifications}
-              trackColor={{ false: '#666', true: '#FF9500' }}
-              thumbColor={pushNotifications ? '#fff' : '#f4f3f4'}
-            />
-          </View>
-
-          {/* Email Notifications */}
-          <View style={styles.settingItem}>
-            <View style={styles.settingLeft}>
-              <MaterialIcons name="email" size={24} color="#fff" />
-              <Text style={styles.settingLabel}>Notificaciones correo</Text>
-            </View>
-            <Switch
-              value={emailNotifications}
-              onValueChange={setEmailNotifications}
-              trackColor={{ false: '#666', true: '#FF9500' }}
-              thumbColor={emailNotifications ? '#fff' : '#f4f3f4'}
-            />
-          </View>
-
           {/* Terms and Conditions */}
           <TouchableOpacity 
             style={styles.settingItemClickable}
@@ -148,6 +181,9 @@ const SettingsScreen: React.FC = () => {
         {/* Bottom spacing */}
         <View style={styles.bottomSpacing} />
       </ScrollView>
+
+      {/* Modal de Términos y Condiciones */}
+      {renderTermsModal()}
     </View>
   );
 };
@@ -245,14 +281,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
   },
-  settingItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#333',
-  },
   settingItemClickable: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -266,12 +294,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
   },
-  settingLabel: {
-    fontSize: 18,
-    color: 'white',
-    marginLeft: 15,
-    fontWeight: '500',
-  },
   settingLabelClickable: {
     fontSize: 18,
     color: '#FF9500',
@@ -282,22 +304,62 @@ const styles = StyleSheet.create({
   bottomSpacing: {
     height: 100,
   },
-  bottomNav: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+  // Estilos del Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
-    paddingVertical: 15,
-    paddingBottom: 30,
-    borderTopWidth: 1,
-    borderTopColor: '#333',
   },
-  navItem: {
-    padding: 10,
-  },
-  navItemActive: {
-    backgroundColor: '#2a2a2a',
+  termsModal: {
+    backgroundColor: 'white',
     borderRadius: 20,
+    width: width * 0.9,
+    height: height * 0.7,
+    borderTopWidth: 5,
+    borderTopColor: '#FF9500',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#000',
+  },
+  closeButton: {
+    padding: 5,
+  },
+  modalContent: {
+    flex: 1,
+    padding: 20,
+  },
+  termsText: {
+    fontSize: 15,
+    color: '#575757',
+    textAlign: 'justify',
+    lineHeight: 22,
+  },
+  modalFooter: {
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
+  acceptButton: {
+    backgroundColor: '#FF9500',
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  acceptButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 
