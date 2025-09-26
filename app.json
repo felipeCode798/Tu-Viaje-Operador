@@ -1,36 +1,21 @@
 {
   "expo": {
-    "name": "Tu-Viaje-Operador",
+    "name": "Tu Viaje Operador",
     "slug": "Tu-Viaje-Operador",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/logoBlancoOperador.png",
     "scheme": "tuviajeoperador",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    
-    "plugins": [
-      "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
-        }
-      ],
-      [
-        "expo-location",
-        {
-          "locationAlwaysAndWhenInUsePermission": "Esta aplicación necesita acceso a tu ubicación para mostrar tu posición en el mapa y proporcionar navegación en tiempo real."
-        }
-      ]
-    ],
-    
+    "splash": {
+      "image": "./assets/images/logoBlancoOperador.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.tuviaje.operador",
+      "bundleIdentifier": "com.tuviajeoperador",
       "config": {
         "googleMapsApiKey": "AIzaSyCL2-TDfkLj4BHxjICT211r8PVx5AGuAzc"
       },
@@ -39,16 +24,13 @@
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Esta aplicación necesita acceso a tu ubicación para navegación en tiempo real."
       }
     },
-    
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/images/logoBlancoOperador.png",
+        "backgroundColor": "#000000"
       },
-      "edgeToEdgeEnabled": true,
-      "softwareKeyboardLayoutMode": "pan",
-      "package": "com.tuviaje.operador",
-      "versionCode": 1,
+      "package": "com.tuviajeoperador",
+      "versionCode": 25,
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyCL2-TDfkLj4BHxjICT211r8PVx5AGuAzc"
@@ -59,21 +41,13 @@
         "ACCESS_COARSE_LOCATION"
       ]
     },
-    
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/logoBlancoOperador.png"
     },
-    
     "experiments": {
       "typedRoutes": true
-    },
-    
-    "extra": {
-      "eas": {
-        "projectId": "ec2c1ee7-6dfc-4eae-a12b-214988d256a2"
-      }
     }
   }
 }

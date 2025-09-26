@@ -1,8 +1,7 @@
+import { Camera, CameraView } from 'expo-camera'; // Importación corregida
 import * as React from 'react';
-import {Text, View, Dimensions, PermissionsAndroid} from 'react-native';
-import {Button, Icon, Overlay} from 'react-native-elements';
-import {BarCodeScanner} from 'expo-barcode-scanner';
-import { BarCodeScannerResult } from 'expo-barcode-scanner';
+import { Dimensions, Text, View } from 'react-native';
+import { Button, Icon, Overlay } from 'react-native-elements';
 
 const {height, width} = Dimensions.get('window');
 
@@ -33,30 +32,15 @@ export default class BarcodeScanner extends React.Component<BarcodeScannerProps,
 
   getPermissionsAsync = async () => {
     try {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.CAMERA,
-        {
-          title: 'Permiso para usar la camara',
-          message: 'Necesitamos tu permiso para usar la camara',
-          buttonNeutral: 'Preguntar luego',
-          buttonNegative: 'Cancelar',
-          buttonPositive: 'OK',
-        },
-      );
-
-      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-        console.log('You can use the camera');
-        this.setState({hasCameraPermission: true});
-      } else {
-        this.setState({hasCameraPermission: false});
-      }
+      const { status } = await Camera.requestCameraPermissionsAsync();
+      this.setState({ hasCameraPermission: status === 'granted' });
     } catch (error) {
       console.error('Error requesting camera permission:', error);
       this.setState({hasCameraPermission: false});
     }
   };
 
-  handleBarCodeScanned = (scanningResult: BarCodeScannerResult) => {
+  handleBarCodeScanned = (scanningResult: any) => {
     const { type, data } = scanningResult;
     this.setState({scanned: true});
     const elements = data.split(',');
@@ -181,9 +165,12 @@ export default class BarcodeScanner extends React.Component<BarcodeScannerProps,
           flexDirection: 'column',
           justifyContent: 'flex-end',
         }}>
-        <BarCodeScanner
-          onBarCodeScanned={scanned ? undefined : this.handleBarCodeScanned}
-          barCodeTypes={[BarCodeScanner.Constants.BarCodeType.qr]}
+        {/* Usar CameraView en lugar de BarCodeScanner */}
+        <CameraView
+          onBarcodeScanned={scanned ? undefined : this.handleBarCodeScanned}
+          barcodeScannerSettings={{
+            barcodeTypes: ['qr'],
+          }}
           style={{width: width, height: height}}
         />
         {scanned && (

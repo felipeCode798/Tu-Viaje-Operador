@@ -12,18 +12,22 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { POLITICAS } from '../../constants/politicas'; // Asegúrate de que la ruta sea correcta
+import { POLITICAS } from '../../constants/politicas';
 import { imageUrl } from '../../constants/Urls';
 import { useAuth } from '../../contexts/AuthContext';
 
 const { height, width } = Dimensions.get('window');
 
 const SettingsScreen: React.FC = () => {
+  // TODOS LOS HOOKS DEBEN ESTAR AL INICIO
   const { user, logout } = useAuth();
   const [viewTerms, setViewTerms] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // Función mejorada para cerrar sesión
   const handleLogout = async () => {
+    if (isLoggingOut) return; // Prevenir múltiples ejecuciones
+    
     Alert.alert(
       'Cerrar Sesión',
       '¿Estás seguro que deseas cerrar sesión?',
@@ -37,10 +41,13 @@ const SettingsScreen: React.FC = () => {
           style: 'destructive',
           onPress: async () => {
             try {
+              setIsLoggingOut(true);
               await logout();
             } catch (error) {
               console.error('Error al cerrar sesión:', error);
               Alert.alert('Error', 'No se pudo cerrar sesión. Intenta nuevamente.');
+            } finally {
+              setIsLoggingOut(false);
             }
           },
         },
@@ -64,8 +71,9 @@ const SettingsScreen: React.FC = () => {
     }
     
     // Luego intenta con la lógica del archivo antiguo
-    if (user?.id) {
-      return { uri: `${imageUrl}${user.id}.png` };
+    if (user?.id || user?._id) {
+      const userId = user.idUser || user.id || user._id;
+      return { uri: `${imageUrl}${userId}.png` };
     }
     
     // Si no hay imagen, usa un placeholder
@@ -96,7 +104,7 @@ const SettingsScreen: React.FC = () => {
           {/* Contenido del Modal */}
           <ScrollView style={styles.modalContent}>
             <Text style={styles.termsText}>
-              {POLITICAS.politicas || 'Términos y condiciones no disponibles.'}
+              {POLITICAS?.politicas || 'Términos y condiciones no disponibles.'}
             </Text>
           </ScrollView>
           
@@ -114,6 +122,28 @@ const SettingsScreen: React.FC = () => {
     </Modal>
   );
 
+  // CONTENIDO CONDICIONAL DESPUÉS DE TODOS LOS HOOKS
+  const loadingView = (
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Tu Perfil</Text>
+        <TouchableOpacity style={styles.logoutButton} disabled={true}>
+          <MaterialIcons name="power-settings-new" size={24} color="#333" />
+        </TouchableOpacity>
+      </View>
+      <View style={styles.centerContainer}>
+        <MaterialIcons name="person" size={50} color="#FF9500" />
+        <Text style={styles.errorText}>Cargando perfil...</Text>
+      </View>
+    </View>
+  );
+
+  // Si no hay usuario, mostrar vista de carga o error
+  if (!user) {
+    return loadingView;
+  }
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
@@ -121,8 +151,16 @@ const SettingsScreen: React.FC = () => {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Tu Perfil</Text>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <MaterialIcons name="power-settings-new" size={24} color="#666" />
+        <TouchableOpacity 
+          style={[styles.logoutButton, isLoggingOut && styles.logoutButtonDisabled]} 
+          onPress={handleLogout}
+          disabled={isLoggingOut}
+        >
+          <MaterialIcons 
+            name={isLoggingOut ? "hourglass-empty" : "power-settings-new"} 
+            size={24} 
+            color={isLoggingOut ? "#333" : "#666"} 
+          />
         </TouchableOpacity>
       </View>
 
@@ -138,7 +176,7 @@ const SettingsScreen: React.FC = () => {
           </View>
           
           <Text style={styles.userName}>
-            {user?.names} {user?.lastName}
+            {user?.names || 'Usuario'} {user?.lastName || ''}
           </Text>
           
           <Text style={styles.userType}>
@@ -211,6 +249,9 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 20,
     backgroundColor: '#2a2a2a',
+  },
+  logoutButtonDisabled: {
+    backgroundColor: '#1a1a1a',
   },
   content: {
     flex: 1,
@@ -303,6 +344,19 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: 100,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: 'white',
+    marginTop: 10,
+    textAlign: 'center',
   },
   // Estilos del Modal
   modalOverlay: {

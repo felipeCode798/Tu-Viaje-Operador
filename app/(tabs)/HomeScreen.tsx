@@ -15,50 +15,31 @@ import StatusFilters from '../../components/StatusFilters';
 import { useAuth } from '../../contexts/AuthContext';
 import HomeServices from '../../services/homeServices';
 import { Programming, Tourism } from '../../types';
+import 'moment/locale/es';
 
 type FilterType = 'Todos' | 'Viajes' | 'Paquetes';
 type StatusType = 'Todos' | 'Pendientes' | 'Iniciados' | 'Finalizados' | 'Cancelados';
 type ConfirmationType = 'Confirmados' | 'No confirmados';
 
 const HomeScreen: React.FC = () => {
+  // TODOS LOS HOOKS DEBEN ESTAR AL INICIO Y EJECUTARSE SIEMPRE
   const { user, userType, logout } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [activeFilter, setActiveFilter] = useState<FilterType>('Todos');
   const [activeStatus, setActiveStatus] = useState<StatusType>('Todos');
   const [confirmationFilter, setConfirmationFilter] = useState<ConfirmationType>('No confirmados');
-  const [allProgrammings, setAllProgrammings] = useState<Programming[]>([]); // ← TODOS los datos
-  const [allTourisms, setAllTourisms] = useState<Tourism[]>([]); // ← TODOS los datos
+  const [allProgrammings, setAllProgrammings] = useState<Programming[]>([]);
+  const [allTourisms, setAllTourisms] = useState<Tourism[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [showFilters, setShowFilters] = useState<boolean>(true);
 
+  // Logs para debugging (después de todos los hooks)
   console.log('User en HomeScreen:', user);
   console.log('UserType en HomeScreen:', userType);
 
-  // Cargar datos cuando cambie la fecha
-  useEffect(() => {
-    console.log('🔃 useEffect triggered - Loading data...');
-    loadData();
-  }, [selectedDate]);
-
-  // Verificar si el usuario está autenticado
-  if (!user) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Programación</Text>
-        </View>
-        <View style={styles.centerContainer}>
-          <MaterialIcons name="error-outline" size={50} color="#FF9500" />
-          <Text style={styles.errorText}>Usuario no autenticado</Text>
-          <Text style={styles.errorSubText}>Por favor inicia sesión para acceder a esta funcionalidad</Text>
-        </View>
-      </View>
-    );
-  }
-
   // Función para formatear fechas
-  const formatDate = (timestamp: string | number): string => {
+  const formatDate = useCallback((timestamp: string | number): string => {
     try {
       const timestampNum = typeof timestamp === 'string' ? parseInt(timestamp, 10) : timestamp;
       
@@ -83,10 +64,10 @@ const HomeScreen: React.FC = () => {
       console.error('Error formateando fecha:', error);
       return 'Fecha no disponible';
     }
-  };
+  }, []);
 
   // Función para procesar los datos y formatear las fechas
-  const processData = (data: any[]) => {
+  const processData = useCallback((data: any[]) => {
     if (!data || !Array.isArray(data)) return [];
     
     return data.map(item => {
@@ -107,10 +88,17 @@ const HomeScreen: React.FC = () => {
       
       return processedItem;
     });
-  };
+  }, [formatDate]);
 
   // Función para cargar datos desde los servicios
   const loadData = useCallback(async (showLoader = true) => {
+    // Validación temprana pero SIN return temprano
+    if (!user || !userType) {
+      console.warn('Usuario o tipo de usuario no disponible');
+      if (showLoader) setLoading(false);
+      return;
+    }
+
     console.log('🔄 loadData called', { 
       userType, 
       userId: user?.idUser || user?._id,
@@ -120,13 +108,13 @@ const HomeScreen: React.FC = () => {
     if (showLoader) setLoading(true);
     
     try {
-      // Cargar datos para un rango de fechas más amplio (por ejemplo, una semana)
+      // Cargar datos para un rango de fechas más amplio
       const startDate = new Date(selectedDate);
-      startDate.setDate(startDate.getDate() - 3); // 3 días antes
+      startDate.setDate(startDate.getDate() - 3);
       startDate.setHours(0, 0, 0, 0);
       
       const endDate = new Date(selectedDate);
-      endDate.setDate(endDate.getDate() + 3); // 3 días después
+      endDate.setDate(endDate.getDate() + 3);
       endDate.setHours(23, 59, 59, 999);
       
       console.log('📅 Rango de fechas para carga:', {
@@ -137,7 +125,6 @@ const HomeScreen: React.FC = () => {
       if (userType === 'Conductor') {
         console.log('🚗 Loading data for Driver...');
         
-        // Cargar programaciones para conductor para un rango de fechas
         const programmingData = await HomeServices.getProgrammingDriver(
           user.idUser || user._id, 
           startDate.getTime().toString()
@@ -145,11 +132,9 @@ const HomeScreen: React.FC = () => {
         
         console.log('📊 Programming data received:', programmingData);
         
-        // Procesar y formatear los datos
         const processedProgrammings = processData(programmingData || []);
-        setAllProgrammings(processedProgrammings); // ← Guardar TODOS los datos
+        setAllProgrammings(processedProgrammings);
 
-        // Cargar turismos para conductor
         const tourismDate = `${selectedDate.getFullYear()}-${selectedDate.getMonth() + 1}-${selectedDate.getDate()}`;
         console.log('🎯 Tourism date:', tourismDate);
         
@@ -160,14 +145,12 @@ const HomeScreen: React.FC = () => {
         
         console.log('🏨 Tourism data received:', tourismData);
         
-        // Procesar y formatear los datos de turismos
         const processedTourisms = processData(tourismData || []);
         setAllTourisms(processedTourisms);
         
       } else if (userType === 'Empresa') {
         console.log('🏢 Loading data for Enterprise...');
         
-        // Cargar programaciones para empresa para un rango de fechas
         const programmingData = await HomeServices.getProgrammingsEnterprise(
           user.idUser || user._id, 
           startDate.getTime().toString()
@@ -175,11 +158,9 @@ const HomeScreen: React.FC = () => {
         
         console.log('📊 Enterprise programming data:', programmingData);
         
-        // Procesar y formatear los datos
         const processedProgrammings = processData(programmingData || []);
         setAllProgrammings(processedProgrammings);
 
-        // Cargar turismos para empresa
         const tourismData = await HomeServices.getTourismByEnterprises(
           user.idUser || user._id, 
           startDate.getTime().toString()
@@ -187,7 +168,6 @@ const HomeScreen: React.FC = () => {
         
         console.log('🏨 Enterprise tourism data:', tourismData);
         
-        // Procesar y formatear los datos de turismos
         const processedTourisms = processData(tourismData || []);
         setAllTourisms(processedTourisms);
       }
@@ -196,14 +176,20 @@ const HomeScreen: React.FC = () => {
       
     } catch (error) {
       console.error('❌ Error loading data:', error);
-      Alert.alert('Error', 'Error al cargar los datos: ' + error.message);
+      Alert.alert('Error', 'Error al cargar los datos: ' + ('Error desconocido'));
     } finally {
       if (showLoader) {
         setLoading(false);
         console.log('🏁 Loading finished');
       }
     }
-  }, [selectedDate, user, userType]);
+  }, [selectedDate, user, userType, processData]);
+
+  // Cargar datos cuando cambie la fecha
+  useEffect(() => {
+    console.log('🔃 useEffect triggered - Loading data...');
+    loadData();
+  }, [selectedDate, loadData]);
 
   // Pull to refresh
   const onRefresh = useCallback(async () => {
@@ -213,7 +199,7 @@ const HomeScreen: React.FC = () => {
     setRefreshing(false);
   }, [loadData]);
 
-  // Filtrar datos según los filtros aplicados - CON FILTRADO POR FECHA
+  // Filtrar datos según los filtros aplicados
   const getFilteredData = useCallback(() => {
     console.log('=== DEBUG FILTRO ===');
     console.log('Programmings originales:', allProgrammings.length);
@@ -226,7 +212,7 @@ const HomeScreen: React.FC = () => {
     let filteredProgrammings = [...allProgrammings];
     let filteredTourisms = [...allTourisms];
 
-    // 1. PRIMERO FILTRAR POR FECHA SELECCIONADA - CORREGIDO
+    // Filtrar por fecha seleccionada
     const selectedDateStart = new Date(selectedDate);
     selectedDateStart.setHours(0, 0, 0, 0);
     const selectedDateEnd = new Date(selectedDate);
@@ -248,8 +234,6 @@ const HomeScreen: React.FC = () => {
       }
       
       const programDate = new Date(programStartTime);
-      
-      // Comparar solo el día, mes y año (ignorar hora)
       const programDateOnly = new Date(programDate.getFullYear(), programDate.getMonth(), programDate.getDate());
       const selectedDateOnly = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
       
@@ -278,8 +262,6 @@ const HomeScreen: React.FC = () => {
       }
       
       const tourismDate = new Date(tourismStartTime);
-      
-      // Comparar solo el día, mes y año (ignorar hora)
       const tourismDateOnly = new Date(tourismDate.getFullYear(), tourismDate.getMonth(), tourismDate.getDate());
       const selectedDateOnly = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
       
@@ -289,7 +271,7 @@ const HomeScreen: React.FC = () => {
     console.log('📅 Después de filtrar por fecha - Programmings:', filteredProgrammings.length);
     console.log('📅 Después de filtrar por fecha - Tourisms:', filteredTourisms.length);
 
-    // 2. Filtrar por tipo
+    // Filtrar por tipo
     if (activeFilter === 'Viajes') {
       filteredTourisms = [];
       console.log('📍 Filtrado: Mostrando solo Viajes');
@@ -298,7 +280,7 @@ const HomeScreen: React.FC = () => {
       console.log('📍 Filtrado: Mostrando solo Paquetes');
     }
 
-    // 3. Filtrar por estado
+    // Filtrar por estado
     if (activeStatus !== 'Todos') {
       const statusMap = {
         'Pendientes': 'Pendiente',
@@ -314,7 +296,7 @@ const HomeScreen: React.FC = () => {
       filteredTourisms = filteredTourisms.filter(t => t.status === targetStatus);
     }
 
-    // 4. Filtrar por confirmación
+    // Filtrar por confirmación
     if (confirmationFilter === 'Confirmados') {
       console.log('✅ Mostrando Confirmados');
       filteredProgrammings = filteredProgrammings.filter(p => 
@@ -336,7 +318,6 @@ const HomeScreen: React.FC = () => {
     console.log('📊 Después de todos los filtros - Programmings:', filteredProgrammings.length);
     console.log('📊 Después de todos los filtros - Tourisms:', filteredTourisms.length);
     
-    // Debug detallado de los datos
     if (filteredProgrammings.length > 0) {
       console.log('📋 Programmings filtrados:', filteredProgrammings.map(p => ({
         id: p._id,
@@ -353,7 +334,7 @@ const HomeScreen: React.FC = () => {
   }, [allProgrammings, allTourisms, activeFilter, activeStatus, confirmationFilter, selectedDate]);
 
   // Función para cambiar el estado de un servicio
-  const handleStatusChange = async (id: string, newStatus: string, type: 'programming' | 'tourism') => {
+  const handleStatusChange = useCallback(async (id: string, newStatus: string, type: 'programming' | 'tourism') => {
     try {
       console.log('🔄 Changing status:', { id, newStatus, type });
       
@@ -368,7 +349,6 @@ const HomeScreen: React.FC = () => {
       console.log('📩 Status change result:', result);
       
       if (result && result.status === 'success') {
-        // Recargar datos después del cambio
         await loadData(false);
         Alert.alert('Éxito', result.message || 'Estado actualizado correctamente');
       } else {
@@ -378,9 +358,26 @@ const HomeScreen: React.FC = () => {
       console.error('❌ Error changing status:', error);
       Alert.alert('Error', 'Error al cambiar el estado del servicio');
     }
-  };
+  }, [loadData]);
 
+  // Obtener datos filtrados
   const { programmings: filteredProgrammings, tourisms: filteredTourisms } = getFilteredData();
+
+  // Render condicional DESPUÉS de todos los hooks
+  if (!user) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Programación</Text>
+        </View>
+        <View style={styles.centerContainer}>
+          <MaterialIcons name="error-outline" size={50} color="#FF9500" />
+          <Text style={styles.errorText}>Usuario no autenticado</Text>
+          <Text style={styles.errorSubText}>Por favor inicia sesión para acceder a esta funcionalidad</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -399,9 +396,7 @@ const HomeScreen: React.FC = () => {
 
       {/* Content */}
       <View style={styles.content}>
-        {/* Header component SIEMPRE VISIBLE - fuera del ServiceList */}
         <View>
-          {/* Calendar - SIEMPRE VISIBLE */}
           <CalendarComponent
             selectedDate={selectedDate}
             onDateChange={(newDate) => {
@@ -410,16 +405,13 @@ const HomeScreen: React.FC = () => {
             }}
           />
 
-          {/* Filtros condicionales - se muestran/ocultan con el botón */}
           {showFilters && (
             <>
-              {/* Filter Buttons */}
               <FilterButtons
                 activeFilter={activeFilter}
                 onFilterChange={setActiveFilter}
               />
 
-              {/* Status Filters */}
               <StatusFilters
                 activeStatus={activeStatus}
                 onStatusChange={setActiveStatus}
@@ -427,7 +419,6 @@ const HomeScreen: React.FC = () => {
             </>
           )}
 
-          {/* Confirmation Filter - SIEMPRE VISIBLE */}
           <View style={styles.confirmationContainer}>
             <TouchableOpacity
               style={[
@@ -461,13 +452,11 @@ const HomeScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* ServiceList SOLO para la lista de servicios */}
         <ServiceList
           programmings={filteredProgrammings}
           tourisms={filteredTourisms}
           loading={loading}
           onStatusChange={handleStatusChange}
-          userType={userType}
           refreshing={refreshing}
           onRefresh={onRefresh}
         />
@@ -476,7 +465,6 @@ const HomeScreen: React.FC = () => {
   );
 };
 
-// Los estilos se mantienen igual
 const styles = StyleSheet.create({
   container: {
     flex: 1,

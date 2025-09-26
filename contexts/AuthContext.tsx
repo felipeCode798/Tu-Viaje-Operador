@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import authService, {
   DriverResponse,
@@ -18,7 +18,6 @@ interface User {
   phone: string;
   enterprise?: EnterpriseResponse;
   type: 'Conductor' | 'Empresa';
-  // Campos específicos de empresa
   nit?: string;
   comision?: number;
   username?: string;
@@ -53,6 +52,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [userType, setUserType] = useState<'Conductor' | 'Empresa' | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     loadStoredAuth();
@@ -81,9 +81,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       const response = await authService.login(credentials);
       
-      console.log('Response del login:', response);
-      
-      // Verificar si el login fue exitoso
       if (!response.result) {
         throw new Error('Credenciales incorrectas');
       }
@@ -93,7 +90,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (credentials.userType === 'Conductor') {
         const userData = response.result as DriverResponse;
-        
         user = {
           _id: userData._id,
           id: userData._id,
@@ -106,7 +102,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         };
       } else {
         const userData = response.result as EnterpriseLoginResponse;
-        
         user = {
           _id: userData.id,
           id: userData.id,
@@ -121,24 +116,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         };
       }
       
-      console.log('User creado:', user);
-      
-      // Guardar en estado
-      setUser(user);
-      // Como no hay token real, usamos un token dummy o el ID del usuario
       const authToken = `user_${user.id}_${Date.now()}`;
+      setUser(user);
       setToken(authToken);
       
-      // Guardar en AsyncStorage
       await AsyncStorage.setItem('authUser', JSON.stringify(user));
       await AsyncStorage.setItem('authToken', authToken);
       await AsyncStorage.setItem('userType', credentials.userType);
 
-      router.replace('/(tabs)/HomeScreen');
+      // Usar setTimeout para evitar problemas de navegación durante el renderizado
+      setTimeout(() => {
+        router.replace('/(tabs)/HomeScreen');
+      }, 100);
       
     } catch (error: any) {
       console.error('Error en login:', error);
-      throw error; // Re-lanzar el error sin modificar
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -152,7 +145,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await AsyncStorage.removeItem('authToken');
       await AsyncStorage.removeItem('authUser');
       await AsyncStorage.removeItem('userType');
-      router.replace('/login');
+      
+      setTimeout(() => {
+        router.replace('/(auth)/login');
+      }, 100);
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
     }

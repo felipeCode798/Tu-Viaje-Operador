@@ -38,6 +38,7 @@ export interface Tour {
 }
 
 export interface Programming {
+  startFormatted: any;
   _id: string;
   available?: boolean;
   enterprise?: Enterprise;

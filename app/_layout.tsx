@@ -1,8 +1,7 @@
-// app/_layout.tsx
-import React from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import React from 'react';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
 
 function RootLayoutContent() {
@@ -12,6 +11,7 @@ function RootLayoutContent() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#FF9500" />
+        <StatusBar style="auto" />
       </View>
     );
   }
@@ -19,19 +19,10 @@ function RootLayoutContent() {
   return (
     <>
       <StatusBar style="light" />
-      <Stack>
-        <Stack.Screen 
-          name="(auth)" 
-          options={{ 
-            headerShown: false,
-          }} 
-        />
-        <Stack.Screen 
-          name="(tabs)" 
-          options={{ 
-            headerShown: false,
-          }} 
-        />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="index" options={{ headerShown: false }} />
       </Stack>
     </>
   );
