@@ -13,6 +13,7 @@ export interface DriverResponse {
   identificacion?: string;
   categorialicencia?: string;
   vigencialicencia?: string;
+  profile?: string; // Añadido este campo
 }
 
 export interface EnterpriseLoginResponse {
@@ -26,7 +27,7 @@ export interface EnterpriseLoginResponse {
 }
 
 export interface EnterpriseResponse {
-  id?: string; // Hacemos opcional el id para evitar el error del Buffer
+  id?: string;
   name: string;
   image?: string;
   nit: string;
@@ -49,7 +50,6 @@ export interface EnterpriseLoginResponseQL {
 export interface LoginResponse {
   result: DriverResponse | EnterpriseLoginResponse | null;
   message: string;
-  // Removemos accessToken y token ya que no están en GraphQL
 }
 
 export interface LoginCredentials {
@@ -94,6 +94,7 @@ class AuthService {
                   lastName
                   email
                   phone
+                  profile
                   enterprise {
                     name
                     nit
@@ -123,7 +124,6 @@ class AuthService {
         console.log('loginData.result:', loginData.result);
         console.log('loginData.message:', loginData.message);
         
-        // Verificación mejorada
         if (!loginData.result) {
           console.log('❌ Login falló - result es null');
           throw new Error(loginData.message || 'Credenciales incorrectas');
@@ -157,7 +157,7 @@ class AuthService {
           `,
           variables: {
             input: {
-              username: credentials.email,
+              username: credentials.email, // IMPORTANTE: Para empresa usa username, no email
               password: credentials.password
             }
           }
@@ -172,7 +172,6 @@ class AuthService {
         console.log('loginData.result:', loginData.result);
         console.log('loginData.message:', loginData.message);
         
-        // Verificación mejorada
         if (!loginData.result) {
           console.log('❌ Login falló - result es null');
           throw new Error(loginData.message || 'Credenciales incorrectas');

@@ -21,16 +21,20 @@ interface ServiceListProps {
   tourisms: Tourism[];
   loading: boolean;
   onStatusChange: (id: string, newStatus: string, type: 'programming' | 'tourism') => void;
-  userType?: string;
+  onOpenPlanilla: (service: any) => void;
+  onOpenMap: (service: any) => void;
   refreshing: boolean;
   onRefresh: () => void;
-  headerComponent?: React.ReactNode;
+  userType: 'Conductor' | 'Empresa' | null;
 }
 
 interface ServiceItemProps {
   item: Programming | Tourism;
   type: 'programming' | 'tourism';
   onStatusChange: (id: string, newStatus: string, type: 'programming' | 'tourism') => void;
+  onOpenPlanilla: (service: any) => void;
+  onOpenMap: (service: any) => void;
+  userType: 'Conductor' | 'Empresa' | null;
 }
 
 // Función para formatear fechas - CORREGIDA
@@ -131,7 +135,14 @@ const formatDateOnly = (dateString: string | number): string => {
   }
 };
 
-const ServiceItem: React.FC<ServiceItemProps> = ({ item, type, onStatusChange }) => {
+const ServiceItem: React.FC<ServiceItemProps> = ({ 
+  item, 
+  type, 
+  onStatusChange, 
+  onOpenPlanilla, 
+  onOpenMap,
+  userType 
+}) => {
   const navigation = useNavigation();
   const [expanded, setExpanded] = useState(false);
   const [showPlanillaModal, setShowPlanillaModal] = useState(false);
@@ -180,6 +191,8 @@ const ServiceItem: React.FC<ServiceItemProps> = ({ item, type, onStatusChange })
       case 'cancelled':
       case 'cancelado':
         return '#F44336';
+      case 'confirmado':
+        return '#9C27B0';
       default:
         return '#999';
     }
@@ -188,12 +201,17 @@ const ServiceItem: React.FC<ServiceItemProps> = ({ item, type, onStatusChange })
   const getStatusText = (status: string) => {
     switch (status?.toLowerCase()) {
       case 'pending':
+      case 'pendiente':
         return 'Pendiente';
       case 'started':
-        return 'Iniciado';
+      case 'iniciado':
+      case 'progreso':
+        return 'En Progreso';
       case 'finished':
+      case 'finalizado':
         return 'Finalizado';
       case 'cancelled':
+      case 'cancelado':
         return 'Cancelado';
       case 'confirmado':
         return 'Confirmado';
@@ -202,12 +220,13 @@ const ServiceItem: React.FC<ServiceItemProps> = ({ item, type, onStatusChange })
     }
   };
 
+  // Función mejorada para cambiar estado
   const handleStatusPress = () => {
     const statusOptions = [
-      { label: 'Pendiente', value: 'pending' },
-      { label: 'Iniciado', value: 'started' },
-      { label: 'Finalizado', value: 'finished' },
-      { label: 'Cancelado', value: 'cancelled' }
+      { label: 'Pendiente', value: 'Pendiente' },
+      { label: 'En Progreso', value: 'Progreso' },
+      { label: 'Finalizado', value: 'Finalizado' },
+      { label: 'Cancelado', value: 'Cancelado' }
     ];
 
     Alert.alert(
@@ -215,9 +234,26 @@ const ServiceItem: React.FC<ServiceItemProps> = ({ item, type, onStatusChange })
       'Selecciona el nuevo estado:',
       statusOptions.map(option => ({
         text: option.label,
-        onPress: () => onStatusChange(item._id, option.value, type)
+        onPress: () => {
+          console.log(`🔄 Cambiando estado a: ${option.value}`);
+          onStatusChange(item._id, option.value, type);
+        }
       })).concat([{ text: 'Cancelar', style: 'cancel' }])
     );
+  };
+
+  // Función para abrir planilla
+  const handleOpenPlanilla = () => {
+    console.log('📋 Abriendo planilla para:', item._id);
+    onOpenPlanilla(item);
+    setShowPlanillaModal(true);
+  };
+
+  // Función para abrir mapa
+  const handleOpenMap = () => {
+    console.log('🗺️ Abriendo mapa para:', item._id);
+    onOpenMap(item);
+    setShowMapModal(true);
   };
 
   // Función mejorada para obtener las coordenadas del item para el mapa
@@ -287,11 +323,11 @@ const ServiceItem: React.FC<ServiceItemProps> = ({ item, type, onStatusChange })
           </View>
           
           <TouchableOpacity
-            style={[styles.statusBadge, { backgroundColor: getStatusColor(item.statusService || item.status) }]}
+            style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}
             onPress={handleStatusPress}
           >
             <Text style={styles.statusText}>
-              {getStatusText(item.statusService || item.status)}
+              {getStatusText(item.status)}
             </Text>
           </TouchableOpacity>
         </View>
@@ -371,36 +407,74 @@ const ServiceItem: React.FC<ServiceItemProps> = ({ item, type, onStatusChange })
                   <View style={styles.detailRow}>
                     <MaterialIcons name="attach-money" size={16} color="#999" />
                     <Text style={styles.detailText}>
-                      Precio: ${(item as Tourism).precio.toLocaleString()}
+                      Precio: ${(item as Tourism).precio?.toLocaleString() || '0'}
                     </Text>
                   </View>
                 </>
               )}
+
+              {/* Estado del servicio */}
+              <View style={styles.detailRow}>
+                <MaterialIcons name="info" size={16} color="#999" />
+                <Text style={styles.detailText}>
+                  Estado: {getStatusText(item.status)}
+                </Text>
+              </View>
+
+              {/* Estado de confirmación */}
+              {(item as any).statusService && (
+                <View style={styles.detailRow}>
+                  <MaterialIcons name="check-circle" size={16} color="#999" />
+                  <Text style={styles.detailText}>
+                    Confirmación: {(item as any).statusService}
+                  </Text>
+                </View>
+              )}
             </View>
             
-            {/* Botones Planilla y Mapa */}
-            <View style={styles.actionButtons}>
-              <TouchableOpacity
-                style={[styles.actionButton, styles.planillaButton]}
-                onPress={() => setShowPlanillaModal(true)}
-              >
-                <MaterialIcons name="description" size={20} color="white" />
-                <Text style={styles.actionButtonText}>Planilla</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.actionButton, styles.mapButton]}
-                onPress={() => setShowMapModal(true)}
-              >
-                <MaterialIcons name="map" size={20} color="white" />
-                <Text style={styles.actionButtonText}>Mapa</Text>
-                {routeInfo.pointCount > 0 && (
-                  <Text style={styles.actionButtonSubtext}>
-                    {routeInfo.pointCount} puntos
-                  </Text>
-                )}
-              </TouchableOpacity>
-            </View>
+            {/* Botones de acción - Solo para conductores */}
+            {userType === 'Conductor' && (
+              <View style={styles.actionButtons}>
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.planillaButton]}
+                  onPress={handleOpenPlanilla}
+                >
+                  <MaterialIcons name="description" size={20} color="white" />
+                  <Text style={styles.actionButtonText}>Planilla</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.mapButton]}
+                  onPress={handleOpenMap}
+                >
+                  <MaterialIcons name="map" size={20} color="white" />
+                  <Text style={styles.actionButtonText}>Mapa</Text>
+                  {routeInfo.pointCount > 0 && (
+                    <Text style={styles.actionButtonSubtext}>
+                      {routeInfo.pointCount} puntos
+                    </Text>
+                  )}
+                </TouchableOpacity>
+
+                {/* Botón para cambiar estado - Siempre visible para conductores */}
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.statusButton]}
+                  onPress={handleStatusPress}
+                >
+                  <MaterialIcons name="swap-vert" size={20} color="white" />
+                  <Text style={styles.actionButtonText}>Cambiar Estado</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Para empresas, mostrar solo información */}
+            {userType === 'Empresa' && (
+              <View style={styles.infoContainer}>
+                <Text style={styles.infoText}>
+                  Para más acciones, contacta al conductor asignado.
+                </Text>
+              </View>
+            )}
           </View>
         )}
       </TouchableOpacity>
@@ -414,7 +488,7 @@ const ServiceItem: React.FC<ServiceItemProps> = ({ item, type, onStatusChange })
         />
       )}
 
-      {/* ✅ Modal para Mapa - CORREGIDO CON LAS FUNCIONES */}
+      {/* Modal para Mapa */}
       <ModalMaps
         showModal={showMapModal}
         closeModal={() => {
@@ -424,8 +498,8 @@ const ServiceItem: React.FC<ServiceItemProps> = ({ item, type, onStatusChange })
         coords={getCoordinatesForMap()}
         programmingId={type === 'programming' ? item._id : undefined}
         itemData={item}
-        onGoToChat={handleGoToChat}        // ← LÍNEA AGREGADA
-        onViewDetails={handleViewDetails}  // ← LÍNEA AGREGADA
+        onGoToChat={handleGoToChat}
+        onViewDetails={handleViewDetails}
       />
     </View>
   );
@@ -436,9 +510,11 @@ const ServiceList: React.FC<ServiceListProps> = ({
   tourisms,
   loading,
   onStatusChange,
+  onOpenPlanilla,
+  onOpenMap,
   refreshing,
   onRefresh,
-  headerComponent,
+  userType,
 }) => {
   // Combinar programmings y tourisms en una sola lista con mapeo mejorado
   const combinedData = [
@@ -484,6 +560,9 @@ const ServiceList: React.FC<ServiceListProps> = ({
       item={item}
       type={item.type}
       onStatusChange={onStatusChange}
+      onOpenPlanilla={onOpenPlanilla}
+      onOpenMap={onOpenMap}
+      userType={userType}
     />
   );
 
@@ -502,7 +581,6 @@ const ServiceList: React.FC<ServiceListProps> = ({
         data={combinedData}
         renderItem={renderItem}
         keyExtractor={(item) => `${item.type}-${item._id}`}
-        ListHeaderComponent={() => headerComponent ? <>{headerComponent}</> : null}
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
             <MaterialIcons name="event-busy" size={50} color="#666" />
@@ -644,17 +722,19 @@ const styles = StyleSheet.create({
   },
   actionButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
     marginTop: 10,
+    gap: 10,
   },
   actionButton: {
+    flex: 1,
     flexDirection: 'column',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 10,
     paddingVertical: 12,
-    borderRadius: 25,
-    minWidth: 120,
+    borderRadius: 10,
     justifyContent: 'center',
+    minHeight: 60,
   },
   planillaButton: {
     backgroundColor: '#FF9500',
@@ -662,16 +742,32 @@ const styles = StyleSheet.create({
   mapButton: {
     backgroundColor: '#4CAF50',
   },
+  statusButton: {
+    backgroundColor: '#2196F3',
+  },
   actionButtonText: {
     color: 'white',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: 'bold',
     marginTop: 4,
+    textAlign: 'center',
   },
   actionButtonSubtext: {
     color: 'rgba(255,255,255,0.7)',
     fontSize: 10,
     marginTop: 2,
+  },
+  infoContainer: {
+    backgroundColor: '#4a4a4a',
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  infoText: {
+    color: '#CCC',
+    fontSize: 14,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });
 

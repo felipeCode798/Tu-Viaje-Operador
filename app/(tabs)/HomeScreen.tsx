@@ -458,8 +458,11 @@ const HomeScreen: React.FC = () => {
           loading={loading}
           onStatusChange={handleStatusChange}
           refreshing={refreshing}
-          onRefresh={onRefresh}
-        />
+          onRefresh={onRefresh} onOpenPlanilla={function (service: any): void {
+            throw new Error('Function not implemented.');
+          } } onOpenMap={function (service: any): void {
+            throw new Error('Function not implemented.');
+          } } userType={null}        />
       </View>
     </View>
   );

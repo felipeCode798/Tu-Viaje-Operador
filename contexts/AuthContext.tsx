@@ -21,6 +21,7 @@ interface User {
   nit?: string;
   comision?: number;
   username?: string;
+  profile?: string; // Añadido este campo
 }
 
 interface AuthContextType {
@@ -94,11 +95,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           _id: userData._id,
           id: userData._id,
           names: userData.names,
-          lastName: userData.lastName,
+          lastName: userData.lastName || '',
           email: userData.email,
           phone: userData.phone,
           enterprise: userData.enterprise,
-          type: 'Conductor'
+          type: 'Conductor',
+          profile: userData.profile || '' // Añadido profile
         };
       } else {
         const userData = response.result as EnterpriseLoginResponse;
@@ -112,7 +114,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           type: 'Empresa',
           nit: userData.nit,
           comision: userData.comision,
-          username: userData.username
+          username: userData.username,
+          profile: '' // Añadido profile vacío para empresa
         };
       }
       
@@ -131,7 +134,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
     } catch (error: any) {
       console.error('Error en login:', error);
-      throw error;
+      
+      // Mensajes de error más específicos
+      let errorMessage = error.message || 'Error al iniciar sesión';
+      
+      if (errorMessage.includes('incorrectas') || errorMessage.includes('incorrectos')) {
+        errorMessage = 'Correo o contraseña incorrectos';
+      } else if (errorMessage.includes('conexión') || errorMessage.includes('network')) {
+        errorMessage = 'Error de conexión. Verifica tu internet e intenta nuevamente.';
+      } else if (errorMessage.includes('GraphQL') || errorMessage.includes('query')) {
+        errorMessage = 'Error del servidor. Intenta nuevamente.';
+      }
+      
+      throw new Error(errorMessage);
     } finally {
       setIsLoading(false);
     }

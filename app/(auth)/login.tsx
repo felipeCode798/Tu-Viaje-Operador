@@ -68,7 +68,8 @@ const LoginScreen: React.FC = () => {
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
+    
+    if (formData.userType === 'Conductor' && !emailRegex.test(formData.email)) {
       Alert.alert('Error', 'Por favor ingresa un correo válido');
       return;
     }
@@ -85,19 +86,20 @@ const LoginScreen: React.FC = () => {
     } catch (error: any) {
       console.error('Error en handleLogin:', error);
       
-      // Mensajes de error más específicos
       let errorMessage = error.message || 'Error al iniciar sesión';
       
       if (errorMessage.includes('incorrectas') || errorMessage.includes('incorrectos')) {
         errorMessage = 'Correo o contraseña incorrectos';
       } else if (errorMessage.includes('conexión') || errorMessage.includes('network')) {
         errorMessage = 'Error de conexión. Verifica tu internet e intenta nuevamente.';
+      } else if (errorMessage.includes('GraphQL') || errorMessage.includes('query')) {
+        errorMessage = 'Error del servidor. Intenta nuevamente.';
       }
       
       Alert.alert('Error', errorMessage);
     }
   };
-
+  
   const handleOpenForgotPassword = (): void => {
     setRecoveryEmail(formData.email); // Prellenar con el email del formulario
     setShowForgotPasswordModal(true);
@@ -172,7 +174,6 @@ const LoginScreen: React.FC = () => {
         resizeMode="cover"
       >
         <View style={styles.overlay}>
-          {/* Logo y título */}
           <View style={styles.headerContainer}>
             <View style={styles.logoContainer}>
               <Image
@@ -183,11 +184,9 @@ const LoginScreen: React.FC = () => {
             </View>
           </View>
 
-          {/* Formulario de login */}
           <View style={styles.formContainer}>
             <Text style={styles.formTitle}>Iniciar Sesión</Text>
             
-            {/* Campo de correo */}
             <View style={styles.inputContainer}>
               <MaterialIcons 
                 name="email" 
@@ -209,7 +208,6 @@ const LoginScreen: React.FC = () => {
               />
             </View>
 
-            {/* Campo de contraseña */}
             <View style={styles.inputContainer}>
               <MaterialIcons 
                 name="lock" 
@@ -243,7 +241,6 @@ const LoginScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
 
-            {/* Selector de tipo de usuario */}
             <TouchableOpacity 
               style={styles.inputContainer} 
               onPress={() => setShowUserTypeModal(true)}
@@ -267,12 +264,10 @@ const LoginScreen: React.FC = () => {
               />
             </TouchableOpacity>
 
-            {/* ¿Olvidaste tu contraseña? */}
             <TouchableOpacity onPress={handleOpenForgotPassword} disabled={isLoading}>
               <Text style={styles.forgotPassword}>¿Olvidaste tu contraseña?</Text>
             </TouchableOpacity>
 
-            {/* Botón de ingresar */}
             <TouchableOpacity 
               style={[styles.loginButton]} 
               onPress={handleLogin}
@@ -297,7 +292,6 @@ const LoginScreen: React.FC = () => {
         </View>
       </ImageBackground>
 
-      {/* Modal de selección de tipo de usuario */}
       <Modal
         visible={showUserTypeModal}
         transparent
@@ -356,7 +350,6 @@ const LoginScreen: React.FC = () => {
         </TouchableOpacity>
       </Modal>
 
-      {/* Modal de recuperación de contraseña */}
       <Modal
         visible={showForgotPasswordModal}
         transparent
@@ -571,7 +564,7 @@ const styles = StyleSheet.create({
   arrowIcon: {
     marginLeft: 5,
   },
-  // Estilos del selector
+
   selectText: {
     flex: 1,
     height: 50,
@@ -586,7 +579,7 @@ const styles = StyleSheet.create({
   dropdownIcon: {
     marginLeft: 'auto',
   },
-  // Estilos del modal
+
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
