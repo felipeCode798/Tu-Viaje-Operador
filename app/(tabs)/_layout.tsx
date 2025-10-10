@@ -30,7 +30,6 @@ export default function TabLayout() {
         },
       }}>
       
-      {/* Tab 1: Programación (HomeScreen) */}
       <Tabs.Screen
         name="HomeScreen"
         options={{
@@ -41,7 +40,7 @@ export default function TabLayout() {
         }}
       />
       
-      {/* Tab 2: Mensajes */}
+
       <Tabs.Screen
         name="MessagesScreen"
         options={{
@@ -52,7 +51,6 @@ export default function TabLayout() {
         }}
       />
       
-      {/* Tab 3: Perfil (Settings) */}
       <Tabs.Screen
         name="SettingsScreen"
         options={{

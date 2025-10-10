@@ -12,7 +12,28 @@ import {
   REHYDRATE,
 } from 'redux-persist';
 
-// Interfaces
+// Interfaces para los NUEVOS reducers que necesita CreateProgramming
+interface User {
+  idUser: string;
+  photo: string;
+  nombres: string;
+  apellidos: string;
+  telefono: string;
+  email: string;
+  password: string;
+  tipoUser: string;
+}
+
+interface SessionState {
+  user: User;
+}
+
+interface NavPagesState {
+  current: string;
+  previous: string;
+}
+
+// Interfaces existentes (las que ya tenías)
 interface Passenger {
   id: string;
   names: string;
@@ -66,7 +87,26 @@ interface MapState {
   }>;
 }
 
-// Initial states
+// Initial states para los NUEVOS reducers
+const initialSessionState: SessionState = {
+  user: {
+    idUser: '',
+    photo: '',
+    nombres: '',
+    apellidos: '',
+    telefono: '',
+    email: '',
+    password: '',
+    tipoUser: 'Conductor', // valor por defecto
+  }
+};
+
+const initialNavPagesState: NavPagesState = {
+  current: 'HomeScreen',
+  previous: 'HomeScreen'
+};
+
+// Initial states existentes (los que ya tenías)
 const initialInfoRoutesState: InfoRoutesState = {
   currentProgramming: null,
   idProgrammingSelect: null,
@@ -80,7 +120,50 @@ const initialMapState: MapState = {
   routeCoordinates: [],
 };
 
-// Slices
+// ✅ NUEVOS SLICES que necesita CreateProgramming
+const sessionSlice = createSlice({
+  name: 'session',
+  initialState: initialSessionState,
+  reducers: {
+    setUser: (state, action: PayloadAction<User>) => {
+      state.user = action.payload;
+    },
+    updateUser: (state, action: PayloadAction<Partial<User>>) => {
+      state.user = { ...state.user, ...action.payload };
+    },
+    clearUser: (state) => {
+      state.user = initialSessionState.user;
+    },
+  },
+});
+
+const navPagesSlice = createSlice({
+  name: 'navPages',
+  initialState: initialNavPagesState,
+  reducers: {
+    setCurrentPage: (state, action: PayloadAction<string>) => {
+      state.current = action.payload;
+    },
+    setPreviousPage: (state, action: PayloadAction<string>) => {
+      state.previous = action.payload;
+    },
+  },
+});
+
+const idSlice = createSlice({
+  name: 'id',
+  initialState: '' as string,
+  reducers: {
+    setId: (state, action: PayloadAction<string>) => {
+      return action.payload;
+    },
+    clearId: () => {
+      return '';
+    },
+  },
+});
+
+// Slices existentes (los que ya tenías)
 const infoRoutesSlice = createSlice({
   name: 'infoRoutes',
   initialState: initialInfoRoutesState,
@@ -107,6 +190,12 @@ const infoRoutesSlice = createSlice({
         state.currentProgramming.status = action.payload;
       }
     },
+    clearInfoRoutes: (state) => {
+      state.currentProgramming = null;
+      state.idProgrammingSelect = null;
+      state.isLoading = false;
+      state.error = null;
+    },
   },
 });
 
@@ -123,11 +212,21 @@ const mapSlice = createSlice({
     setRouteCoordinates: (state, action: PayloadAction<Array<{ latitude: number; longitude: number }>>) => {
       state.routeCoordinates = action.payload;
     },
+    clearMap: (state) => {
+      state.driverLocation = null;
+      state.passengers = [];
+      state.routeCoordinates = [];
+    },
   },
 });
 
-// Combinar reducers
+// ✅ Combinar TODOS los reducers
 const rootReducer = combineReducers({
+  // Nuevos reducers para CreateProgramming
+  session: sessionSlice.reducer,
+  navPages: navPagesSlice.reducer,
+  id: idSlice.reducer,
+  // Reducers existentes
   infoRoutes: infoRoutesSlice.reducer,
   map: mapSlice.reducer,
 });
@@ -136,7 +235,7 @@ const rootReducer = combineReducers({
 const persistConfig = {
   key: "root", 
   storage: AsyncStorage,
-  blacklist: ["filter", "modals"], // Ajusta según tus necesidades reales
+  blacklist: ["infoRoutes", "map"], // No persistir estos para evitar problemas
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -149,7 +248,7 @@ export const store = configureStore({
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
-    }) as any,
+    }),
 });
 
 export const persistor = persistStore(store);
@@ -162,7 +261,25 @@ export type AppDispatch = typeof store.dispatch;
 export const useAppDispatch = () => useDispatch<AppDispatch>();
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
 
-// Actions
+// ✅ Exportar TODAS las actions
+// Actions para CreateProgramming
+export const {
+  setUser,
+  updateUser,
+  clearUser,
+} = sessionSlice.actions;
+
+export const {
+  setCurrentPage,
+  setPreviousPage,
+} = navPagesSlice.actions;
+
+export const {
+  setId,
+  clearId,
+} = idSlice.actions;
+
+// Actions existentes
 export const {
   setProgramming,
   setIdProgrammingSelect,
@@ -170,10 +287,12 @@ export const {
   setError,
   updateDriverLocation,
   updateProgrammingStatus,
+  clearInfoRoutes,
 } = infoRoutesSlice.actions;
 
 export const {
   setDriverLocation,
   updatePassengersLocations,
   setRouteCoordinates,
+  clearMap,
 } = mapSlice.actions;

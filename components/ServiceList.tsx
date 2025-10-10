@@ -437,7 +437,7 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
               <View style={styles.actionButtons}>
                 <TouchableOpacity
                   style={[styles.actionButton, styles.planillaButton]}
-                  onPress={handleOpenPlanilla}
+                  onPress={() => onOpenPlanilla(item)}
                 >
                   <MaterialIcons name="description" size={20} color="white" />
                   <Text style={styles.actionButtonText}>Planilla</Text>
@@ -445,21 +445,15 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
                 
                 <TouchableOpacity
                   style={[styles.actionButton, styles.mapButton]}
-                  onPress={handleOpenMap}
+                  onPress={() => onOpenMap(item)}
                 >
                   <MaterialIcons name="map" size={20} color="white" />
                   <Text style={styles.actionButtonText}>Mapa</Text>
-                  {routeInfo.pointCount > 0 && (
-                    <Text style={styles.actionButtonSubtext}>
-                      {routeInfo.pointCount} puntos
-                    </Text>
-                  )}
                 </TouchableOpacity>
 
-                {/* Botón para cambiar estado - Siempre visible para conductores */}
                 <TouchableOpacity
                   style={[styles.actionButton, styles.statusButton]}
-                  onPress={handleStatusPress}
+                  onPress={() => onStatusChange(item._id, getNextStatus(item.status), type)}
                 >
                   <MaterialIcons name="swap-vert" size={20} color="white" />
                   <Text style={styles.actionButtonText}>Cambiar Estado</Text>
@@ -467,7 +461,7 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
               </View>
             )}
 
-            {/* Para empresas, mostrar solo información */}
+            // Para empresas, muestra solo información:
             {userType === 'Empresa' && (
               <View style={styles.infoContainer}>
                 <Text style={styles.infoText}>

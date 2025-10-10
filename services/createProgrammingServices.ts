@@ -1,24 +1,20 @@
-import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
-import { clientUrl } from '../constants/Urls';
+import gql from "graphql-tag";
+import ApolloClient from "apollo-boost";
+import { imageUrl, clientUrl } from "../constants/Urls";
 
-// Interfaces para tipado
-interface Origin {
+// Interfaces para los tipos de datos
+interface Location {
   id: string;
   name: string;
 }
 
-interface Destination {
+interface Tour {
   id: string;
-  name: string;
+  origin: Location;
+  destination: Location;
 }
 
-interface Route {
-  id: string;
-  origin: Origin;
-  destination: Destination;
-}
-
-interface BusImage {
+interface Image {
   id: string;
   url: string;
 }
@@ -26,7 +22,7 @@ interface BusImage {
 interface Bus {
   id: string;
   name: string;
-  images: BusImage[];
+  images: Image[];
   capacity: number;
   placa: string;
   type: string;
@@ -44,200 +40,290 @@ interface Driver {
 
 interface Place {
   name: string;
-  latitude: number;
-  longitude: number;
+  latitude?: number;
+  longitude?: number;
+  [key: string]: any;
 }
 
-interface ProgrammingData {
-  ruta: string;
-  vehiculo: string;
-  conductor: string;
+interface ProgrammingInput {
+  tour: string;
+  bus: string;
+  driver: string;
   documentacion: boolean;
   dcto: boolean;
-  precioDcto: string;
-  place: Place;
-  precio: string;
+  pricedcto: number;
+  llegada: string;
+  puntoFin: Place;
+  price: number;
   start: string;
   end: string;
-  disponibles: string;
-  id: string;
+  available: number;
+  capacity: number;
+  enterprise: string;
   places: Place[];
   descripcion: string;
-  images: string[];
-  banner: string;
+  images: any[];
+  banner: any;
 }
 
-const createApolloClient = () => {
-  return new ApolloClient({
-    uri: clientUrl,
-    cache: new InMemoryCache(),
-  });
-};
+interface ProgrammingResponse {
+  result: {
+    id: string;
+  } | null;
+  message: string;
+}
+
+interface ToursEnabledResponse {
+  getToursEnabled: {
+    result: Tour[] | null;
+    message: string;
+  };
+}
+
+interface BusesResponse {
+  getBusesByEnterpriseWithoutPaginate: {
+    result: Bus[] | null;
+    message: string;
+  };
+}
+
+interface DriversResponse {
+  getDriversByEnterpriseWithoutPaginate: {
+    pages: {
+      page: number;
+      totalPages: number;
+    };
+    result: Driver[] | null;
+    message: string;
+  };
+}
+
+const client = new ApolloClient({
+  uri: clientUrl,
+});
 
 export default class CreateProgrammingServices {
-  static async getRoutesEnabled(): Promise<Route[]> {
-    const client = createApolloClient();
-    
-    try {
-      const response = await client.query({
-        query: gql`
-          query {
-            getToursEnabled {
-              result {
-                id
-                origin {
+  static getRoutesEnabled(): Promise<Tour[]> {
+    return new Promise((resolve, reject) => {
+      client
+        .query<ToursEnabledResponse>({
+          query: gql`
+            query {
+              getToursEnabled {
+                result {
+                  id
+                  origin {
+                    id
+                    name
+                  }
+                  destination {
+                    id
+                    name
+                  }
+                }
+                message
+              }
+            }
+          `,
+          fetchPolicy: 'network-only', // Forzar petición fresca
+        })
+        .then((res) => {
+          const data = res.data.getToursEnabled;
+          if (data.result != null) {
+            resolve(data.result);
+          } else {
+            reject(new Error(data.message || "Error al obtener rutas"));
+          }
+        })
+        .catch((error) => {
+          console.error("❌ Error en getRoutesEnabled:", error);
+          reject(error);
+        });
+    });
+  }
+
+  // ✅ CORREGIDO: Cambiar $id de String! a ID!
+  static getBusesEnable(id: string): Promise<Bus[]> {
+    console.log("🔍 getBusesEnable llamado con ID:", id);
+    return new Promise((resolve, reject) => {
+      client
+        .query<BusesResponse>({
+          query: gql`
+            query GetBusesByEnterprise($id: ID!) {
+              getBusesByEnterpriseWithoutPaginate(id: $id) {
+                result {
                   id
                   name
+                  images {
+                    id
+                    url
+                  }
+                  capacity
+                  placa
+                  type
                 }
-                destination {
-                  id
-                  name
-                }
-              }
-              message
-            }
-          }
-        `,
-      });
-
-      const data = response.data.getToursEnabled;
-      if (data.result != null) {
-        return data.result;
-      } else {
-        throw new Error(data.message);
-      }
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  static async getBusesEnable(id: string): Promise<Bus[]> {
-    const client = createApolloClient();
-    
-    try {
-      const response = await client.query({
-        query: gql`
-          query {
-            getBusesByEnterpriseWithoutPaginate(id:"${id.toString()}"){
-              result{
-                id
-                name
-                images{
-                  id
-                  url
-                }
-               capacity
-               placa
-               type
               }
             }
-           }`,
-      });
-
-      const data = response.data.getBusesByEnterpriseWithoutPaginate;
-      if (data.result != null) {
-        return data.result;
-      } else {
-        throw new Error(data.message);
-      }
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  static async getDriversEnable(id: string): Promise<Driver[]> {
-    const client = createApolloClient();
-    
-    try {
-      const response = await client.query({
-        query: gql`
-          query {
-            getDriversByEnterpriseWithoutPaginate(id:"${id.toString()}"){
-              pages{
-                page
-                totalPages
-              }
-              result{
-                id
-                names
-                phone
-                email
-                profile
-                deviceId
-                status
-              }
-              message
-            }
-          }`,
-      });
-
-      const data = response.data.getDriversByEnterpriseWithoutPaginate;
-      if (data.result != null) {
-        return data.result;
-      } else {
-        throw new Error(data.message);
-      }
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  static async createProgramming(data: ProgrammingData): Promise<any> {
-    console.log("ESTA ES LA DATA QUE LLEGA AL CONSUMO DEL SERVICIO", data);
-
-    let precio = 0;
-    if (data.precio && data.precio !== "null") {
-      precio = parseFloat(data.precio);
-    }
-
-    const client = createApolloClient();
-    
-    try {
-      const response = await client.mutate({
-        mutation: gql`
-          mutation createProgramming($input: ProgrammingInput) {
-            createProgramming(input: $input) {
-              result {
-                id
-              }
-              message
-            }
-          }
-        `,
-        variables: {
-          input: {
-            tour: data.ruta,
-            bus: data.vehiculo,
-            driver: data.conductor,
-            documentacion: data.documentacion,
-            dcto: data.dcto,
-            pricedcto: parseFloat(data.precioDcto),
-            llegada: data.place.name,
-            puntoFin: data.place,
-            price: precio,
-            start: `${Date.parse(data.start)}`,
-            end: `${Date.parse(data.end)}`,
-            available: parseInt(data.disponibles, 10),
-            capacity: parseInt(data.disponibles, 10),
-            enterprise: data.id,
-            places: data.places,
-            descripcion: data.descripcion,
-            images: data.images,
-            banner: data.banner,
+          `,
+          variables: {
+            id: id // Ya no necesita .toString() porque GraphQL lo manejará
           },
-        },
-      });
+          fetchPolicy: 'network-only', // Forzar petición fresca
+        })
+        .then((res) => {
+          console.log("✅ Respuesta getBuses:", res);
+          const data = res.data.getBusesByEnterpriseWithoutPaginate;
+          if (data.result != null) {
+            console.log(`✅ ${data.result.length} buses obtenidos`);
+            resolve(data.result);
+          } else {
+            console.error("❌ No hay resultado en getBuses");
+            reject(new Error("No se pudieron obtener los buses"));
+          }
+        })
+        .catch((error) => {
+          console.error("❌ Error fetching buses:", error);
+          reject(error);
+        });
+    });
+  }
 
-      console.log("respuesta del subscribe", response);
-      const responseData = response.data.createProgramming;
-      if (responseData.result != null) {
-        return responseData;
-      } else {
-        return null;
-      }
-    } catch (error) {
-      console.error("Error enviando la consulta:", error);
-      throw error;
+  // ✅ CORREGIDO: Cambiar $id de String! a ID!
+  static getDriversEnable(id: string): Promise<Driver[]> {
+    console.log("🔍 getDriversEnable llamado con ID:", id);
+    return new Promise((resolve, reject) => {
+      client
+        .query<DriversResponse>({
+          query: gql`
+            query GetDriversByEnterprise($id: ID!) {
+              getDriversByEnterpriseWithoutPaginate(id: $id) {
+                result {
+                  id
+                  names
+                  phone
+                  email
+                  profile
+                  deviceId
+                  status
+                }
+                message
+              }
+            }
+          `,
+          variables: {
+            id: id // Ya no necesita .toString() porque GraphQL lo manejará
+          },
+          fetchPolicy: 'network-only', // Forzar petición fresca
+        })
+        .then((res) => {
+          console.log("✅ Respuesta getDrivers:", res);
+          const data = res.data.getDriversByEnterpriseWithoutPaginate;
+          if (data.result != null) {
+            console.log(`✅ ${data.result.length} conductores obtenidos`);
+            resolve(data.result);
+          } else {
+            console.error("❌ No hay resultado en getDrivers");
+            reject(new Error(data.message || "Error al obtener conductores"));
+          }
+        })
+        .catch((error) => {
+          console.error("❌ Error fetching drivers:", error);
+          reject(error);
+        });
+    });
+  }
+
+  static createProgramming(data: any): Promise<ProgrammingResponse> {
+    console.log("📝 Datos para crear programación:", data);
+
+    // Validar y convertir tipos
+    const precio = data.precio ? parseFloat(data.precio) : 0;
+    const precioDcto = data.precioDcto ? parseFloat(data.precioDcto) : 0;
+    const disponibles = data.disponibles ? parseInt(data.disponibles, 10) : 0;
+    
+    // Convertir fechas a timestamps
+    let startTimestamp: number;
+    let endTimestamp: number;
+
+    // Manejar fechas que vienen como string ISO
+    if (typeof data.start === 'string') {
+      startTimestamp = new Date(data.start).getTime();
+    } else if (data.start instanceof Date) {
+      startTimestamp = data.start.getTime();
+    } else {
+      return Promise.reject(new Error("Formato de fecha de inicio inválido"));
     }
+
+    if (typeof data.end === 'string') {
+      endTimestamp = new Date(data.end).getTime();
+    } else if (data.end instanceof Date) {
+      endTimestamp = data.end.getTime();
+    } else {
+      return Promise.reject(new Error("Formato de fecha de fin inválido"));
+    }
+
+    if (isNaN(startTimestamp) || isNaN(endTimestamp)) {
+      return Promise.reject(new Error("Fechas inválidas"));
+    }
+
+    const input = {
+      tour: data.ruta,
+      bus: data.vehiculo,
+      driver: data.conductor,
+      documentacion: Boolean(data.documentacion),
+      dcto: Boolean(data.dcto),
+      pricedcto: precioDcto,
+      llegada: data.place?.name || "",
+      puntoFin: data.place || {},
+      price: precio,
+      start: startTimestamp.toString(),
+      end: endTimestamp.toString(),
+      available: disponibles,
+      capacity: disponibles,
+      enterprise: data.id,
+      places: data.places || [],
+      descripcion: data.descripcion || "",
+      images: data.images || [],
+      banner: data.banner || null,
+    };
+
+    console.log("📤 Input para mutation:", JSON.stringify(input, null, 2));
+
+    return new Promise((resolve, reject) => {
+      client
+        .mutate<{ createProgramming: ProgrammingResponse }>({
+          mutation: gql`
+            mutation CreateProgramming($input: ProgrammingInput) {
+              createProgramming(input: $input) {
+                result {
+                  id
+                }
+                message
+              }
+            }
+          `,
+          variables: {
+            input
+          },
+        })
+        .then((res) => {
+          console.log("✅ Respuesta de la mutación:", res);
+          if (res.data) {
+            resolve(res.data.createProgramming);
+          } else {
+            reject(new Error("No data received from mutation"));
+          }
+        })
+        .catch((error) => {
+          console.error("❌ Error en mutation:", error);
+          if (error.graphQLErrors) {
+            console.error("GraphQL Errors:", error.graphQLErrors);
+          }
+          if (error.networkError) {
+            console.error("Network Error:", error.networkError);
+          }
+          reject(error);
+        });
+    });
   }
 }

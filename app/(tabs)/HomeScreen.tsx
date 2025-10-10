@@ -6,23 +6,27 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
+  Modal,
+  Dimensions
 } from 'react-native';
 import CalendarComponent from '../../components/CalendarComponent';
 import FilterButtons from '../../components/FilterButtons';
 import ServiceList from '../../components/ServiceList';
 import StatusFilters from '../../components/StatusFilters';
+import FloatButtonModal from '../../components/FloatButtonModal';
 import { useAuth } from '../../contexts/AuthContext';
 import HomeServices from '../../services/homeServices';
 import { Programming, Tourism } from '../../types';
 import 'moment/locale/es';
+
+const { width, height } = Dimensions.get('window');
 
 type FilterType = 'Todos' | 'Viajes' | 'Paquetes';
 type StatusType = 'Todos' | 'Pendientes' | 'Iniciados' | 'Finalizados' | 'Cancelados';
 type ConfirmationType = 'Confirmados' | 'No confirmados';
 
 const HomeScreen: React.FC = () => {
-  // TODOS LOS HOOKS DEBEN ESTAR AL INICIO Y EJECUTARSE SIEMPRE
   const { user, userType, logout } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [activeFilter, setActiveFilter] = useState<FilterType>('Todos');
@@ -33,10 +37,13 @@ const HomeScreen: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [showFilters, setShowFilters] = useState<boolean>(true);
+  const [showMapsModal, setShowMapsModal] = useState<boolean>(false);
+  const [showPlanillaModal, setShowPlanillaModal] = useState<boolean>(false);
+  const [selectedService, setSelectedService] = useState<any>(null);
 
-  // Logs para debugging (después de todos los hooks)
   console.log('User en HomeScreen:', user);
   console.log('UserType en HomeScreen:', userType);
+  console.log('🔘 Should show float button:', userType === 'Empresa');
 
   // Función para formatear fechas
   const formatDate = useCallback((timestamp: string | number): string => {
@@ -92,7 +99,6 @@ const HomeScreen: React.FC = () => {
 
   // Función para cargar datos desde los servicios
   const loadData = useCallback(async (showLoader = true) => {
-    // Validación temprana pero SIN return temprano
     if (!user || !userType) {
       console.warn('Usuario o tipo de usuario no disponible');
       if (showLoader) setLoading(false);
@@ -108,7 +114,6 @@ const HomeScreen: React.FC = () => {
     if (showLoader) setLoading(true);
     
     try {
-      // Cargar datos para un rango de fechas más amplio
       const startDate = new Date(selectedDate);
       startDate.setDate(startDate.getDate() - 3);
       startDate.setHours(0, 0, 0, 0);
@@ -360,6 +365,18 @@ const HomeScreen: React.FC = () => {
     }
   }, [loadData]);
 
+  // Función para abrir modal de planilla
+  const handleOpenPlanilla = useCallback((service: any) => {
+    setSelectedService(service);
+    setShowPlanillaModal(true);
+  }, []);
+
+  // Función para abrir modal de mapa
+  const handleOpenMap = useCallback((service: any) => {
+    setSelectedService(service);
+    setShowMapsModal(true);
+  }, []);
+
   // Obtener datos filtrados
   const { programmings: filteredProgrammings, tourisms: filteredTourisms } = getFilteredData();
 
@@ -457,13 +474,73 @@ const HomeScreen: React.FC = () => {
           tourisms={filteredTourisms}
           loading={loading}
           onStatusChange={handleStatusChange}
+          onOpenPlanilla={handleOpenPlanilla}
+          onOpenMap={handleOpenMap}
           refreshing={refreshing}
-          onRefresh={onRefresh} onOpenPlanilla={function (service: any): void {
-            throw new Error('Function not implemented.');
-          } } onOpenMap={function (service: any): void {
-            throw new Error('Function not implemented.');
-          } } userType={null}        />
+          onRefresh={onRefresh}
+          userType={userType}
+        />
       </View>
+
+      {/* ✅ Botón flotante para empresas - POSICIÓN CORREGIDA */}
+      {userType === 'Empresa' && <FloatButtonModal />}
+
+      {/* Modal de Planilla */}
+      <Modal
+        visible={showPlanillaModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowPlanillaModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Planilla de Servicio</Text>
+              <TouchableOpacity onPress={() => setShowPlanillaModal(false)}>
+                <MaterialIcons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            {selectedService && (
+              <View style={styles.modalBody}>
+                <Text style={styles.serviceInfo}>
+                  Servicio: {selectedService._id}
+                </Text>
+                <Text style={styles.serviceInfo}>
+                  Estado: {selectedService.status}
+                </Text>
+                {/* Aquí puedes agregar más información de la planilla */}
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de Mapa */}
+      <Modal
+        visible={showMapsModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowMapsModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Mapa del Servicio</Text>
+              <TouchableOpacity onPress={() => setShowMapsModal(false)}>
+                <MaterialIcons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            {selectedService && (
+              <View style={styles.modalBody}>
+                <Text style={styles.serviceInfo}>
+                  Mostrando mapa para el servicio: {selectedService._id}
+                </Text>
+                {/* Aquí integrarías tu componente de mapa */}
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -545,6 +622,38 @@ const styles = StyleSheet.create({
     color: '#CCC',
     marginTop: 5,
     textAlign: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 15,
+    padding: 20,
+    width: '90%',
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  modalBody: {
+    paddingVertical: 10,
+  },
+  serviceInfo: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 8,
   },
 });
 

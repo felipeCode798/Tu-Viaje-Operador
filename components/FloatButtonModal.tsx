@@ -1,3 +1,4 @@
+// components/FloatButtonModal.tsx
 import React, { useState } from 'react';
 import {
   View,
@@ -5,77 +6,86 @@ import {
   StyleSheet,
   Modal,
   TouchableOpacity,
-  Dimensions,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-
-const { width, height } = Dimensions.get('window');
+import { useAuth } from '../contexts/AuthContext'; // ✅ AGREGADO
 
 const FloatButtonModal: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const router = useRouter();
+  const { user } = useAuth(); // ✅ Obtener el usuario del contexto
 
   const handleCreateProgramming = () => {
     setModalVisible(false);
-    router.push('/FormProgramming');
+    console.log('📍 Navegando a CreateProgramming');
+    console.log('👤 Pasando usuario:', user?._id || user?.id);
+    
+    // ✅ Pasar el usuario como parámetro
+    router.push({
+      pathname: '/CreateProgramming',
+      params: {
+        userId: user?._id || user?.id || '',
+        userName: user?.names || '',
+      }
+    });
   };
 
   const handleCreateTourism = () => {
     setModalVisible(false);
-    router.push('/FormTourisms');
+    console.log('📍 Navegando a CreateTourisms');
+    
+    router.push({
+      pathname: '/CreateTourisms',
+      params: {
+        userId: user?._id || user?.id || '',
+        userName: user?.names || '',
+      }
+    });
   };
 
-  return (
-    <View>
-      <View style={[styles.floatButton, styles.center]}>
-        <TouchableOpacity
-          onPress={() => setModalVisible(true)}
-          style={styles.modalBtn}
-        >
-          <MaterialIcons 
-            name="list-alt" 
-            size={height * 0.03} 
-            color="white" 
-          />
-        </TouchableOpacity>
-      </View>
+  console.log('🎯 FloatButtonModal rendered - Usuario ID:', user?._id || user?.id);
 
+  return (
+    <View style={styles.container}>
+      {/* Botón flotante */}
+      <TouchableOpacity
+        style={styles.floatButton}
+        onPress={() => setModalVisible(true)}
+      >
+        <MaterialIcons name="add" size={30} color="white" />
+      </TouchableOpacity>
+
+      {/* Modal */}
       <Modal
         animationType="fade"
         transparent={true}
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.centeredView}>
-          <View style={styles.modal}>
-            <TouchableOpacity
-              onPress={() => setModalVisible(false)}
-              style={styles.closeButton}
-            >
-              <Text style={[styles.text, styles.textClose]}>X</Text>
-            </TouchableOpacity>
-
-            <View style={[styles.center, styles.iconCenterModal]}>
-              <MaterialIcons name="business" color="#FF9500" size={50} />
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Crear Servicio</Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <MaterialIcons name="close" size={24} color="#666" />
+              </TouchableOpacity>
             </View>
 
             <TouchableOpacity
+              style={styles.optionButton}
               onPress={handleCreateProgramming}
-              style={styles.modalButton}
             >
-              <Text style={[styles.text, styles.buttonText]}>
-                Crear viaje express
-              </Text>
+              <MaterialIcons name="directions-bus" size={24} color="#FF9500" />
+              <Text style={styles.optionText}>Crear viaje express</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
+              style={styles.optionButton}
               onPress={handleCreateTourism}
-              style={styles.modalButton}
             >
-              <Text style={[styles.text, styles.buttonText]}>
-                Crear paquete turístico
-              </Text>
+              <MaterialIcons name="tour" size={24} color="#FF9500" />
+              <Text style={styles.optionText}>Crear paquete turístico</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -85,92 +95,67 @@ const FloatButtonModal: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  floatButton: {
+  container: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 105,
     right: 20,
-    shadowColor: 'black',
-    shadowOpacity: 0.2,
-    alignItems: 'center',
-    alignContent: 'center',
-    justifyContent: 'center',
+    zIndex: 1000,
   },
-  iconCenterModal: {
-    position: 'absolute',
-    backgroundColor: '#FFF',
-    width: width * 0.2,
-    height: width * 0.2,
-    borderRadius: 100,
-    top: -height * 0.05,
-  },
-  closeButton: {
-    position: 'absolute',
-    backgroundColor: '#868686',
-    borderRadius: 100,
-    top: height * 0.01,
-    right: height * 0.01,
-    width: width * 0.09,
-    alignContent: 'center',
-  },
-  modalBtn: {
+  floatButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: '#FF9500',
-    borderRadius: 100,
-    borderColor: '#FFF',
-    width: width * 0.15,
-    height: width * 0.15,
-    alignContent: 'center',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  text: {
-    fontSize: width * 0.05,
-    color: '#FFF',
-    textAlign: 'center',
-    alignItems: 'center',
-    alignContent: 'center',
-  },
-  textClose: {
-    lineHeight: width * 0.1,
-  },
-  buttonText: {
-    lineHeight: width * 0.16,
-  },
-  center: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modal: {
-    backgroundColor: '#4f4f4f',
-    borderRadius: width * 0.05,
-    padding: 35,
-    alignItems: 'center',
+    elevation: 8,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
-    shadowRadius: height * 0.1,
-    elevation: 5,
-    width: width * 0.87,
-    height: height * 0.33,
-    alignContent: 'center',
+    shadowRadius: 4,
   },
-  centeredView: {
+  modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  modalButton: {
-    backgroundColor: '#FF9500',
-    borderRadius: 100,
-    borderColor: 'black',
-    elevation: 2,
-    width: width * 0.7,
-    marginTop: height * 0.02,
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 15,
+    padding: 20,
+    width: '80%',
+    maxWidth: 300,
+    elevation: 5,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
+    marginBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    paddingBottom: 10,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  optionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    marginBottom: 10,
+    backgroundColor: '#f8f8f8',
+  },
+  optionText: {
+    marginLeft: 10,
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
   },
 });
 
