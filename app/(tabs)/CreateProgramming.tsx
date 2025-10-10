@@ -326,24 +326,23 @@ const CreateProgramming: React.FC<CreateProgrammingProps> = () => {
     }
   };
 
-  const savePlaces = (newPlaces: Place[]) => {
+  const savePlaces = (newPlaces: Place[] | undefined) => {
     console.log("📍 Puntos de recogida guardados:", newPlaces);
-    if (newPlaces && Array.isArray(newPlaces)) {
-      setPlaces(newPlaces);
-    } else {
-      console.warn("⚠️ savePlaces recibió datos inválidos:", newPlaces);
-      setPlaces([]);
-    }
+    
+    // ✅ GARANTIZAR que siempre sea un array
+    const placesToSave = Array.isArray(newPlaces) ? newPlaces : [];
+    
+    setPlaces(placesToSave);
   };
-  
-  const savePlacesFinal = (newPlace: Place[]) => {
+    
+  const savePlacesFinal = (newPlace: Place[] | undefined) => {
     console.log("📍 Punto final guardado:", newPlace);
-    if (newPlace && Array.isArray(newPlace) && newPlace.length > 0) {
-      setPlace(newPlace[0]);
-    } else {
-      console.warn("⚠️ savePlacesFinal recibió datos inválidos:", newPlace);
-      setPlace({} as Place);
-    }
+    
+    // ✅ GARANTIZAR que siempre sea un array y tomar el primer elemento si existe
+    const placesArray = Array.isArray(newPlace) ? newPlace : [];
+    const finalPlace = placesArray.length > 0 ? placesArray[0] : {} as Place;
+    
+    setPlace(finalPlace);
   };
 
   const closeModal = () => {
@@ -1196,7 +1195,9 @@ const CreateProgramming: React.FC<CreateProgrammingProps> = () => {
                 <GooglePlacesComponent
                   savePlaces={(places) => {
                     console.log("📥 Recibiendo puntos de recogida:", places);
-                    savePlaces(places);
+                    // ✅ GARANTIZAR que places sea un array válido
+                    const validPlaces = Array.isArray(places) ? places : [];
+                    savePlaces(validPlaces);
                   }}
                   cantElements={3}
                   closeModal={closeModal}
@@ -1206,7 +1207,9 @@ const CreateProgramming: React.FC<CreateProgrammingProps> = () => {
                 <GooglePlacesComponent
                   savePlaces={(place) => {
                     console.log("📥 Recibiendo punto final:", place);
-                    savePlacesFinal(place);
+                    // ✅ GARANTIZAR que place sea un array válido
+                    const validPlace = Array.isArray(place) ? place : [];
+                    savePlacesFinal(validPlace);
                   }}
                   cantElements={1}
                   closeModal={closeModal}
