@@ -25,7 +25,7 @@ interface User {
 }
 
 interface SessionState {
-  user: User;
+  user: User | null;
 }
 
 interface NavPagesState {
@@ -89,16 +89,7 @@ interface MapState {
 
 // Initial states para los NUEVOS reducers
 const initialSessionState: SessionState = {
-  user: {
-    idUser: '',
-    photo: '',
-    nombres: '',
-    apellidos: '',
-    telefono: '',
-    email: '',
-    password: '',
-    tipoUser: 'Conductor', // valor por defecto
-  }
+  user: null
 };
 
 const initialNavPagesState: NavPagesState = {
@@ -129,10 +120,12 @@ const sessionSlice = createSlice({
       state.user = action.payload;
     },
     updateUser: (state, action: PayloadAction<Partial<User>>) => {
-      state.user = { ...state.user, ...action.payload };
+      if (state.user) {
+        state.user = { ...state.user, ...action.payload };
+      }
     },
     clearUser: (state) => {
-      state.user = initialSessionState.user;
+      state.user = null;
     },
   },
 });
@@ -152,13 +145,13 @@ const navPagesSlice = createSlice({
 
 const idSlice = createSlice({
   name: 'id',
-  initialState: '' as string,
+  initialState: { value: '' } as { value: string },
   reducers: {
     setId: (state, action: PayloadAction<string>) => {
-      return action.payload;
+      state.value = action.payload;
     },
-    clearId: () => {
-      return '';
+    clearId: (state) => {
+      state.value = '';
     },
   },
 });
@@ -207,10 +200,12 @@ const mapSlice = createSlice({
       state.driverLocation = action.payload;
     },
     updatePassengersLocations: (state, action: PayloadAction<Array<{ id: string; location: { latitude: number; longitude: number } }>>) => {
-      state.passengers = action.payload;
+      // ✅ Validar que siempre sea un array
+      state.passengers = Array.isArray(action.payload) ? action.payload : [];
     },
     setRouteCoordinates: (state, action: PayloadAction<Array<{ latitude: number; longitude: number }>>) => {
-      state.routeCoordinates = action.payload;
+      // ✅ Validar que siempre sea un array
+      state.routeCoordinates = Array.isArray(action.payload) ? action.payload : [];
     },
     clearMap: (state) => {
       state.driverLocation = null;
@@ -231,23 +226,35 @@ const rootReducer = combineReducers({
   map: mapSlice.reducer,
 });
 
-// Configuración de persistencia
+// ✅ CONFIGURACIÓN SEGURA DE PERSISTENCIA
 const persistConfig = {
-  key: "root", 
+  key: "root",
   storage: AsyncStorage,
-  blacklist: ["infoRoutes", "map"], // No persistir estos para evitar problemas
+  blacklist: ["infoRoutes", "map"],
+  timeout: 0, // Sin timeout para evitar problemas
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
 
-// Store configuration
+// ✅ Store configuration CON MEJOR MANEJO DE ERRORES
 export const store = configureStore({
   reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+        // Ignorar ciertos paths si es necesario
+        ignoredActionPaths: ['meta.arg', 'payload.timestamp'],
+        ignoredPaths: [],
       },
+    }).concat(() => (next: (arg0: any) => any) => (action: any) => {
+      try {
+        return next(action);
+      } catch (error) {
+        console.error('Redux middleware error:', error);
+        console.error('Action:', action);
+        throw error;
+      }
     }),
 });
 
