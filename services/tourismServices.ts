@@ -195,12 +195,12 @@ export default class TourismServices {
       
       console.log('✅ URLs de imágenes subidas:', uploadedImages);
 
-      // ✅✅✅ CRÍTICO: USAR Date.parse() COMO EN EL CÓDIGO ANTERIOR ✅✅✅
+      // ✅✅✅ CORRECCIÓN CRÍTICA: USAR Date.parse() COMO EN EL CÓDIGO ORIGINAL ✅✅✅
       console.log('📅 Procesando fechas...');
       console.log('  - ida original:', data.ida, 'tipo:', typeof data.ida);
       console.log('  - vuelta original:', data.vuelta, 'tipo:', typeof data.vuelta);
 
-      // ✅ CORREGIDO: Usar Date.parse() exactamente como en el código anterior
+      // ✅ CORREGIDO: Usar Date.parse() exactamente como en el código JavaScript original
       const idaTimestamp = Date.parse(data.ida);
       const vueltaTimestamp = Date.parse(data.vuelta);
 
@@ -238,7 +238,7 @@ export default class TourismServices {
         entradas: data.entradas,
         gallery: uploadedImages.imgGallery,
         hospedaje: data.hospedaje,
-        // ✅✅✅ LÍNEAS CRÍTICAS - USAR TIMESTAMPS COMO EN CÓDIGO ANTERIOR ✅✅✅
+        // ✅✅✅ LÍNEAS CRÍTICAS CORREGIDAS - USAR Date.parse() COMO EN JS ORIGINAL ✅✅✅
         ida: `${idaTimestamp}`,        // ← DEBE ser string del timestamp
         vuelta: `${vueltaTimestamp}`,  // ← DEBE ser string del timestamp
         imagen: uploadedImages.imgPrincipal,

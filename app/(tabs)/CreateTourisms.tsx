@@ -281,14 +281,10 @@ const CreateTourisms: React.FC = () => {
   useEffect(() => {
     console.log("🔄 Iniciando carga de destinos...");
     console.log("👤 User ID disponible:", userId);
-    console.log("👤 User desde Auth:", user);
-    console.log("👤 User desde Params:", userIdFromParams);
-    console.log("👤 User desde Redux ID:", idState);
-    console.log("👤 User desde Redux Session:", sessionState?.user?.idUser);
-
+    
     if (userId) {
       console.log("✅ User ID válido encontrado:", userId);
-      setStateValue('user', userId); // ✅ Actualizar el estado con el userId
+      setStateValue('user', userId);
       getDestinations();
     } else {
       console.error("❌ No hay user ID disponible después de todas las fuentes");
@@ -437,30 +433,81 @@ const CreateTourisms: React.FC = () => {
     }
   };
 
-  const sendUpload = async (id: string) => {
+  // ✅ CORRECCIÓN: Función sendUpload corregida para subir imágenes
+  const sendUpload = async (id: string): Promise<{imgPrincipal: string, imgBanner: string, imgGallery: string[]}> => {
     return new Promise(async (resolve, reject) => {
       try {
-        console.log('🔄 Preparando imágenes para subir...');
-        
-        // Solo recolectar las URIs de las imágenes
-        // La subida real se hará en TourismServices.createTourism
-        const imageData = {
-          principal: state.imgPrincipal?.file || '',
-          banner: state.imgBanner?.file || '',
-          gallery: state.imgGallery.map(img => img.file).filter(url => url && url.startsWith('file://'))
+        console.log('🔄 Subiendo imágenes al servidor...');
+
+        let imgPrincipal = '';
+        let imgBanner = '';
+        let imgGallery: string[] = [];
+
+        // ✅ Subir imagen principal
+        if (state.imgPrincipal && state.imgPrincipal.file) {
+          console.log('📤 Subiendo imagen principal...');
+          imgPrincipal = await helpers.uploadImages(
+            state.imgPrincipal,
+            id,
+            'turismo',
+            state.nombrePaquete,
+            'principal'
+          );
+          console.log('✅ Imagen principal subida:', imgPrincipal);
+        }
+
+        // ✅ Subir imagen banner
+        if (state.imgBanner && state.imgBanner.file) {
+          console.log('📤 Subiendo imagen banner...');
+          imgBanner = await helpers.uploadImages(
+            state.imgBanner,
+            id,
+            'turismo',
+            state.nombrePaquete,
+            'banner'
+          );
+          console.log('✅ Imagen banner subida:', imgBanner);
+        }
+
+        // ✅ Subir galería de imágenes
+        if (state.imgGallery && Array.isArray(state.imgGallery) && state.imgGallery.length > 0) {
+          console.log(`📤 Subiendo ${state.imgGallery.length} imágenes de galería...`);
+          
+          for (let i = 0; i < state.imgGallery.length; i++) {
+            const galleryItem = state.imgGallery[i];
+            
+            if (galleryItem && galleryItem.file) {
+              const galleryImage = await helpers.uploadImages(
+                galleryItem,
+                id,
+                'turismo',
+                state.nombrePaquete,
+                'gallery'
+              );
+              
+              imgGallery.push(galleryImage);
+              console.log(`✅ Imagen ${i + 1} de galería subida:`, galleryImage);
+            }
+          }
+        }
+
+        const result = {
+          imgPrincipal,
+          imgBanner,
+          imgGallery
         };
 
-        console.log('✅ URIs de imágenes preparadas:', imageData);
-        resolve(imageData);
+        console.log('✅ Todas las imágenes subidas:', result);
+        resolve(result);
         
       } catch (error) {
-        console.error('❌ Error preparando imágenes:', error);
+        console.error('❌ Error subiendo imágenes:', error);
         reject(error);
       }
     });
   };
 
-  const onHandleSubmit = () => {
+  const onHandleSubmit = async () => {
     let validStartDate = moment(state.startDate);
     let validEndtDate = moment(state.endDate);
 
@@ -692,6 +739,7 @@ const CreateTourisms: React.FC = () => {
       state.startDate.trim().length !== 0 &&
       state.horaSalida.trim().length !== 0
     ) {
+      // ✅ CORRECCIÓN: Crear fecha correctamente para Date.parse()
       const fechaHoraSalida = new Date(`${state.startDate}T${state.horaSalida}:00.000+00:00`);
       obj.ida = fechaHoraSalida;
     } else {
@@ -702,6 +750,7 @@ const CreateTourisms: React.FC = () => {
       state.endDate.trim().length !== 0 &&
       state.horaLlegada.trim().length !== 0
     ) {
+      // ✅ CORRECCIÓN: Crear fecha correctamente para Date.parse()
       const fechaHoraLlegada = new Date(`${state.endDate}T${state.horaLlegada}:00.000+00:00`);
       obj.vuelta = fechaHoraLlegada;
     } else {
@@ -753,44 +802,44 @@ const CreateTourisms: React.FC = () => {
     console.log('>>>>>>>>>>>>>>>_____________objecto creado___________<<<<<<<<<<<<<<<<<<<<<<', obj);
 
     if (mensaje.length !== 0) {
-    Alert.alert('Alerta', mensaje.join('\n'));
+      Alert.alert('Alerta', mensaje.join('\n'));
     } else {
       console.log("ENVIANDO DATOS", state.precio, state.precioNino, state.cuposPorDiaConfig);
       setStateValue('loading', true);
       
-      // Preparar objeto con las imágenes como objetos (no solo URLs)
-      obj.imagen = state.imgPrincipal;
-      obj.banner = state.imgBanner;
-      obj.gallery = state.imgGallery;
-      
-      const diasSinTildes: any = {};
-      for (let dia in state.cuposPorDiaConfig) {
-        const diaSinTildes = dia.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        if ((state.cuposPorDiaConfig as any)[dia] !== 0) {
-          diasSinTildes[diaSinTildes] = (state.cuposPorDiaConfig as any)[dia];
+      try {
+        // ✅ CORRECCIÓN: Subir imágenes primero y obtener URLs
+        console.log('📤 Iniciando subida de imágenes...');
+        const uploadedImages = await sendUpload(state.user);
+        
+        // Preparar objeto con las URLs de imágenes subidas
+        obj.imagen = uploadedImages.imgPrincipal;
+        obj.banner = uploadedImages.imgBanner;
+        obj.gallery = uploadedImages.imgGallery;
+        
+        const diasSinTildes: any = {};
+        for (let dia in state.cuposPorDiaConfig) {
+          const diaSinTildes = dia.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+          if ((state.cuposPorDiaConfig as any)[dia] !== 0) {
+            diasSinTildes[diaSinTildes] = (state.cuposPorDiaConfig as any)[dia];
+          }
         }
+        obj.cuposPorDiaConfig = diasSinTildes;
+
+        console.log('----------------obj justo antes de enviar--------------------------', obj);
+
+        // Llamar al servicio con los datos completos
+        const resp = await TourismServices.createTourism(obj);
+        console.log('-------respuesta de la creacion del turismo --------------', resp);
+        Alert.alert("Éxito", "Paquete turístico creado correctamente");
+        router.back();
+        
+      } catch (error) {
+        console.error('❌ Error creando turismo:', error);
+        Alert.alert("Error", "No se pudo crear el paquete turístico. Verifica los datos.");
+      } finally {
+        setStateValue('loading', false);
       }
-      obj.cuposPorDiaConfig = diasSinTildes;
-
-      console.log('----------------obj justo antes de enviar--------------------------', obj);
-
-      // Llamar directamente al servicio sin subir imágenes por separado
-      TourismServices.createTourism(obj)
-        .then(resp => {
-          console.log('-------respuesta de la creacion del turismo --------------', resp);
-          Alert.alert("Éxito", "Paquete turístico creado correctamente");
-          router.back();
-          setStateValue('loading', false);
-        })
-        .catch(error => {
-          console.error('❌ Error creando turismo:', error);
-          Alert.alert("Error", "No se pudo crear el paquete turístico. Verifica los datos.");
-          setStateValue('loading', false);
-        }).catch(e => {
-          console.log('error', e);
-          Alert.alert("Error", "No se pudieron subir las imágenes");
-          setStateValue('loading', false);
-        });
     }
   };
 
@@ -820,7 +869,7 @@ const CreateTourisms: React.FC = () => {
   if (state.loading) {
     return <Loader />;
   }
-
+  
   return (
     <View style={{ backgroundColor: '#4f4f4f' }}>
       <StatusBar barStyle={'light-content'} />
