@@ -224,43 +224,139 @@ const CreateProgramming: React.FC = () => {
 
   const chooseImage = async (type: string, limit: number) => {
     try {
+      console.log("🖼️ Intentando seleccionar imagen para:", type);
+      
+      // ✅ Verificar disponibilidad primero
+      const availability = await helpers.checkImagePickerAvailability();
+      console.log("🔍 Disponibilidad de image picker:", availability);
+      
+      if (!availability.launchImageLibrary) {
+        Alert.alert(
+          "Función no disponible", 
+          "La selección de imágenes no está disponible en este momento. Puedes continuar sin imágenes o contactar al soporte."
+        );
+        return;
+      }
+
+      console.log("🔄 Iniciando selección de imagen...");
       const resp = await helpers.pickImages(limit, [4, 3]);
+      
+      console.log("📸 Respuesta de pickImages:", {
+        hasUri: !!resp?.uri,
+        uriCount: resp?.uri?.length,
+        hasFile: !!resp?.file,
+        hasBase64: !!resp?.base64
+      });
+      
+      if (!resp || !resp.uri || !resp.uri[0]) {
+        throw new Error("No se pudo obtener la imagen seleccionada");
+      }
+
       const options: ImageOption = {
         name: type,
         file: resp.uri[0],
         fileF: resp.file,
-        base64: resp.base64,
+        base64: resp.base64 || '',
       };
-      if (type === "principal") setImgPrincipal(options);
-      else if (type === "banner") setImgBanner(options);
-      else if (type === "gallery") {
-        let gallery = [...imgGallery];
-        if (gallery.length > 5) gallery.shift();
-        setImgGallery([...gallery, options]);
+
+      console.log("✅ Imagen procesada exitosamente para:", type);
+
+      switch (type) {
+        case "principal":
+          setImgPrincipal(options);
+          Alert.alert("Éxito", "Imagen principal seleccionada correctamente");
+          break;
+        case "banner":
+          setImgBanner(options);
+          Alert.alert("Éxito", "Imagen de banner seleccionada correctamente");
+          break;
+        case "gallery":
+          let gallery = [...imgGallery];
+          if (gallery.length > 5) gallery.shift();
+          setImgGallery([...gallery, options]);
+          Alert.alert("Éxito", "Imagen agregada a la galería");
+          break;
       }
-    } catch (error) {
-      Alert.alert("Error", "No se pudo seleccionar la imagen");
+      
+    } catch (error: any) {
+      console.error("❌ Error en chooseImage:", error);
+      
+      let errorMessage = "No se pudo seleccionar la imagen";
+      
+      if (error.message.includes('cancel')) {
+        errorMessage = "Selección de imagen cancelada";
+      } else if (error.message.includes('permisos')) {
+        errorMessage = "Se necesitan permisos para acceder a la galería";
+      } else if (error.message.includes('disponible')) {
+        errorMessage = "El selector de imágenes no está disponible";
+      } else if (error.message.includes('No se seleccionó')) {
+        errorMessage = "No se seleccionó ninguna imagen";
+      }
+      
+      Alert.alert("Error", errorMessage);
     }
   };
 
   const sendUpload = async (id: string): Promise<boolean> => {
     try {
+      console.log("🔄 Iniciando upload de imágenes...");
+      
+      const uploadPromises = [];
+
       if (imgPrincipal) {
-        await helpers.uploadImages(imgPrincipal, id, "destino", place.name || "programacion", "principal");
+        console.log("📤 Subiendo imagen principal...");
+        uploadPromises.push(
+          helpers.uploadImages({
+            file: imgPrincipal, 
+            id, 
+            type: "destino", 
+            nombrepaq: place.name || "programacion", 
+            typeGalery: "principal"
+          })
+        );
       }
+
       if (imgBanner) {
-        await helpers.uploadImages(imgBanner, id, "destino", place.name || "programacion", "banner");
+        console.log("📤 Subiendo imagen banner...");
+        uploadPromises.push(
+          helpers.uploadImages({
+            file: imgBanner, 
+            id, 
+            type: "destino", 
+            nombrepaq: place.name || "programacion", 
+            typeGalery: "banner"
+          })
+        );
       }
+
       for (let i = 0; i < imgGallery.length; i++) {
-        await helpers.uploadImages(imgGallery[i], id, "destino", place.name || "programacion", "gallery");
+        console.log(`📤 Subiendo imagen galería ${i + 1}...`);
+        uploadPromises.push(
+          helpers.uploadImages({
+            file: imgGallery[i], 
+            id, 
+            type: "destino", 
+            nombrepaq: place.name || "programacion", 
+            typeGalery: "gallery"
+          })
+        );
       }
+
+      if (uploadPromises.length > 0) {
+        await Promise.all(uploadPromises);
+        console.log("✅ Todas las imágenes subidas exitosamente");
+      } else {
+        console.log("ℹ️ No hay imágenes para subir");
+      }
+
       return true;
     } catch (error) {
+      console.error("❌ Error en sendUpload:", error);
       throw error;
     }
   };
 
-  const onHandleSubmit = () => {
+  const onHandleSubmit = async () => {
     if (!userId) {
       Alert.alert("Error", "No se pudo identificar al usuario");
       return;
@@ -290,38 +386,42 @@ const CreateProgramming: React.FC = () => {
       { text: "Cancelar", style: "cancel" },
       {
         text: "Crear",
-        onPress: () => {
-          if (!userId) return;
-          
-          sendUpload(userId)
-            .then(() => {
-              const obj = {
-                id: userId,
-                ruta,
-                vehiculo,
-                conductor,
-                disponibles,
-                precio,
-                dcto,
-                precioDcto: dcto ? precioDcto : "",
-                documentacion,
-                places,
-                place,
-                descripcion,
-                images: imgPrincipal?.file || "",
-                banner: imgBanner?.file || "",
-                start: `${startDate}T${horaSalida}:00.000+00:00`,
-                end: `${endDate}T${horaLlegada}:00.000+00:00`,
-              };
-              
-              CreateProgrammingServices.createProgramming(obj)
-                .then(() => {
-                  Alert.alert("Éxito", "Programación creada correctamente");
-                  router.back();
-                })
-                .catch(() => Alert.alert("Error", "No se pudo crear la programación"));
-            })
-            .catch(() => Alert.alert("Error", "Error al subir las imágenes"));
+        onPress: async () => {
+          try {
+            if (!userId) return;
+            
+            // ✅ CORREGIDO: Subir imágenes primero
+            await sendUpload(userId);
+            
+            const obj = {
+              id: userId,
+              ruta,
+              vehiculo,
+              conductor,
+              disponibles,
+              precio,
+              dcto,
+              precioDcto: dcto ? precioDcto : "",
+              documentacion,
+              places,
+              place,
+              descripcion,
+              images: imgPrincipal?.file || "",
+              banner: imgBanner?.file || "",
+              start: `${startDate}T${horaSalida}:00.000+00:00`,
+              end: `${endDate}T${horaLlegada}:00.000+00:00`,
+            };
+            
+            console.log("📤 Creando programación con datos:", obj);
+            
+            await CreateProgrammingServices.createProgramming(obj);
+            Alert.alert("Éxito", "Programación creada correctamente");
+            router.back();
+            
+          } catch (error) {
+            console.error("❌ Error al crear programación:", error);
+            Alert.alert("Error", "No se pudo crear la programación");
+          }
         }
       }
     ]);

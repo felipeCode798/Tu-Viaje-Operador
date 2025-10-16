@@ -1,6 +1,6 @@
-import gql from "graphql-tag";
 import ApolloClient from "apollo-boost";
-import { imageUrl, clientUrl } from "../constants/Urls";
+import gql from "graphql-tag";
+import { clientUrl } from "../constants/Urls";
 
 // Interfaces para los tipos de datos
 interface Location {
@@ -266,6 +266,26 @@ export default class CreateProgrammingServices {
       return Promise.reject(new Error("Fechas inválidas"));
     }
 
+    // ✅ CORREGIDO: Preparar places según el schema GraphQL (sin address)
+    const placesInput = (data.places || []).map((place: any) => ({
+      name: place.name || '',
+      latitude: place.latitude || 0,
+      longitude: place.longitude || 0,
+      // ❌ REMOVER: address no está en el schema
+    }));
+
+    // ✅ CORREGIDO: Preparar puntoFin según el schema GraphQL (sin address)
+    const puntoFinInput = data.place ? {
+      name: data.place.name || '',
+      latitude: data.place.latitude || 0,
+      longitude: data.place.longitude || 0,
+      // ❌ REMOVER: address no está en el schema
+    } : {};
+
+    // ✅ CORREGIDO: Manejar imágenes correctamente - deben ser strings, no arrays
+    const imagesInput = data.images && data.images !== "" ? data.images : "";
+    const bannerInput = data.banner && data.banner !== "" ? data.banner : "";
+
     const input = {
       tour: data.ruta,
       bus: data.vehiculo,
@@ -274,20 +294,20 @@ export default class CreateProgrammingServices {
       dcto: Boolean(data.dcto),
       pricedcto: precioDcto,
       llegada: data.place?.name || "",
-      puntoFin: data.place || {},
+      puntoFin: puntoFinInput,
       price: precio,
       start: startTimestamp.toString(),
       end: endTimestamp.toString(),
       available: disponibles,
       capacity: disponibles,
       enterprise: data.id,
-      places: data.places || [],
+      places: placesInput,
       descripcion: data.descripcion || "",
-      images: data.images || [],
-      banner: data.banner || null,
+      images: imagesInput, // ✅ Ahora es string, no array
+      banner: bannerInput, // ✅ Ahora es string, no null
     };
 
-    console.log("📤 Input para mutation:", JSON.stringify(input, null, 2));
+    console.log("📤 Input CORREGIDO para mutation:", JSON.stringify(input, null, 2));
 
     return new Promise((resolve, reject) => {
       client
@@ -308,7 +328,7 @@ export default class CreateProgrammingServices {
         })
         .then((res) => {
           console.log("✅ Respuesta de la mutación:", res);
-          if (res.data) {
+          if (res.data && res.data.createProgramming) {
             resolve(res.data.createProgramming);
           } else {
             reject(new Error("No data received from mutation"));
@@ -318,6 +338,15 @@ export default class CreateProgrammingServices {
           console.error("❌ Error en mutation:", error);
           if (error.graphQLErrors) {
             console.error("GraphQL Errors:", error.graphQLErrors);
+            error.graphQLErrors.forEach((graphQLError: any, index: number) => {
+              console.error(`GraphQL Error ${index + 1}:`, graphQLError.message);
+              if (graphQLError.locations) {
+                console.error(`Locations:`, graphQLError.locations);
+              }
+              if (graphQLError.path) {
+                console.error(`Path:`, graphQLError.path);
+              }
+            });
           }
           if (error.networkError) {
             console.error("Network Error:", error.networkError);

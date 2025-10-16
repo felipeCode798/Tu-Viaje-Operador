@@ -4,7 +4,7 @@ import {
   Icon,
   Overlay,
 } from 'react-native-elements';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import ModalSelector from 'react-native-modal-selector';
 import { KeyboardAwareScrollView } from '@codler/react-native-keyboard-aware-scroll-view';
 import {
@@ -38,6 +38,8 @@ import { Picker } from '@react-native-picker/picker';
 import { ConfigDay } from '../../components/ConfigDay';
 import { Loader } from '../../components/Loader';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../redux/store';
 
 const { height, width } = Dimensions.get('window');
 const colorScheme = Appearance.getColorScheme();
@@ -90,9 +92,35 @@ interface PlaceResult {
 const CreateTourisms: React.FC = () => {
   const router = useRouter();
   const { user } = useAuth();
+  const params = useLocalSearchParams();
+
+  const userIdFromParams = params.userId as string;
+  const userNameFromParams = params.userName as string;
+
+  const idState = useSelector((state: RootState) => state.id);
+  const sessionState = useSelector((state: RootState) => state.session);
+
+  const getUser = () => {
+    if (userIdFromParams) {
+      return { _id: userIdFromParams, names: userNameFromParams };
+    }
+    if (idState && typeof idState === 'string' && idState.length > 0) {
+      return { _id: idState, id: idState };
+    }
+    if (sessionState?.user?.idUser) {
+      return { _id: sessionState.user.idUser, names: sessionState.user.nombres };
+    }
+    if (user?.idUser) {
+      return { _id: user.idUser, names: user.nombres };
+    }
+    return null;
+  };
+
+  const userData = getUser();
+  const userId = userData?._id || userData?.id;
 
   const [state, setState] = useState({
-    user: user?.idUser || '',
+    user: userId || '',
     nombrePaquete: '',
     descPaquete: '',
     vehiculo: false,
@@ -135,8 +163,8 @@ const CreateTourisms: React.FC = () => {
     DatePickerVisibleLlegada: false,
     markedDates: {} as MarkedDates,
     timeVuelta: '',
-    startDate: moment(Date()).format('YYYY-MM-DD'),
-    endDate: moment(Date()).format('YYYY-MM-DD'),
+    startDate: moment(new Date()).format('YYYY-MM-DD'),
+    endDate: moment(new Date()).format('YYYY-MM-DD'),
     isStartDatePicked: false,
     isEndDatePicked: false,
     destinoPaquete: {
@@ -251,51 +279,98 @@ const CreateTourisms: React.FC = () => {
   };
 
   useEffect(() => {
-    getDestinations();
-  }, []);
+    console.log("🔄 Iniciando carga de destinos...");
+    console.log("👤 User ID disponible:", userId);
+    console.log("👤 User desde Auth:", user);
+    console.log("👤 User desde Params:", userIdFromParams);
+    console.log("👤 User desde Redux ID:", idState);
+    console.log("👤 User desde Redux Session:", sessionState?.user?.idUser);
+
+    if (userId) {
+      console.log("✅ User ID válido encontrado:", userId);
+      setStateValue('user', userId); // ✅ Actualizar el estado con el userId
+      getDestinations();
+    } else {
+      console.error("❌ No hay user ID disponible después de todas las fuentes");
+      Alert.alert("Error", "No se pudo identificar al usuario. Por favor, vuelve a iniciar sesión.");
+    }
+  }, [userId]);
 
   const getDestinations = () => {
+    if (!state.user) {
+      console.error("❌ No hay user ID en el estado");
+      return;
+    }
+    
+    console.log("📡 Llamando getDestinations con user:", state.user);
+    
     TourismServices.getDestinationsWithoutPaginate(state.user)
       .then((data: Destination[]) => {
+        console.log("✅ Destinos recibidos:", data);
+        
         const destinations = data.map(destination => ({
           ...destination,
           key: destination.id,
           label: destination.name,
         }));
+        
+        console.log(`📍 ${destinations.length} destinos formateados`);
         setStateValue('destinos', destinations);
       })
-      .catch(e => {
-        console.log(e);
+      .catch(error => {
+        console.error("❌ Error obteniendo destinos:", error);
+        Alert.alert("Error", "No se pudieron cargar los destinos. Verifica tu conexión.");
       });
   };
 
   const chooseImage = async (type: string, limit: number) => {
-    const resp = await helpers.pickImages(limit, [4, 3]);
+    try {
+      console.log(`📸 Iniciando selección de imagen para: ${type}`);
+      
+      const resp = await helpers.pickImages(limit, [4, 3]);
+      
+      if (!resp || !resp.uri || resp.uri.length === 0) {
+        console.error("❌ No se seleccionó ninguna imagen");
+        return;
+      }
 
-    let url = resp.uri[0];
-    let base64 = resp.base64;
-    let fileF = resp.file;
+      let url = resp.uri[0];
+      console.log(`✅ URI de imagen obtenida: ${url}`);
 
-    let options: ImageOption = {
-      name: type,
-      file: url,
-      fileF: fileF,
-      base64,
-    };
+      // Verifica que la URI sea válida
+      if (!url || typeof url !== 'string' || !url.startsWith('file://')) {
+        console.error("❌ URI de imagen no válida:", url);
+        Alert.alert("Error", "La imagen seleccionada no es válida");
+        return;
+      }
 
-    switch (type) {
-      case 'principal':
-        setStateValue('imgPrincipal', options);
-        break;
-      case 'banner':
-        setStateValue('imgBanner', options);
-        break;
-      case 'gallery':
-        let gallery = state.imgGallery;
-        if (gallery.length > 5) gallery.shift();
-        gallery.push(options);
-        setStateValue('imgGallery', [...gallery]);
-        break;
+      // ✅ Asegúrate de que el objeto tenga la estructura que espera uploadImages
+      let options = {
+        name: type,
+        file: url,
+        fileF: resp.file || { assets: [{ uri: url }] }, // Estructura compatible
+        base64: resp.base64 || '',
+      };
+
+      console.log(`✅ Imagen procesada correctamente para: ${type}`, options);
+
+      switch (type) {
+        case 'principal':
+          setStateValue('imgPrincipal', options);
+          break;
+        case 'banner':
+          setStateValue('imgBanner', options);
+          break;
+        case 'gallery':
+          let gallery = [...state.imgGallery];
+          if (gallery.length >= 5) gallery.shift();
+          gallery.push(options);
+          setStateValue('imgGallery', gallery);
+          break;
+      }
+    } catch (error) {
+      console.error(`❌ Error en chooseImage para ${type}:`, error);
+      Alert.alert("Error", "No se pudo procesar la imagen seleccionada");
     }
   };
 
@@ -340,56 +415,46 @@ const CreateTourisms: React.FC = () => {
     setStateValue('infoHoraLlegada', OnlyInfoTime(date));
   };
 
-  const changeFormat = (number: string) => {
-    const numeroSinFormato = number.replace(/\D/g, "");
-    const precio = parseInt(numeroSinFormato, 10);
-    return precio;
+  const changeFormat = (number: string): number => {
+    if (!number || number === '' || number === 'NaN') return 0;
+    
+    try {
+      // Remover puntos de formato y solo dejar números
+      const numeroSinFormato = number.replace(/\./g, '').replace(/\D/g, "");
+      const precio = parseInt(numeroSinFormato, 10);
+      
+      console.log(`💰 Conversión de precio: "${number}" -> ${precio}`);
+      
+      if (isNaN(precio)) {
+        console.warn("⚠️ No se pudo convertir el precio:", number);
+        return 0;
+      }
+      
+      return precio;
+    } catch (error) {
+      console.error("❌ Error en changeFormat:", error);
+      return 0;
+    }
   };
 
   const sendUpload = async (id: string) => {
     return new Promise(async (resolve, reject) => {
       try {
-        let imgPrincipal = await helpers.uploadImages(
-          state.imgPrincipal,
-          id,
-          'turismo',
-          state.nombrePaquete,
-          'principal',
-        );
+        console.log('🔄 Preparando imágenes para subir...');
+        
+        // Solo recolectar las URIs de las imágenes
+        // La subida real se hará en TourismServices.createTourism
+        const imageData = {
+          principal: state.imgPrincipal?.file || '',
+          banner: state.imgBanner?.file || '',
+          gallery: state.imgGallery.map(img => img.file).filter(url => url && url.startsWith('file://'))
+        };
 
-        let imgBanner = await helpers.uploadImages(
-          state.imgBanner,
-          id,
-          'turismo',
-          state.nombrePaquete,
-          'banner',
-        );
-
-        let imgGallery = [];
-        for (let i = 0; i < state.imgGallery.length; i++) {
-          let img = await helpers.uploadImages(
-            state.imgGallery[i],
-            id,
-            'turismo',
-            state.nombrePaquete,
-            'gallery',
-          );
-
-          imgGallery.push(img);
-        }
-
-        setState(prev => ({
-          ...prev,
-          imgPrincipal: imgPrincipal,
-          imgBanner: imgBanner,
-          imgGallery: imgGallery,
-        }));
-
-        console.log('imgPrincipal', imgPrincipal);
-        console.log('imgBanner', imgBanner);
-        console.log('imgGallery', imgGallery);
-        resolve(true);
+        console.log('✅ URIs de imágenes preparadas:', imageData);
+        resolve(imageData);
+        
       } catch (error) {
+        console.error('❌ Error preparando imágenes:', error);
         reject(error);
       }
     });
@@ -627,7 +692,8 @@ const CreateTourisms: React.FC = () => {
       state.startDate.trim().length !== 0 &&
       state.horaSalida.trim().length !== 0
     ) {
-      obj.ida = moment(`${state.startDate}T${state.horaSalida}:00.000+00:00`);
+      const fechaHoraSalida = new Date(`${state.startDate}T${state.horaSalida}:00.000+00:00`);
+      obj.ida = fechaHoraSalida;
     } else {
       mensaje.push('*Debe seleccionar una fecha y hora de salida.');
     }
@@ -636,7 +702,8 @@ const CreateTourisms: React.FC = () => {
       state.endDate.trim().length !== 0 &&
       state.horaLlegada.trim().length !== 0
     ) {
-      obj.vuelta = moment(`${state.endDate}T${state.horaLlegada}:00.000+00:00`);
+      const fechaHoraLlegada = new Date(`${state.endDate}T${state.horaLlegada}:00.000+00:00`);
+      obj.vuelta = fechaHoraLlegada;
     } else {
       mensaje.push('*Debe seleccionar una fecha y hora de llegada.');
     }
@@ -686,35 +753,42 @@ const CreateTourisms: React.FC = () => {
     console.log('>>>>>>>>>>>>>>>_____________objecto creado___________<<<<<<<<<<<<<<<<<<<<<<', obj);
 
     if (mensaje.length !== 0) {
-      Alert.alert('Alerta', mensaje.join('\n'));
+    Alert.alert('Alerta', mensaje.join('\n'));
     } else {
-      console.log("ENVIANDO DATOS", state.precio, state.precioNino, state.precioDcto, state.cuposPorDiaConfig);
+      console.log("ENVIANDO DATOS", state.precio, state.precioNino, state.cuposPorDiaConfig);
       setStateValue('loading', true);
-      sendUpload(user?.idUser || '')
+      
+      // Preparar objeto con las imágenes como objetos (no solo URLs)
+      obj.imagen = state.imgPrincipal;
+      obj.banner = state.imgBanner;
+      obj.gallery = state.imgGallery;
+      
+      const diasSinTildes: any = {};
+      for (let dia in state.cuposPorDiaConfig) {
+        const diaSinTildes = dia.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        if ((state.cuposPorDiaConfig as any)[dia] !== 0) {
+          diasSinTildes[diaSinTildes] = (state.cuposPorDiaConfig as any)[dia];
+        }
+      }
+      obj.cuposPorDiaConfig = diasSinTildes;
+
+      console.log('----------------obj justo antes de enviar--------------------------', obj);
+
+      // Llamar directamente al servicio sin subir imágenes por separado
+      TourismServices.createTourism(obj)
         .then(resp => {
-          obj.imagen = state.imgPrincipal;
-          obj.banner = state.imgBanner;
-          obj.gallery = state.imgGallery;
-          
-          const diasSinTildes: any = {};
-          for (let dia in state.cuposPorDiaConfig) {
-            const diaSinTildes = dia.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-            if ((state.cuposPorDiaConfig as any)[dia] !== 0) {
-              diasSinTildes[diaSinTildes] = (state.cuposPorDiaConfig as any)[dia];
-            }
-          }
-          obj.cuposPorDiaConfig = diasSinTildes;
-
-          console.log('----------------obj justo antes de enviar--------------------------', obj);
-
-          TourismServices.createTourism(obj).then(resp => {
-            console.log('-------respuesta de la creacion del turismo --------------', resp);
-            router.back();
-            setStateValue('loading', false);
-          });
+          console.log('-------respuesta de la creacion del turismo --------------', resp);
+          Alert.alert("Éxito", "Paquete turístico creado correctamente");
+          router.back();
+          setStateValue('loading', false);
         })
-        .catch(e => {
+        .catch(error => {
+          console.error('❌ Error creando turismo:', error);
+          Alert.alert("Error", "No se pudo crear el paquete turístico. Verifica los datos.");
+          setStateValue('loading', false);
+        }).catch(e => {
           console.log('error', e);
+          Alert.alert("Error", "No se pudieron subir las imágenes");
           setStateValue('loading', false);
         });
     }
@@ -770,9 +844,11 @@ const CreateTourisms: React.FC = () => {
 
       <KeyboardAwareScrollView
         enableOnAndroid={true}
-        contentContainerStyle={{flexGrow: 1}}
+        contentContainerStyle={{flexGrow: 1, paddingBottom: 150,}}
         enableAutomaticScroll={true}
-        viewIsInsideTabBar={false}>
+        viewIsInsideTabBar={false}
+        showsVerticalScrollIndicator={false}
+        extraScrollHeight={100}>
         <View style={[styles.container]}>
           <ScrollView>
             <View>
@@ -1085,30 +1161,37 @@ const CreateTourisms: React.FC = () => {
                 <Text style={[styles.textLabel, styles.texColorWite]}>
                   Destino del paquete turístico
                 </Text>
-                <ModalSelector
-                  data={state.destinos}
-                  onChange={option => {
-                    setState(prev => ({
-                      ...prev,
-                      destinoPaquete: {
-                        key: option.key,
-                        label: option.label,
-                      },
-                      destino: option.key,
-                    }));
-                  }}
-                  initValue={state.destinos.key}
-                  scrollViewAccessibilityLabel={'Scrollable options'}
-                  cancelText={'Cancelar'}
-                  optionTextStyle={{color: 'black'}}
-                  optionContainerStyle={{
-                    backgroundColor: 'white',
-                    opacity: 1,
-                  }}>
-                  <Text style={[styles.textSelect, styles.texColorWite]}>
-                    {state.destinoPaquete.label}
+
+                {state.destinos.length > 0 ? (
+                  <ModalSelector
+                    data={state.destinos}
+                    onChange={option => {
+                      console.log("📍 Destino seleccionado:", option);
+                      setState(prev => ({
+                        ...prev,
+                        destinoPaquete: {
+                          key: option.key,
+                          label: option.label,
+                        },
+                        destino: option.key,
+                      }));
+                    }}
+                    initValue="Seleccionar destino"
+                    cancelText="Cancelar"
+                    optionTextStyle={{color: 'black'}}
+                    optionContainerStyle={{
+                      backgroundColor: 'white',
+                      maxHeight: height * 0.4,
+                    }}>
+                    <Text style={[styles.textSelect, styles.texColorWite, styles.textInput]}>
+                      {state.destinoPaquete.label}
+                    </Text>
+                  </ModalSelector>
+                ) : (
+                  <Text style={[styles.textSelect, styles.texColorWite, styles.textInput, {color: 'gray'}]}>
+                    Cargando destinos...
                   </Text>
-                </ModalSelector>
+                )}
               </View>
               {/* Puntos de recogida */}
               <View>
@@ -1910,35 +1993,29 @@ const CreateTourisms: React.FC = () => {
 
               <View
                 style={{
-                  paddingTop:
-                    Platform.OS === 'ios' ? height * 0.001 : height * 0.001,
-                  marginBottom:
-                    Platform.OS === 'ios' ? height * 0.001 : height * 0.001,
+                  paddingTop: Platform.OS === 'ios' ? height * 0.001 : height * 0.001,
+                  marginBottom: Platform.OS === 'ios' ? height * 0.001 : height * 0.001,
                 }}>
                 <Text style={[styles.textLabel, styles.texColorWite]}>
                   Galería de imágenes
                 </Text>
 
                 {state.imgGallery.length != 0 && (
-                  <FlatList
-                    data={state.imgGallery}
-                    renderItem={({item}) => (
+                  // REEMPLAZA el FlatList con esto:
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-evenly' }}>
+                    {state.imgGallery.map((item, index) => (
                       <Image
-                        source={{uri: item.file}}
+                        key={index.toString()}
+                        source={{ uri: item.file }}
                         style={{
                           height: 130,
                           width: 130,
                           borderRadius: 10,
+                          margin: 5,
                         }}
                       />
-                    )}
-                    numColumns={2}
-                    keyExtractor={(item, index) => index.toString()}
-                    columnWrapperStyle={{
-                      marginVertical: 10,
-                      justifyContent: 'space-evenly',
-                    }}
-                  />
+                    ))}
+                  </View>
                 )}
 
                 <TouchableOpacity
@@ -1950,7 +2027,7 @@ const CreateTourisms: React.FC = () => {
                   }}
                   onPress={() => chooseImage('gallery', 5)}>
                   <Text style={styles.text}>
-                    {state.imgPrincipal ? 'Cambiar' : 'Seleccionar'}
+                    {state.imgGallery.length > 0 ? 'Agregar más' : 'Seleccionar'}
                   </Text>
                 </TouchableOpacity>
               </View>

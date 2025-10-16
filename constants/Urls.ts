@@ -5,8 +5,8 @@
 
 //-----------------------------------------------------------------------
 //DEMO PRUEBASr
-export const server = "https://demo-graph.tuviajeapp.co/"; //nuevos servidores de pruebas
-export const imageUrl = "https://demo-files.tuviajeapp.co/test/"; //nuevos servidores de pruebas
+export const server = "https://demo-graph.tuviajeapp.co/";
+export const imageUrl = "https://demo-files.tuviajeapp.co/test/";
 export const clientUrl = `${server}graphql`;
 
 //-----------------------------------------------------------------------
