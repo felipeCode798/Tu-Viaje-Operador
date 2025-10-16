@@ -1,7 +1,7 @@
+import { MaterialIcons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { Platform } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
@@ -40,7 +40,6 @@ export default function TabLayout() {
         }}
       />
       
-
       <Tabs.Screen
         name="MessagesScreen"
         options={{
@@ -58,6 +57,21 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size = 28 }) => (
             <MaterialIcons name="person" size={size} color={color} />
           ),
+        }}
+      />
+      
+      {/* Excluir estas pantallas del tab bar */}
+      <Tabs.Screen
+        name="CreateTourisms"
+        options={{
+          href: null, // Esto oculta la pantalla del tab bar
+        }}
+      />
+      
+      <Tabs.Screen
+        name="CreateProgramming"
+        options={{
+          href: null, // Esto oculta la pantalla del tab bar
         }}
       />
     </Tabs>

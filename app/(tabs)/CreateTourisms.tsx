@@ -1,44 +1,43 @@
-import React, { useState, useEffect } from 'react';
+import { KeyboardAwareScrollView } from '@codler/react-native-keyboard-aware-scroll-view';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+  Alert,
+  Appearance,
+  Dimensions,
+  Image,
+  Modal,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
 import {
   Header,
   Icon,
   Overlay,
 } from 'react-native-elements';
-import { useRouter, useLocalSearchParams } from 'expo-router';
 import ModalSelector from 'react-native-modal-selector';
-import { KeyboardAwareScrollView } from '@codler/react-native-keyboard-aware-scroll-view';
-import {
-  View,
-  Text,
-  Dimensions,
-  Platform,
-  ScrollView,
-  StatusBar,
-  TouchableOpacity,
-  StyleSheet,
-  Switch,
-  TextInput,
-  Modal,
-  Image,
-  FlatList,
-  Alert,
-  Appearance,
-} from 'react-native';
 
-import TourismServices from '../../services/tourismServices';
 import moment from 'moment';
 import { Calendar } from 'react-native-calendars';
-import { GooglePlacesComponent } from '../../components/GooglePlacesComponent';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import { GooglePlacesComponent } from '../../components/GooglePlacesComponent';
+import TourismServices from '../../services/tourismServices';
 
-import { helpers } from '../../utils/helpers';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
+import { helpers } from '../../utils/helpers';
 
 import { Picker } from '@react-native-picker/picker';
+import { useSelector } from 'react-redux';
 import { ConfigDay } from '../../components/ConfigDay';
 import { Loader } from '../../components/Loader';
 import { useAuth } from '../../contexts/AuthContext';
-import { useSelector } from 'react-redux';
 import { RootState } from '../../redux/store';
 
 const { height, width } = Dimensions.get('window');
@@ -735,13 +734,14 @@ const CreateTourisms: React.FC = () => {
       }
     }
 
+    // ✅ CORRECCIÓN: Usar Date directamente para las fechas
     if (
       state.startDate.trim().length !== 0 &&
       state.horaSalida.trim().length !== 0
     ) {
-      // ✅ CORRECCIÓN: Crear fecha correctamente para Date.parse()
-      const fechaHoraSalida = new Date(`${state.startDate}T${state.horaSalida}:00.000+00:00`);
-      obj.ida = fechaHoraSalida;
+      obj.ida = new Date(`${state.startDate}T${state.horaSalida}:00.000+00:00`);
+      console.log('📅 Fecha salida (Date):', obj.ida);
+      console.log('📅 Timestamp salida:', obj.ida.getTime());
     } else {
       mensaje.push('*Debe seleccionar una fecha y hora de salida.');
     }
@@ -750,9 +750,9 @@ const CreateTourisms: React.FC = () => {
       state.endDate.trim().length !== 0 &&
       state.horaLlegada.trim().length !== 0
     ) {
-      // ✅ CORRECCIÓN: Crear fecha correctamente para Date.parse()
-      const fechaHoraLlegada = new Date(`${state.endDate}T${state.horaLlegada}:00.000+00:00`);
-      obj.vuelta = fechaHoraLlegada;
+      obj.vuelta = new Date(`${state.endDate}T${state.horaLlegada}:00.000+00:00`);
+      console.log('📅 Fecha llegada (Date):', obj.vuelta);
+      console.log('📅 Timestamp llegada:', obj.vuelta.getTime());
     } else {
       mensaje.push('*Debe seleccionar una fecha y hora de llegada.');
     }
@@ -799,7 +799,17 @@ const CreateTourisms: React.FC = () => {
     obj.precioNino = changeFormat(state.precioNino);
     obj.precioDcto = changeFormat(state.precioDcto);
 
-    console.log('>>>>>>>>>>>>>>>_____________objecto creado___________<<<<<<<<<<<<<<<<<<<<<<', obj);
+    console.log('>>>>>>>>>>>>>>>_____________objecto creado___________<<<<<<<<<<<<<<<<<<<<<<', {
+      ...obj,
+      ida: obj.ida?.getTime ? obj.ida.getTime() : obj.ida,
+      vuelta: obj.vuelta?.getTime ? obj.vuelta.getTime() : obj.vuelta,
+      places: obj.places.map((p: any) => ({
+        name: p.name,
+        latitude: p.latitude,
+        longitude: p.longitude
+        // ❌ address removido
+      }))
+    });
 
     if (mensaje.length !== 0) {
       Alert.alert('Alerta', mensaje.join('\n'));
@@ -812,10 +822,21 @@ const CreateTourisms: React.FC = () => {
         console.log('📤 Iniciando subida de imágenes...');
         const uploadedImages = await sendUpload(state.user);
         
-        // Preparar objeto con las URLs de imágenes subidas
+        console.log('✅ URLs de imágenes subidas:', uploadedImages);
+
+        // ✅ CORRECCIÓN: Preparar objeto con las URLs de imágenes subidas
         obj.imagen = uploadedImages.imgPrincipal;
         obj.banner = uploadedImages.imgBanner;
         obj.gallery = uploadedImages.imgGallery;
+        
+        // ✅ CORRECCIÓN: Limpiar los lugares (remover address)
+        const placesLimpios = state.places.map(place => ({
+          name: place.name || '',
+          latitude: place.latitude || 0,
+          longitude: place.longitude || 0
+          // ❌ address removido porque no está en el schema GraphQL
+        }));
+        obj.places = placesLimpios;
         
         const diasSinTildes: any = {};
         for (let dia in state.cuposPorDiaConfig) {
@@ -826,17 +847,39 @@ const CreateTourisms: React.FC = () => {
         }
         obj.cuposPorDiaConfig = diasSinTildes;
 
-        console.log('----------------obj justo antes de enviar--------------------------', obj);
+        console.log('----------------obj justo antes de enviar--------------------------', {
+          ...obj,
+          ida: obj.ida?.getTime ? obj.ida.getTime() : obj.ida,
+          vuelta: obj.vuelta?.getTime ? obj.vuelta.getTime() : obj.vuelta,
+          places: obj.places // Ya están limpios sin address
+        });
 
-        // Llamar al servicio con los datos completos
+        // ✅ CORRECCIÓN: Llamar al servicio SIN subir imágenes nuevamente
+        console.log('🚀 Enviando datos a TourismServices.createTourism...');
         const resp = await TourismServices.createTourism(obj);
         console.log('-------respuesta de la creacion del turismo --------------', resp);
-        Alert.alert("Éxito", "Paquete turístico creado correctamente");
-        router.back();
         
-      } catch (error) {
+        if (resp && resp.result) {
+          Alert.alert("Éxito", "Paquete turístico creado correctamente");
+          router.back();
+        } else {
+          Alert.alert("Error", resp?.message || "No se pudo crear el paquete turístico");
+        }
+        
+      } catch (error: any) {
         console.error('❌ Error creando turismo:', error);
-        Alert.alert("Error", "No se pudo crear el paquete turístico. Verifica los datos.");
+        
+        let errorMessage = "No se pudo crear el paquete turístico. Verifica los datos.";
+        
+        if (error.message?.includes('400')) {
+          errorMessage = "Error en los datos enviados. Verifica que toda la información sea correcta.";
+        } else if (error.message?.includes('network')) {
+          errorMessage = "Error de conexión. Verifica tu internet e intenta nuevamente.";
+        } else if (error.networkError) {
+          errorMessage = "Error de servidor. Intenta nuevamente en unos momentos.";
+        }
+        
+        Alert.alert("Error", errorMessage);
       } finally {
         setStateValue('loading', false);
       }
@@ -2176,8 +2219,8 @@ const styles = StyleSheet.create({
     shadowRadius: height * 0.1,
     elevation: 5,
     padding: width * 0.05,
-    width: width * 0.87,
-    height: height * 0.43,
+    width: width * 0.9,
+    height: height * 0.9,
     alignContent: 'center',
   },
   textLabel: {

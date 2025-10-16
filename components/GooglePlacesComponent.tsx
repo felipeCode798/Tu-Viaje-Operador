@@ -173,74 +173,52 @@ export const GooglePlacesComponent: React.FC<GooglePlacesComponentProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* HEADER */}
+      {/* HEADER MEJORADO */}
       <View style={styles.header}>
-        <Text style={styles.title}>
-          {cantElements > 1 ? 'Selecciona puntos de recogida' : 'Selecciona punto de llegada'}
-        </Text>
-        <Text style={styles.subtitle}>
-          {cantElements > 1 
-            ? `Puedes seleccionar hasta ${cantElements} lugares` 
-            : 'Selecciona un lugar como punto final'
-          }
-        </Text>
-      </View>
-
-      {/* BUSCADOR MANUAL */}
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.textInput}
-          placeholder="Buscar ubicación..."
-          placeholderTextColor="#999"
-          value={searchText}
-          onChangeText={handleSearchChange}
-          onSubmitEditing={addManualPlace}
-          returnKeyType="search"
-        />
-        
-        <TouchableOpacity 
-          style={[
-            styles.addButton,
-            (!searchText.trim() || selectedPlaces.length >= cantElements) && styles.addButtonDisabled
-          ]} 
-          onPress={addManualPlace}
-          disabled={!searchText.trim() || selectedPlaces.length >= cantElements}
-        >
-          <Text style={styles.addButtonText}>+</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* RESULTADOS DE BÚSQUEDA - MEJORADO */}
-      {isLoading && (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color="#E2991C" />
-          <Text style={styles.loadingText}>Buscando lugares...</Text>
+        <View style={styles.headerContent}>
+          <Text style={styles.title}>Puntos de Recogida</Text>
+          <Text style={styles.subtitle}>Selecciona hasta {cantElements} lugares</Text>
         </View>
-      )}
+        <View style={styles.counterHeader}>
+          <Text style={styles.counterHeaderText}>
+            {selectedPlaces.length}/{cantElements}
+          </Text>
+        </View>
+      </View>
 
-      {searchResults.length > 0 && (
-        <View style={styles.resultsWrapper}>
-          <Text style={styles.resultsTitle}>Sugerencias:</Text>
-          <ScrollView 
-            style={styles.resultsContainer}
-            showsVerticalScrollIndicator={true}
-            nestedScrollEnabled={true}
+      {/* BUSCADOR MEJORADO */}
+      <View style={styles.searchSection}>
+        <View style={styles.searchContainer}>
+          <TextInput
+            style={styles.textInput}
+            placeholder="Buscar ubicación..."
+            placeholderTextColor="#999"
+            value={searchText}
+            onChangeText={handleSearchChange}
+            onSubmitEditing={addManualPlace}
+            returnKeyType="search"
+          />
+          
+          <TouchableOpacity 
+            style={[
+              styles.addButton,
+              (!searchText.trim() || selectedPlaces.length >= cantElements) && styles.addButtonDisabled
+            ]} 
+            onPress={addManualPlace}
+            disabled={!searchText.trim() || selectedPlaces.length >= cantElements}
           >
-            {searchResults.map((result, index) => (
-              <TouchableOpacity
-                key={result.place_id}
-                style={[
-                  styles.resultItem,
-                  index === searchResults.length - 1 && styles.lastResultItem
-                ]}
-                onPress={() => handlePlaceSelect(result)}
-              >
-                <Text style={styles.resultText}>{result.description}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+            <Text style={styles.addButtonText}>+</Text>
+          </TouchableOpacity>
         </View>
-      )}
+
+        {/* INDICADOR DE CARGA */}
+        {isLoading && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color="#E2991C" />
+            <Text style={styles.loadingText}>Buscando lugares...</Text>
+          </View>
+        )}
+      </View>
 
       {/* MENSAJE DE ERROR */}
       {showError && (
@@ -254,51 +232,93 @@ export const GooglePlacesComponent: React.FC<GooglePlacesComponentProps> = ({
         </View>
       )}
 
-      {/* LUGARES SELECCIONADOS */}
-      <View style={styles.selectedContainer}>
-        <Text style={styles.selectedTitle}>
-          {cantElements > 1 ? 'Puntos seleccionados' : 'Punto seleccionado'} 
-          ({selectedPlaces.length}/{cantElements})
-        </Text>
-        
-        <ScrollView 
-          style={styles.scrollContainer}
-          showsVerticalScrollIndicator={true}
-        >
-          {selectedPlaces.length > 0 ? (
-            selectedPlaces.map((result, index) => (
-              <View key={index} style={styles.placeItem}>
-                <View style={styles.placeInfo}>
-                  <Text style={styles.placeNumber}>{index + 1}.</Text>
-                  <View style={styles.placeDetails}>
+      {/* CONTENIDO PRINCIPAL - MEJOR DISTRIBUCIÓN */}
+      <View style={styles.mainContent}>
+        {/* RESULTADOS DE BÚSQUEDA - CAJA MÁS GRANDE */}
+        {searchResults.length > 0 && (
+          <View style={[
+            styles.resultsSection,
+            { flex: searchResults.length > 0 ? 0.7 : 0 } // Aumentado de 0.4 a 0.7
+          ]}>
+            <Text style={styles.sectionTitle}>Sugerencias</Text>
+            <ScrollView 
+              style={styles.resultsContainer}
+              showsVerticalScrollIndicator={true}
+              nestedScrollEnabled={true}
+            >
+              {searchResults.map((result, index) => (
+                <TouchableOpacity
+                  key={result.place_id}
+                  style={[
+                    styles.resultItem,
+                    index === searchResults.length - 1 && styles.lastResultItem
+                  ]}
+                  onPress={() => handlePlaceSelect(result)}
+                >
+                  <View style={styles.resultIcon}>
+                    <Text style={styles.resultIconText}>📍</Text>
+                  </View>
+                  <Text style={styles.resultText}>{result.description}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* LUGARES SELECCIONADOS - MÁS PEQUEÑO CUANDO HAY SUGERENCIAS */}
+        <View style={[
+          styles.selectedSection,
+          searchResults.length > 0 && { flex: 0.3 } // Reducido de 0.6 a 0.3
+        ]}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.selectedTitle}>Puntos seleccionados</Text>
+          </View>
+          
+          <ScrollView 
+            style={styles.scrollContainer}
+            showsVerticalScrollIndicator={true}
+            contentContainerStyle={[
+              styles.scrollContent,
+              selectedPlaces.length === 0 && styles.emptyScrollContent
+            ]}
+          >
+            {selectedPlaces.length > 0 ? (
+              selectedPlaces.map((result, index) => (
+                <View key={index} style={styles.placeCard}>
+                  <View style={styles.placeNumber}>
+                    <Text style={styles.placeNumberText}>{index + 1}</Text>
+                  </View>
+                  <View style={styles.placeInfo}>
                     <Text style={styles.placeName}>{result.name}</Text>
                     {result.address && (
                       <Text style={styles.placeAddress}>{result.address}</Text>
                     )}
                   </View>
+                  <TouchableOpacity
+                    onPress={() => handleRemovePlace(index)}
+                    style={styles.removeButton}
+                  >
+                    <Text style={styles.removeText}>×</Text>
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity
-                  onPress={() => handleRemovePlace(index)}
-                  style={styles.removeButton}
-                >
-                  <Text style={styles.removeText}>✕</Text>
-                </TouchableOpacity>
+              ))
+            ) : (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateIcon}>🗺️</Text>
+                <Text style={styles.emptyStateTitle}>
+                  Escoge las canadas de salida y regreso
+                </Text>
+                <View style={styles.separator} />
+                <Text style={styles.emptyStateText}>
+                  Selecciona al menos un punto
+                </Text>
               </View>
-            ))
-          ) : (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>
-                {cantElements > 1 
-                  ? 'Busca y selecciona los puntos de recogida' 
-                  : 'Busca y selecciona el punto de llegada'
-                }
-              </Text>
-            </View>
-          )}
-        </ScrollView>
+            )}
+          </ScrollView>
+        </View>
       </View>
 
-      {/* ✅ BOTONES DENTRO DEL FONDO DEL MODAL */}
+      {/* BOTONES MEJORADOS */}
       <View style={styles.buttonsContainer}>
         <TouchableOpacity
           style={[
@@ -330,106 +350,262 @@ export const GooglePlacesComponent: React.FC<GooglePlacesComponentProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#4f4f4f',
-    padding: 20,
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#2d2d2d',
+    borderRadius: 16,
   },
+  // HEADER MEJORADO
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: 20,
+    paddingTop: 50,
+    paddingHorizontal: 16,
+  },
+  headerContent: {
+    flex: 1,
   },
   title: {
     color: 'white',
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 5,
+    marginBottom: 4,
   },
   subtitle: {
     color: '#ccc',
     fontSize: 14,
-    textAlign: 'center',
+  },
+  counterHeader: {
+    backgroundColor: '#E2991C',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    marginLeft: 10,
+  },
+  counterHeaderText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  // BUSCADOR MEJORADO
+  searchSection: {
+    marginBottom: 16,
+    paddingHorizontal: 16,
   },
   searchContainer: {
     flexDirection: 'row',
-    marginBottom: 15,
+    marginBottom: 8,
   },
   textInput: {
     flex: 1,
-    backgroundColor: '#3d3d3d',
+    backgroundColor: '#3a3a3a',
     color: 'white',
-    height: 50,
-    borderRadius: 10,
-    paddingHorizontal: 15,
+    height: 52,
+    borderRadius: 12,
+    paddingHorizontal: 16,
     fontSize: 16,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: '#555',
-    marginRight: 10,
+    marginRight: 12,
   },
   addButton: {
     backgroundColor: '#E2991C',
-    width: 50,
-    height: 50,
-    borderRadius: 10,
+    width: 52,
+    height: 52,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
   },
   addButtonDisabled: {
-    backgroundColor: '#666',
+    backgroundColor: '#555',
   },
   addButtonText: {
     color: 'white',
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
   },
   loadingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
-    padding: 10,
-    backgroundColor: '#2d2d2d',
+    padding: 12,
+    backgroundColor: '#3a3a3a',
     borderRadius: 8,
+    marginHorizontal: 16,
   },
   loadingText: {
     color: '#ccc',
     marginLeft: 10,
     fontSize: 14,
   },
-  // ✅ MEJORADO: Contenedor de resultados más grande
-  resultsWrapper: {
-    marginBottom: 15,
-    maxHeight: height * 0.35, // 35% de la altura de la pantalla
-    minHeight: 150, // Mínimo 150 de altura
+  // CONTENIDO PRINCIPAL
+  mainContent: {
+    flex: 1,
+    paddingHorizontal: 16,
   },
-  resultsTitle: {
-    color: '#ccc',
-    fontSize: 16,
-    marginBottom: 8,
-    fontWeight: 'bold',
+  // SECCIÓN DE RESULTADOS - MÁS GRANDE
+  resultsSection: {
+    marginBottom: 90,
+  },
+  sectionTitle: {
+    color: '#E2991C',
+    fontSize: 18, // Más grande
+    fontWeight: '700', // Más negrita
+    marginBottom: 12, // Más espacio
   },
   resultsContainer: {
-    backgroundColor: '#2d2d2d',
-    borderRadius: 10,
+    backgroundColor: '#3a3a3a',
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#555',
-    maxHeight: height * 0.3, // 30% de la altura para el scroll
+    maxHeight: height * 0.5, // Aumentado de 0.35 a 0.5 (50% de la pantalla)
+    minHeight: 200, // Altura mínima aumentada
   },
   resultItem: {
-    padding: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 18, // Padding aumentado
     borderBottomWidth: 1,
     borderBottomColor: '#555',
+    minHeight: 60, // Altura mínima por item
   },
   lastResultItem: {
-    borderBottomWidth: 0, // Sin borde en el último elemento
+    borderBottomWidth: 0,
+  },
+  resultIcon: {
+    marginRight: 15, // Más espacio
+  },
+  resultIconText: {
+    fontSize: 14, // Icono más grande
   },
   resultText: {
     color: 'white',
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 13, // Texto más grande
+    lineHeight: 14, // Más espacio entre líneas
+    flex: 1,
   },
+  // SECCIÓN SELECCIONADOS
+  selectedSection: {
+    flex: 1,
+  },
+  sectionHeader: {
+    marginBottom: 12,
+  },
+  selectedTitle: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+  emptyScrollContent: {
+    justifyContent: 'center',
+  },
+  placeCard: {
+    backgroundColor: '#3a3a3a',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderLeftWidth: 4,
+    borderLeftColor: '#E2991C',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  placeNumber: {
+    backgroundColor: '#E2991C',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  placeNumberText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  placeInfo: {
+    flex: 1,
+  },
+  placeName: {
+    color: 'white',
+    fontSize: 15,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  placeAddress: {
+    color: '#ccc',
+    fontSize: 13,
+    lineHeight: 16,
+  },
+  removeButton: {
+    padding: 4,
+    marginLeft: 8,
+  },
+  removeText: {
+    color: '#ff6b6b',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  emptyState: {
+    padding: 40,
+    backgroundColor: '#3a3a3a',
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#555',
+    borderStyle: 'dashed',
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 200,
+  },
+  emptyStateIcon: {
+    fontSize: 32,
+    marginBottom: 12,
+  },
+  emptyStateTitle: {
+    color: '#ccc',
+    textAlign: 'center',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: '#555',
+    width: '60%',
+    marginBottom: 12,
+  },
+  emptyStateText: {
+    color: '#999',
+    textAlign: 'center',
+    fontSize: 14,
+  },
+  // MENSAJE DE ERROR
   errorContainer: {
-    backgroundColor: '#ff6b6b',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 15,
+    backgroundColor: '#ff4757',
+    padding: 14,
+    borderRadius: 10,
+    marginBottom: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#ff6b6b',
+    marginHorizontal: 16,
   },
   errorText: {
     color: 'white',
@@ -437,98 +613,30 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '500',
   },
-  selectedContainer: {
-    flex: 1,
-    marginBottom: 15,
-    minHeight: 200, // Altura mínima para la sección de seleccionados
-  },
-  selectedTitle: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  scrollContainer: {
-    flex: 1,
-  },
-  placeItem: {
-    backgroundColor: '#2d2d2d',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 10,
-    borderLeftWidth: 4,
-    borderLeftColor: 'orange',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  placeInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  placeNumber: {
-    color: 'orange',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginRight: 10,
-    width: 25,
-  },
-  placeDetails: {
-    flex: 1,
-  },
-  placeName: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 2,
-  },
-  placeAddress: {
-    color: '#ccc',
-    fontSize: 12,
-  },
-  removeButton: {
-    padding: 5,
-    marginLeft: 10,
-  },
-  removeText: {
-    color: '#ff6b6b',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  emptyState: {
-    padding: 30,
-    backgroundColor: '#2d2d2d',
-    borderRadius: 10,
-    borderStyle: 'dashed',
-    borderWidth: 2,
-    borderColor: '#666',
-    alignItems: 'center',
-  },
-  emptyStateText: {
-    color: '#999',
-    textAlign: 'center',
-    fontSize: 14,
-    fontStyle: 'italic',
-  },
-  // ✅ NUEVO: Contenedor para los botones
+  // BOTONES MEJORADOS
   buttonsContainer: {
-    marginTop: 10,
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#555',
+    backgroundColor: '#2d2d2d',
   },
   saveButton: {
-    padding: 16,
-    borderRadius: 10,
-    marginBottom: 10,
+    padding: 18,
+    borderRadius: 12,
+    marginBottom: 12,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#555',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 4,
   },
   saveButtonActive: {
     backgroundColor: '#E2991C',
-    borderColor: '#E2991C',
   },
   saveButtonDisabled: {
-    backgroundColor: '#2d2d2d',
+    backgroundColor: '#3a3a3a',
+    borderWidth: 1,
     borderColor: '#555',
   },
   saveButtonText: {
@@ -538,14 +646,15 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     padding: 16,
-    borderRadius: 10,
+    borderRadius: 12,
     alignItems: 'center',
-    backgroundColor: '#2d2d2d',
+    backgroundColor: 'transparent',
     borderWidth: 1,
     borderColor: '#555',
   },
   cancelButtonText: {
     color: '#ccc',
     fontSize: 16,
+    fontWeight: '500',
   },
 });

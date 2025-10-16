@@ -1,23 +1,15 @@
-import { ApolloClient, InMemoryCache, gql, createHttpLink } from '@apollo/client';
+import { ApolloClient, InMemoryCache, createHttpLink, gql } from '@apollo/client';
 import { clientUrl } from '../constants/Urls';
-import { helpers } from '../utils/helpers';
 
 interface Destination {
   id: string;
   name: string;
 }
 
-interface ImageOption {
-  name: string;
-  file: string;
-  fileF: any;
-  base64: string;
-}
-
 interface TourismData {
   acomodacion: string;
   alimentacion: boolean;
-  banner: any;
+  banner: string;
   cupos: string;
   dcto: boolean;
   descPaquete: string;
@@ -30,11 +22,11 @@ interface TourismData {
   dias: string;
   empresa: string;
   entradas: boolean;
-  gallery: any[];
+  gallery: string[];
   hospedaje: boolean;
   ida: any;
   vuelta: any;
-  imagen: any;
+  imagen: string;
   noches: string;
   nombreAuto: string;
   nombreGuia: string;
@@ -109,120 +101,59 @@ export default class TourismServices {
     }
   }
 
-  static async createTourism(data: TourismData): Promise<any> {
+static async createTourism(data: TourismData): Promise<any> {
     console.log("<<<<<<<<<<<<<<<<<<<LO QUE ENTRO AL SERVICIO>>>>>>>>>>>>>>>>>>", data);
     
     const client = createApolloClient();
     
     try {
-      // Función interna para subir imágenes
-      const sendUpload = async (): Promise<{imgPrincipal: string, imgBanner: string, imgGallery: string[]}> => {
-        return new Promise(async (resolve, reject) => {
-          try {
-            console.log('🔄 Subiendo imágenes al servidor...');
-
-            let imgPrincipal = '';
-            let imgBanner = '';
-            let imgGallery: string[] = [];
-
-            // ✅ Subir imagen principal
-            if (data.imagen && data.imagen.file) {
-              console.log('📤 Subiendo imagen principal...');
-              imgPrincipal = await helpers.uploadImages(
-                data.imagen,
-                data.empresa,
-                'turismo',
-                data.nombrePaquete,
-                'principal'
-              );
-              console.log('✅ Imagen principal subida:', imgPrincipal);
-            }
-
-            // ✅ Subir imagen banner
-            if (data.banner && data.banner.file) {
-              console.log('📤 Subiendo imagen banner...');
-              imgBanner = await helpers.uploadImages(
-                data.banner,
-                data.empresa,
-                'turismo',
-                data.nombrePaquete,
-                'banner'
-              );
-              console.log('✅ Imagen banner subida:', imgBanner);
-            }
-
-            // ✅ Subir galería de imágenes
-            if (data.gallery && Array.isArray(data.gallery) && data.gallery.length > 0) {
-              console.log(`📤 Subiendo ${data.gallery.length} imágenes de galería...`);
-              
-              for (let i = 0; i < data.gallery.length; i++) {
-                const galleryItem = data.gallery[i];
-                
-                if (galleryItem && galleryItem.file) {
-                  const galleryImage = await helpers.uploadImages(
-                    galleryItem,
-                    data.empresa,
-                    'turismo',
-                    data.nombrePaquete,
-                    'gallery'
-                  );
-                  
-                  imgGallery.push(galleryImage);
-                  console.log(`✅ Imagen ${i + 1} de galería subida:`, galleryImage);
-                }
-              }
-            }
-
-            const result = {
-              imgPrincipal,
-              imgBanner,
-              imgGallery
-            };
-
-            console.log('✅ Todas las imágenes subidas:', result);
-            resolve(result);
-            
-          } catch (error) {
-            console.error('❌ Error subiendo imágenes:', error);
-            reject(error);
-          }
-        });
-      };
-
-      // Subir imágenes primero
-      console.log('📤 Iniciando subida de imágenes...');
-      const uploadedImages = await sendUpload();
+      console.log('✅ Imágenes ya subidas, procediendo con creación del turismo...');
       
-      console.log('✅ URLs de imágenes subidas:', uploadedImages);
-
-      // ✅✅✅ CORRECCIÓN CRÍTICA: USAR Date.parse() COMO EN EL CÓDIGO ORIGINAL ✅✅✅
+      // ✅ CORRECCIÓN: Procesar fechas correctamente
       console.log('📅 Procesando fechas...');
       console.log('  - ida original:', data.ida, 'tipo:', typeof data.ida);
       console.log('  - vuelta original:', data.vuelta, 'tipo:', typeof data.vuelta);
 
-      // ✅ CORREGIDO: Usar Date.parse() exactamente como en el código JavaScript original
-      const idaTimestamp = Date.parse(data.ida);
-      const vueltaTimestamp = Date.parse(data.vuelta);
+      let idaTimestamp: number;
+      let vueltaTimestamp: number;
 
-      console.log('📅 Fechas después de conversión a timestamp:');
-      console.log('  - ida timestamp:', idaTimestamp);
-      console.log('  - vuelta timestamp:', vueltaTimestamp);
+      if (data.ida && typeof data.ida === 'object' && 'format' in data.ida) {
+        // Si es objeto moment
+        idaTimestamp = (data.ida as any).valueOf();
+      } else if (data.ida instanceof Date) {
+        // Si es Date
+        idaTimestamp = data.ida.getTime();
+      } else {
+        // Si ya es timestamp
+        idaTimestamp = Number(data.ida);
+      }
 
-      // ✅ Asegurar que los precios sean números
-      const precioNumero = data.precio;
-      const precioNinoNumero = data.precioNino;
-      const precioDctoNumero = data.precioDcto;
+      if (data.vuelta && typeof data.vuelta === 'object' && 'format' in data.vuelta) {
+        vueltaTimestamp = (data.vuelta as any).valueOf();
+      } else if (data.vuelta instanceof Date) {
+        vueltaTimestamp = data.vuelta.getTime();
+      } else {
+        vueltaTimestamp = Number(data.vuelta);
+      }
 
-      console.log('💰 Precios convertidos:');
-      console.log('  - precio:', precioNumero);
-      console.log('  - precioNino:', precioNinoNumero);
-      console.log('  - precioDcto:', precioDctoNumero);
+      console.log('📅 Timestamps finales:');
+      console.log('  - ida:', idaTimestamp);
+      console.log('  - vuelta:', vueltaTimestamp);
 
-      // ✅ CONSTRUIR OBJETO PARA GRAPHQL (EXACTO COMO CÓDIGO ANTERIOR)
+      // ✅✅✅ CORRECCIÓN CRÍTICA: LIMPIAR LOS OBJETOS DE ORIGEN (REMOVER ADDRESS)
+      const origenLimpio = Array.isArray(data.places) ? data.places.map(place => ({
+        name: place.name || '',
+        latitude: place.latitude || 0,
+        longitude: place.longitude || 0
+        // ❌ REMOVER: address: place.address (no está en el schema)
+      })) : [];
+
+      console.log('📍 Origen limpio (sin address):', origenLimpio);
+
       const inputData = {
         acomodacion: data.acomodacion,
         alimentacion: data.alimentacion,
-        banner: uploadedImages.imgBanner,
+        banner: data.banner,
         cupos: parseInt(data.cupos) || 0,
         dcto: data.dcto,
         descripcion: data.descPaquete,
@@ -236,21 +167,20 @@ export default class TourismServices {
         disponibles: parseInt(data.cupos) || 0,
         empresa: data.empresa,
         entradas: data.entradas,
-        gallery: uploadedImages.imgGallery,
+        gallery: data.gallery,
         hospedaje: data.hospedaje,
-        // ✅✅✅ LÍNEAS CRÍTICAS CORREGIDAS - USAR Date.parse() COMO EN JS ORIGINAL ✅✅✅
-        ida: `${idaTimestamp}`,        // ← DEBE ser string del timestamp
-        vuelta: `${vueltaTimestamp}`,  // ← DEBE ser string del timestamp
-        imagen: uploadedImages.imgPrincipal,
+        ida: `${idaTimestamp}`,
+        vuelta: `${vueltaTimestamp}`,
+        imagen: data.imagen,
         noches: parseInt(data.noches) || 0,
         nombre: data.nombreAuto,
         nombreGuia: data.nombreGuia,
         nombrepaq: data.nombrePaquete,
-        origen: data.places,
+        origen: origenLimpio, // ✅ Usar el origen limpio
         placa: data.placa,
-        precio: precioNumero,
-        precioNino: precioNinoNumero,
-        precioDcto: precioDctoNumero,
+        precio: data.precio,
+        precioNino: data.precioNino,
+        precioDcto: data.precioDcto,
         tipo: data.transpote,
         tiquetes: data.tiquetes,
         traslado: data.traslado,
@@ -262,7 +192,7 @@ export default class TourismServices {
       console.log("🐛 Verificación FINAL de tipos:");
       console.log("  - ida:", typeof inputData.ida, "=", inputData.ida);
       console.log("  - vuelta:", typeof inputData.vuelta, "=", inputData.vuelta);
-      console.log("  - precio:", typeof inputData.precio, "=", inputData.precio);
+      console.log("  - origen:", Array.isArray(inputData.origen) ? inputData.origen.length : 'no array');
 
       // ✅ ENVIAR DATOS A GRAPHQL
       const response = await client.mutate({
@@ -294,9 +224,17 @@ export default class TourismServices {
       
       if (error.networkError) {
         console.error("🔌 Error de red:", error.networkError);
+        if (error.networkError.result) {
+          console.error("🔌 Detalles del error:", JSON.stringify(error.networkError.result, null, 2));
+        }
       }
       if (error.graphQLErrors && error.graphQLErrors.length > 0) {
-        console.error("📊 Errores GraphQL:", error.graphQLErrors);
+        console.error("📊 Errores GraphQL:");
+        error.graphQLErrors.forEach((graphQLError: any, index: number) => {
+          console.error(`📊 Error ${index + 1}:`, graphQLError.message);
+          console.error(`📊 Locations:`, graphQLError.locations);
+          console.error(`📊 Path:`, graphQLError.path);
+        });
       }
       
       throw error;
