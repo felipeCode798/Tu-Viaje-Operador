@@ -15,6 +15,7 @@
     "@codler/react-native-keyboard-aware-scroll-view": "^2.0.1",
     "@expo/vector-icons": "14.1.0",
     "@react-native-async-storage/async-storage": "2.1.2",
+    "@react-native-community/datetimepicker": "^8.4.5",
     "@react-native-picker/picker": "^2.11.2",
     "@react-navigation/bottom-tabs": "^7.3.10",
     "@react-navigation/elements": "^2.3.8",
@@ -78,6 +79,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
+    "@react-native-community/cli": "^20.0.2",
     "@types/form-data": "^2.2.1",
     "@types/moment": "^2.11.29",
     "@types/react": "~19.0.10",

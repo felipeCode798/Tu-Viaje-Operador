@@ -30,7 +30,6 @@ const CardNoConfirmedProgramming: React.FC<CardNoConfirmedProgrammingProps> = ({
   const [activeModalTour, setActiveModalTour] = useState(false);
 
   const handleConfirm = (item: Programming | Tourism) => {
-    console.log('Confirmar', item);
     setActiveModalTour(true);
   };
 

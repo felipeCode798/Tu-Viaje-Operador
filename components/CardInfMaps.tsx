@@ -64,8 +64,6 @@ const CardInfMaps: React.FC<CardInfMapsProps> = ({ _onRefresh }) => {
   const [statusFinal] = useState("Finalizado");
   const [statusCancelled] = useState("Cancelado");
 
-  console.log("\n-------------------------->props desde el hook <==============================================", infoItems);
-
   return (
     <View style={styles.card}>
       <View style={styles.cardIcon}>

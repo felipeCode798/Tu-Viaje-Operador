@@ -568,7 +568,7 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
                   <Text style={styles.actionButtonText}>Mapa</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity
+                {/* <TouchableOpacity
                   style={[styles.actionButton, styles.statusButton]}
                   onPress={handleStatusPress}
                 >
@@ -576,17 +576,19 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
                   <Text style={styles.actionButtonText}>
                     {(item as any).statusService === 'Confirmado' ? 'Cambiar Estado' : 'Confirmar'}
                   </Text>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
               </View>
             )}
 
             // Para empresas, muestra solo información:
             {userType === 'Empresa' && (
-              <View style={styles.infoContainer}>
-                <Text style={styles.infoText}>
-                  Para más acciones, contacta al conductor asignado.
-                </Text>
-              </View>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.mapButton]}
+                onPress={handleOpenMap}
+              >
+                <MaterialIcons name="map" size={20} color="white" />
+                <Text style={styles.actionButtonText}>Mapa</Text>
+              </TouchableOpacity>
             )}
           </View>
         )}
@@ -605,7 +607,6 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
       <ModalMaps
         showModal={showMapModal}
         closeModal={() => {
-          console.log('🔒 Cerrando modal de mapa desde ServiceList');
           setShowMapModal(false);
         }}
         coords={getCoordinatesForMap()}
@@ -613,6 +614,8 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
         itemData={item}
         onGoToChat={handleGoToChat}
         onViewDetails={handleViewDetails}
+        onStatusChange={onStatusChange} // ← Añadir esta prop
+        userType={userType} // ← Añadir esta prop
       />
     </View>
   );

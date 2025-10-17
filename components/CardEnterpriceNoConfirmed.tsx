@@ -52,7 +52,6 @@ const CardEnterpriceNoConfirmed = ({
   const [noConfirmados, setNoConfirmados] = useState<ProgrammingItem[]>([]);
 
   useEffect(() => {
-    console.log('PROGRAMMING', programming);
     let conf: ProgrammingItem[] = [];
 
     programming.forEach((item) => {
@@ -133,8 +132,7 @@ const CardEnterpriceNoConfirmed = ({
               ) : (
                 <TouchableOpacity
                   key={item._id}
-                  onPress={() => {
-                    console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!HOLA AQUI ESTOY" , programming);          
+                  onPress={() => {  
                     infoItemsTurims(item);
                     currrentCoordsTurism(item);
                     ModalPermissions();

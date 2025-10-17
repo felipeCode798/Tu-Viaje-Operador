@@ -44,8 +44,10 @@ interface ModalMapsProps {
   coords: Point[];
   programmingId?: string;
   itemData?: Programming | Tourism;
-  onGoToChat?: () => void; // Nueva prop para navegar al chat
-  onViewDetails?: () => void; // Nueva prop para ver detalles
+  onGoToChat?: () => void;
+  onViewDetails?: () => void;
+  onStatusChange?: (id: string, newStatus: string, type: 'programming' | 'tourism') => void;
+  userType?: 'Conductor' | 'Empresa' | null;
 }
 
 const ModalMaps: React.FC<ModalMapsProps> = ({ 
@@ -55,7 +57,9 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
   programmingId, 
   itemData,
   onGoToChat,
-  onViewDetails
+  onViewDetails,
+  onStatusChange,
+  userType = 'Conductor'
 }) => {
   const [region, setRegion] = useState({
     latitude: 4.7109886,
@@ -106,7 +110,6 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
   };
 
   const calculateRegion = () => {
-    // Filtrar coordenadas válidas antes de calcular la región
     const validCoords = routePoints.filter(point => 
       point && 
       typeof point.latitude === 'number' && 
@@ -149,8 +152,6 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
     const deltaLat = Math.max((maxLat - minLat) * 1.5, 0.01);
     const deltaLng = Math.max((maxLng - minLng) * 1.5, 0.01);
 
-    console.log('Calculated region:', { midLat, midLng, deltaLat, deltaLng });
-
     setRegion({
       latitude: midLat,
       longitude: midLng,
@@ -159,6 +160,157 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
     });
   };
 
+  // Función para manejar cambios de estado desde el modal
+  const handleStatusChange = async (newStatus: string) => {
+    if (!itemData?._id) {
+      Alert.alert('Error', 'No se pudo identificar el servicio');
+      return;
+    }
+
+    const serviceType = 'tour' in itemData ? 'tourism' : 'programming';
+    
+    let confirmationMessage = '';
+    let confirmText = '';
+
+    switch (newStatus) {
+      case 'Progreso':
+        confirmationMessage = '¿Estás seguro de que quieres iniciar el viaje?';
+        confirmText = 'Iniciar viaje';
+        break;
+      case 'Finalizado':
+        confirmationMessage = '¿Estás seguro de que quieres finalizar el viaje?';
+        confirmText = 'Finalizar viaje';
+        break;
+      case 'Cancelado':
+        confirmationMessage = '¿Estás seguro de que quieres cancelar el viaje?';
+        confirmText = 'Cancelar viaje';
+        break;
+      default:
+        confirmationMessage = `¿Estás seguro de que quieres cambiar el estado a ${newStatus}?`;
+        confirmText = 'Cambiar estado';
+    }
+
+    Alert.alert(
+      'Confirmar cambio de estado',
+      confirmationMessage,
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: confirmText,
+          onPress: async () => {
+            try {
+              if (onStatusChange) {
+                await onStatusChange(itemData._id, newStatus, serviceType);
+              } else {
+                console.log(`Cambiando estado a: ${newStatus} para servicio: ${itemData._id}`);
+                // Aquí podrías llamar directamente al servicio si no tienes acceso a onStatusChange
+              }
+              
+              Alert.alert('Éxito', `Estado cambiado a ${newStatus} correctamente`);
+              
+              setTimeout(() => {
+                closeModal();
+              }, 1500);
+              
+            } catch (error) {
+              console.error('Error al cambiar estado:', error);
+              Alert.alert('Error', 'No se pudo cambiar el estado del servicio');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // Función para renderizar el botón de estado según el rol y estado del servicio
+  const renderStatusButton = () => {
+    if (!itemData) return null;
+
+    const currentStatus = itemData.status;
+    const currentStatusService = (itemData as any).statusService;
+    const isConfirmed = currentStatusService === 'Confirmado';
+
+    // Para rol Conductor
+    if (userType === 'Conductor') {
+      if (!isConfirmed) {
+        return (
+          <TouchableOpacity style={[styles.statusButton, styles.disabledButton]} disabled>
+            <Text style={styles.disabledButtonText}>Esperando confirmación</Text>
+          </TouchableOpacity>
+        );
+      }
+
+      switch (currentStatus?.toLowerCase()) {
+        case 'pendiente':
+          return (
+            <TouchableOpacity 
+              style={[styles.statusButton, styles.startButton]}
+              onPress={() => handleStatusChange('Progreso')}
+            >
+              <MaterialIcons name="play-arrow" size={20} color="white" />
+              <Text style={styles.statusButtonText}>Iniciar Viaje</Text>
+            </TouchableOpacity>
+          );
+        case 'progreso':
+        case 'iniciado':
+          return (
+            <TouchableOpacity 
+              style={[styles.statusButton, styles.finishButton]}
+              onPress={() => handleStatusChange('Finalizado')}
+            >
+              <MaterialIcons name="check-circle" size={20} color="white" />
+              <Text style={styles.statusButtonText}>Finalizar Viaje</Text>
+            </TouchableOpacity>
+          );
+        case 'finalizado':
+        case 'cancelado':
+          return (
+            <TouchableOpacity style={[styles.statusButton, styles.disabledButton]} disabled>
+              <Text style={styles.disabledButtonText}>
+                {currentStatus === 'finalizado' ? 'Viaje Finalizado' : 'Viaje Cancelado'}
+              </Text>
+            </TouchableOpacity>
+          );
+        default:
+          return (
+            <TouchableOpacity style={[styles.statusButton, styles.disabledButton]} disabled>
+              <Text style={styles.disabledButtonText}>Estado no disponible</Text>
+            </TouchableOpacity>
+          );
+      }
+    }
+
+    // Para rol Empresa - SIEMPRE mostrar Cancelar Viaje si no está finalizado o cancelado
+    if (userType === 'Empresa') {
+      const canCancel = currentStatus === 'Pendiente' || currentStatus === 'Progreso' || currentStatus === 'Iniciado';
+      
+      if (canCancel) {
+        return (
+          <TouchableOpacity 
+            style={[styles.statusButton, styles.cancelButton]}
+            onPress={() => handleStatusChange('Cancelado')}
+          >
+            <MaterialIcons name="cancel" size={20} color="white" />
+            <Text style={styles.statusButtonText}>Cancelar viaje</Text>
+          </TouchableOpacity>
+        );
+      } else {
+        return (
+          <TouchableOpacity style={[styles.statusButton, styles.disabledButton]} disabled>
+            <Text style={styles.disabledButtonText}>
+              {currentStatus === 'finalizado' ? 'Viaje finalizado' : 'Viaje cancelado'}
+            </Text>
+          </TouchableOpacity>
+        );
+      }
+    }
+
+    return null;
+  };
+  
   const handleMarkerPress = async (point: Point) => {
     setSelectedPoint(point);
     
@@ -185,68 +337,16 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
     }
   };
 
-  const startRoute = async () => {
-    if (!programmingId) {
-      Alert.alert('Error', 'No se puede iniciar la ruta sin ID de programación');
-      return;
+  const handleGoToChat = () => {
+    console.log('🔄 Botón de chat presionado');
+    if (onGoToChat) {
+      console.log('✅ Ejecutando onGoToChat callback');
+      onGoToChat();
+    } else {
+      console.log('❌ onGoToChat callback no definido');
+      Alert.alert('Error', 'La funcionalidad de chat no está configurada correctamente');
     }
-
-    try {
-      const result = await WayRouteServices.setStatusRoute(programmingId, 'started');
-      if (result === 'SUCCESS') {
-        setRouteStarted(true);
-        Alert.alert('Éxito', 'Ruta iniciada correctamente');
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Error al iniciar la ruta');
-    }
-  };
-
-  const finishRoute = async () => {
-    if (!programmingId) return;
-
-    try {
-      const result = await WayRouteServices.setStatusRoute(programmingId, 'finished');
-      if (result === 'SUCCESS') {
-        setRouteStarted(false);
-        Alert.alert('Éxito', 'Ruta finalizada correctamente');
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Error al finalizar la ruta');
-    }
-  };
-
-  const sendPositionUpdate = async () => {
-    if (!userLocation || !routeStarted) return;
-
-    try {
-      await WayRouteServices.sendPositionDriver(
-        userLocation.latitude,
-        userLocation.longitude
-      );
-    } catch (error) {
-      console.error('Error sending position:', error);
-    }
-  };
-
-  // Enviar posición cada 30 segundos si la ruta está iniciada
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    
-    if (routeStarted && userLocation) {
-      interval = setInterval(() => {
-        sendPositionUpdate();
-      }, 30000);
-    }
-
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [routeStarted, userLocation]);
-
-  const handleSavePlaces = (newPlaces: Point[]) => {
-    setRoutePoints([...routePoints, ...newPlaces]);
-    setShowPlacesModal(false);
+    closeModal();
   };
 
   const formatTime = (timestamp: string | number): string => {
@@ -299,73 +399,6 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
     }
   };
 
-  const renderPassengerCard = (passenger: ServiceByPlace) => (
-    <View key={passenger.id} style={styles.passengerCard}>
-      <View style={styles.passengerHeader}>
-        <View style={styles.passengerAvatar}>
-          <MaterialIcons name="person" size={20} color="#FF9500" />
-        </View>
-        <View style={styles.passengerInfo}>
-          <Text style={styles.passengerName}>
-            {passenger.passenger.names} {passenger.passenger.lastName}
-          </Text>
-          <Text style={styles.passengerPhone}>
-            {passenger.passenger.phone}
-          </Text>
-        </View>
-        <TouchableOpacity
-          style={[
-            styles.statusButton,
-            { backgroundColor: passenger.pickup ? '#4CAF50' : '#FF9500' }
-          ]}
-          onPress={() => handlePassengerStatus(passenger)}
-        >
-          <Text style={styles.statusButtonText}>
-            {passenger.pickup ? 'Recogido' : 'Recoger'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-
-  const handlePassengerStatus = async (passenger: ServiceByPlace) => {
-    try {
-      const newStatus = passenger.pickup ? 'pending' : 'picked';
-      await WayRouteServices.setStatusUser(passenger.id, newStatus);
-      
-      // Actualizar la lista local
-      setPassengers(prev => prev.map(p => 
-        p.id === passenger.id ? { ...p, pickup: !p.pickup } : p
-      ));
-      
-    } catch (error) {
-      Alert.alert('Error', 'Error al actualizar el estado del pasajero');
-    }
-  };
-
-  const handleGoToChat = () => {
-    console.log('🔄 Botón de chat presionado');
-    if (onGoToChat) {
-      console.log('✅ Ejecutando onGoToChat callback');
-      onGoToChat();
-    } else {
-      console.log('❌ onGoToChat callback no definido');
-      Alert.alert('Error', 'La funcionalidad de chat no está configurada correctamente');
-    }
-    closeModal(); // Cerrar el modal después de ir al chat
-  };
-
-  const handleViewDetails = () => {
-    console.log('🔄 Botón de detalles presionado');
-    if (onViewDetails) {
-      console.log('✅ Ejecutando onViewDetails callback');
-      onViewDetails();
-    } else {
-      console.log('❌ onViewDetails callback no definido');
-      Alert.alert('Error', 'La funcionalidad de detalles no está configurada correctamente');
-    }
-  };
-
   return (
     <Modal 
       animationType="slide" 
@@ -374,21 +407,7 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
       statusBarTranslucent
     >
       <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={closeModal}>
-            <MaterialIcons name="arrow-back" size={24} color="white" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Programación</Text>
-          <TouchableOpacity 
-            style={styles.locationButton} 
-            onPress={getCurrentLocation}
-          >
-            <MaterialIcons name="my-location" size={24} color="white" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Mapa */}
+        {/* Mapa (sin cambios) */}
         <View style={styles.mapContainer}>
           <MapView
             style={styles.map}
@@ -398,7 +417,7 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
             showsMyLocationButton={false}
             onRegionChangeComplete={setRegion}
           >
-            {/* Marcadores de la ruta - Validación mejorada */}
+            {/* Marcadores de la ruta */}
             {routePoints
               .filter(point => 
                 point && 
@@ -409,24 +428,20 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
                 point.latitude !== 0 && 
                 point.longitude !== 0
               )
-              .map((point, index) => {
-                console.log('Rendering marker for point:', point);
-                return (
-                  <Marker
-                    key={`route-${index}-${point.latitude}-${point.longitude}`}
-                    coordinate={{
-                      latitude: Number(point.latitude),
-                      longitude: Number(point.longitude),
-                    }}
-                    title={point.name || `Punto ${index + 1}`}
-                    description={`${point.latitude.toFixed(6)}, ${point.longitude.toFixed(6)}`}
-                    onPress={() => handleMarkerPress(point)}
-                    pinColor={index === 0 ? '#4CAF50' : index === routePoints.length - 1 ? '#F44336' : '#FF9500'}
-                  />
-                );
-              })}
+              .map((point, index) => (
+                <Marker
+                  key={`route-${index}-${point.latitude}-${point.longitude}`}
+                  coordinate={{
+                    latitude: Number(point.latitude),
+                    longitude: Number(point.longitude),
+                  }}
+                  title={point.name || `Punto ${index + 1}`}
+                  description={`${point.latitude.toFixed(6)}, ${point.longitude.toFixed(6)}`}
+                  onPress={() => handleMarkerPress(point)}
+                  pinColor={index === 0 ? '#4CAF50' : index === routePoints.length - 1 ? '#F44336' : '#FF9500'}
+                />
+              ))}
 
-            {/* Ubicación del usuario - Validación mejorada */}
             {userLocation && 
              typeof userLocation.latitude === 'number' && 
              typeof userLocation.longitude === 'number' &&
@@ -443,7 +458,6 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
               />
             )}
 
-            {/* Línea de ruta - Validación mejorada */}
             {routePoints.length > 1 && (
               <Polyline
                 coordinates={routePoints
@@ -468,12 +482,15 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
           </MapView>
         </View>
 
-        {/* Panel de información inferior similar a la imagen */}
+        {/* Panel de información inferior */}
         <View style={styles.bottomInfoPanel}>
-          {/* Información del viaje */}
-          <View style={styles.tripInfoContainer}>
+
+          <View style={styles.panelHeader}>
+            <TouchableOpacity style={styles.backButton} onPress={closeModal}>
+              <MaterialIcons name="arrow-back" size={24} color="white" />
+            </TouchableOpacity>
+            
             <View style={styles.locationBadge}>
-              // quiero que el texto ponga el nombre del lugar de origen y destino del viaje
               <Text style={styles.locationText}>
                 {itemData && 'tour' in itemData 
                   ? `${itemData.tour?.origin?.name || 'Origen'} → ${itemData.tour?.destination?.name || 'Destino'}` 
@@ -481,18 +498,27 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
               </Text>
             </View>
             
+            <TouchableOpacity 
+              style={styles.locationButton} 
+              onPress={getCurrentLocation}
+            >
+              <MaterialIcons name="my-location" size={24} color="white" />
+            </TouchableOpacity>
+          </View>
+          {/* Información del viaje */}
+          <View style={styles.tripInfoContainer}>     
             <View style={styles.tripDetails}>
               <View style={styles.tripDetailRow}>
                 <View style={styles.tripDetailItem}>
                   <Text style={styles.tripDetailLabel}>Fecha de salida</Text>
                   <Text style={styles.tripDetailValue}>
-                    {itemData && 'start' in itemData ? formatDate(itemData.start) : '04/15/22'}
+                    {itemData && 'start' in itemData ? formatDate(itemData.start) : 'N/A'}
                   </Text>
                 </View>
                 <View style={styles.tripDetailItem}>
                   <Text style={styles.tripDetailLabel}>Lugar de recogida</Text>
                   <Text style={styles.tripDetailValue}>
-                    {itemData && 'tour' in itemData ? itemData.tour?.origin?.name || 'Iglesia, Popayán' : 'Iglesia, Popayán'}
+                    {itemData && 'tour' in itemData ? itemData.tour?.origin?.name || 'N/A' : 'N/A'}
                   </Text>
                 </View>
               </View>
@@ -501,34 +527,32 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
                 <View style={styles.tripDetailItem}>
                   <Text style={styles.tripDetailLabel}>Fecha llegada</Text>
                   <Text style={styles.tripDetailValue}>
-                    {itemData && 'end' in itemData ? formatDate(itemData.end) : '07/15/22'}
+                    {itemData && 'end' in itemData ? formatDate(itemData.end) : 'N/A'}
                   </Text>
                 </View>
                 <View style={styles.tripDetailItem}>
                   <Text style={styles.tripDetailLabel}>Lugar de llegada</Text>
                   <Text style={styles.tripDetailValue}>
-                    {itemData && 'tour' in itemData ? itemData.tour?.destination?.name || 'C.C Jardín Plaza, Cali' : 'C.C Jardín Plaza, Cali'}
+                    {itemData && 'tour' in itemData ? itemData.tour?.destination?.name || 'N/A' : 'N/A'}
                   </Text>
                 </View>
               </View>
             </View>
           </View>
 
-          {/* Botones de acción */}
+          {/* Botones de acción actualizados */}
           <View style={styles.actionButtonsContainer}>
             <TouchableOpacity style={styles.chatButton} onPress={handleGoToChat}>
               <MaterialIcons name="chat" size={20} color="white" />
               <Text style={styles.chatButtonText}>Ir al chat grupal</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity style={styles.detailsButton} onPress={handleViewDetails}>
-              <Text style={styles.detailsButtonText}>Ver detalle completo</Text>
-              <MaterialIcons name="chevron-right" size={20} color="#FF9500" />
-            </TouchableOpacity>
+            {/* Botón de estado dinámico */}
+            {renderStatusButton()}
           </View>
         </View>
 
-        {/* Panel de pasajeros cuando se selecciona un marcador */}
+        {/* Resto del código sin cambios... */}
         {selectedPoint && (
           <View style={styles.passengersPanel}>
             <View style={styles.panelHeader}>
@@ -545,7 +569,23 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
             ) : (
               <ScrollView style={styles.passengersList}>
                 {passengers.length > 0 ? (
-                  passengers.map(renderPassengerCard)
+                  passengers.map((passenger) => (
+                    <View key={passenger.id} style={styles.passengerCard}>
+                      <View style={styles.passengerHeader}>
+                        <View style={styles.passengerAvatar}>
+                          <MaterialIcons name="person" size={20} color="#FF9500" />
+                        </View>
+                        <View style={styles.passengerInfo}>
+                          <Text style={styles.passengerName}>
+                            {passenger.passenger.names} {passenger.passenger.lastName}
+                          </Text>
+                          <Text style={styles.passengerPhone}>
+                            {passenger.passenger.phone}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  ))
                 ) : (
                   <Text style={styles.noPassengersText}>
                     No hay pasajeros en este punto
@@ -555,27 +595,6 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
             )}
           </View>
         )}
-
-        {/* Modal para agregar lugares */}
-        <Modal 
-          visible={showPlacesModal} 
-          animationType="slide"
-          onRequestClose={() => setShowPlacesModal(false)}
-        >
-          <View style={styles.placesModalContainer}>
-            <View style={styles.placesModalHeader}>
-              <Text style={styles.placesModalTitle}>Agregar Punto de Ruta</Text>
-              <TouchableOpacity onPress={() => setShowPlacesModal(false)}>
-                <MaterialIcons name="close" size={24} color="black" />
-              </TouchableOpacity>
-            </View>
-            <GooglePlacesComponent
-              savePlaces={handleSavePlaces}
-              closeModal={() => setShowPlacesModal(false)}
-              cantElements={1}
-            />
-          </View>
-        </Modal>
       </View>
     </Modal>
   );
@@ -595,8 +614,14 @@ const styles = StyleSheet.create({
     paddingBottom: 15,
     backgroundColor: '#1a1a1a',
   },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
   backButton: {
     padding: 8,
+    marginRight: 10,
   },
   headerTitle: {
     fontSize: 18,
@@ -612,7 +637,6 @@ const styles = StyleSheet.create({
   map: {
     flex: 1,
   },
-  // Nuevos estilos para el panel inferior
   bottomInfoPanel: {
     backgroundColor: '#1a1a1a',
     paddingHorizontal: 20,
@@ -673,10 +697,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  detailsButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#FF9500',
+  statusButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -684,12 +705,28 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     gap: 8,
   },
-  detailsButtonText: {
-    color: '#FF9500',
+  startButton: {
+    backgroundColor: '#4CAF50',
+  },
+  finishButton: {
+    backgroundColor: '#2196F3',
+  },
+  cancelButton: {
+    backgroundColor: '#F44336',
+  },
+  disabledButton: {
+    backgroundColor: '#666',
+  },
+  statusButtonText: {
+    color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
   },
-  // Estilos existentes para el panel de pasajeros
+  disabledButtonText: {
+    color: '#CCC',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
   passengersPanel: {
     position: 'absolute',
     bottom: 280,
@@ -747,40 +784,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#CCC',
   },
-  statusButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 15,
-  },
-  statusButtonText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
   noPassengersText: {
     color: '#999',
     textAlign: 'center',
     fontSize: 14,
     marginTop: 20,
-  },
-  placesModalContainer: {
-    flex: 1,
-    backgroundColor: 'white',
-    paddingTop: 50,
-  },
-  placesModalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  placesModalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: 'black',
   },
 });
 

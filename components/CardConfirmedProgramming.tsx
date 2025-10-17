@@ -40,12 +40,10 @@ const CardConfirmedProgramming: React.FC<CardConfirmedProgrammingProps> = ({
   const [activeModalTour, setActiveModalTour] = useState(false);
 
   const handleConfirm = (item: Programming | Tourism) => {
-    console.log('Confirmar', item);
     setActiveModalTour(true);
   };
 
   const handleReject = (item: Programming | Tourism) => {
-    console.log('Rechazar', item);
     ModalPermissions();
     infoItems(item);
     currentCoords(item);
@@ -150,7 +148,6 @@ const CardConfirmedProgramming: React.FC<CardConfirmedProgrammingProps> = ({
                 onPress={() => {
                   const newIndex = activeIndex === index ? null : index;
                   setActiveIndex(newIndex);
-                  console.log('Active Index:', newIndex);
                 }}>
                 <ConfirmadosList
                   typeItem={item.tipoProducto}

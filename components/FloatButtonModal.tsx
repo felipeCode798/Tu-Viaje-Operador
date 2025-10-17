@@ -18,8 +18,6 @@ const FloatButtonModal: React.FC = () => {
 
   const handleCreateProgramming = () => {
     setModalVisible(false);
-    console.log('📍 Navegando a CreateProgramming');
-    console.log('👤 Pasando usuario:', user?._id || user?.id);
     
     // ✅ Pasar el usuario como parámetro
     router.push({
@@ -33,7 +31,6 @@ const FloatButtonModal: React.FC = () => {
 
   const handleCreateTourism = () => {
     setModalVisible(false);
-    console.log('📍 Navegando a CreateTourisms');
     
     router.push({
       pathname: '/CreateTourisms',
@@ -43,8 +40,6 @@ const FloatButtonModal: React.FC = () => {
       }
     });
   };
-
-  console.log('🎯 FloatButtonModal rendered - Usuario ID:', user?._id || user?.id);
 
   return (
     <View style={styles.container}>

@@ -12,3 +12,7 @@
 -keep class com.facebook.react.turbomodule.** { *; }
 
 # Add any project specific keep options here:
+
+# React Native DateTime Picker
+-keep class com.reactcommunity.rndatetimepicker.** { *; }
+-keep class com.facebook.react.turbomodule.core.interfaces.** { *; }

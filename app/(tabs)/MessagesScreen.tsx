@@ -9,6 +9,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Linking,
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import ChatServices from '../../services/ChatServices';
@@ -29,16 +30,69 @@ interface ServiceItem {
   destino?: { name: string };
 }
 
+interface Passenger {
+  _id: string;
+  cel: string | null;
+  phone?: string;
+  names: string;
+  lastnames: string;
+}
+
 const MessagesScreen: React.FC = () => {
   const { user, userType } = useAuth();
   const [mergeData, setMergeData] = useState<ServiceItem[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [passengers, setPassengers] = useState<any[]>([]);
+  const [passengers, setPassengers] = useState<Passenger[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [selectedService, setSelectedService] = useState<ServiceItem | null>(null);
 
-  console.log('User en MessagesScreen:', user);
+  // Función para obtener cualquier número disponible
+  const getAnyPhoneNumber = (passenger: Passenger): string | null => {
+    // Usar phone primero (porque sabemos que tiene datos), luego cel
+    return passenger.phone || passenger.cel || null;
+  };
+
+  // Función para abrir WhatsApp
+  const openWhatsApp = (passenger: Passenger) => {
+    const phoneNumber = getAnyPhoneNumber(passenger);
+    
+    if (!phoneNumber) {
+      Alert.alert('Error', 'No hay número de contacto disponible para este pasajero');
+      return;
+    }
+
+    // Limpiar el número (remover espacios, guiones, etc.)
+    const cleanNumber = phoneNumber.replace(/\D/g, '');
+    
+    // Verificar si el número tiene código de país, si no, agregar +57 para Colombia
+    let whatsappNumber = cleanNumber;
+    if (!whatsappNumber.startsWith('+')) {
+      if (whatsappNumber.startsWith('57')) {
+        whatsappNumber = `+${whatsappNumber}`;
+      } else {
+        whatsappNumber = `+57${whatsappNumber}`;
+      }
+    }
+
+    const message = `Hola ${passenger.names} ${passenger.lastnames}, te contacto desde el servicio de transporte.`;
+    const url = `whatsapp://send?phone=${whatsappNumber}&text=${encodeURIComponent(message)}`;
+
+    Linking.canOpenURL(url)
+      .then((supported) => {
+        if (supported) {
+          return Linking.openURL(url);
+        } else {
+          // Si WhatsApp no está instalado, abrir en el navegador
+          const webUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+          return Linking.openURL(webUrl);
+        }
+      })
+      .catch((err) => {
+        console.error('Error abriendo WhatsApp:', err);
+        Alert.alert('Error', 'No se pudo abrir WhatsApp. Verifica que esté instalado.');
+      });
+  };
 
   // Cargar datos al iniciar
   useEffect(() => {
@@ -284,35 +338,51 @@ const MessagesScreen: React.FC = () => {
             ))}
           </View>
         )}
-
-        {/* Modal de Pasajeros (simulado - necesitarías implementar el modal real) */}
-        {/* <ModalListPassagers
-          visible={showModal}
-          onClose={() => setShowModal(false)}
-          passengers={passengers}
-          service={selectedService}
-        /> */}
       </ScrollView>
 
-      {/* Modal simplificado para mostrar pasajeros */}
+      {/* Modal de Pasajeros */}
       {showModal && (
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Pasajeros del Servicio</Text>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Pasajeros del Servicio</Text>
+              <TouchableOpacity onPress={() => setShowModal(false)}>
+                <MaterialIcons name="close" size={24} color="#999" />
+              </TouchableOpacity>
+            </View>
+            
             <ScrollView style={styles.passengersList}>
               {passengers.length === 0 ? (
                 <Text style={styles.noPassengers}>No hay pasajeros registrados</Text>
               ) : (
-                passengers.map((passenger, index) => (
-                  <View key={passenger._id || index} style={styles.passengerItem}>
-                    <Text style={styles.passengerName}>
-                      {passenger.names} {passenger.lastnames}
-                    </Text>
-                    <Text style={styles.passengerPhone}>{passenger.phone || passenger.cel}</Text>
-                  </View>
-                ))
+                passengers.map((passenger, index) => {
+                  const phoneNumber = getAnyPhoneNumber(passenger);
+                  
+                  return (
+                    <TouchableOpacity
+                      key={passenger._id || index}
+                      style={styles.passengerItem}
+                      onPress={() => openWhatsApp(passenger)}
+                    >
+                      <View style={styles.passengerInfo}>
+                        <Text style={styles.passengerName}>
+                          {passenger.names} {passenger.lastnames}
+                        </Text>
+                        <View style={styles.phoneContainer}>
+                          <MaterialIcons name="phone" size={16} color="#FF9500" />
+                          <Text style={styles.passengerPhone}>
+                            {phoneNumber || 'Sin número'}
+                          </Text>
+
+                        </View>
+                      </View>
+                      <MaterialIcons name="chat" size={20} color="#25D366" />
+                    </TouchableOpacity>
+                  );
+                })
               )}
             </ScrollView>
+            
             <TouchableOpacity 
               style={styles.closeButton}
               onPress={() => setShowModal(false)}
@@ -479,12 +549,16 @@ const styles = StyleSheet.create({
     width: '100%',
     maxHeight: '80%',
   },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: 'white',
-    marginBottom: 15,
-    textAlign: 'center',
   },
   passengersList: {
     maxHeight: 300,
@@ -494,6 +568,12 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 10,
     marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  passengerInfo: {
+    flex: 1,
   },
   passengerName: {
     fontSize: 16,
@@ -501,9 +581,18 @@ const styles = StyleSheet.create({
     color: 'white',
     marginBottom: 5,
   },
+  phoneContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   passengerPhone: {
     fontSize: 14,
     color: '#FF9500',
+    marginLeft: 5,
+    marginRight: 8,
+  },
+  whatsappIcon: {
+    marginLeft: 5,
   },
   noPassengers: {
     color: '#999',

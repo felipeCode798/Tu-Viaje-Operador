@@ -26,7 +26,6 @@ export default class BarcodeScanner extends React.Component<BarcodeScannerProps,
   };
 
   async componentDidMount() {
-    console.log('entre barcode');
     this.getPermissionsAsync();
   }
 
@@ -44,7 +43,6 @@ export default class BarcodeScanner extends React.Component<BarcodeScannerProps,
     const { type, data } = scanningResult;
     this.setState({scanned: true});
     const elements = data.split(',');
-    console.log(elements);
     if (elements.length === 3) {
       this.setState({scanElements: elements, viewConfirm: true});
     } else {

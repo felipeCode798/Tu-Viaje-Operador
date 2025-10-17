@@ -35,7 +35,6 @@ export default class DateTimePickerComponent extends Component<DateTimePickerCom
   };
 
   _handleDatePicked = (date: Date): void => {
-    console.log('A date has been picked: ', date);
     const formattedDate = this.formatDate(date);
     this.setState({ date: formattedDate });
     this.props.callback(formattedDate);

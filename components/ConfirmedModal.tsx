@@ -63,12 +63,10 @@ const ConfirmedModal: React.FC<Props> = ({
   const infoItems = useSelector((state: RootState) => state.infoItems);
 
   const handleConfirm = () => {
-    console.log("Confirm button pressed!");
     confirm();
   };
 
   const handleDecline = () => {
-    console.log("Decline button pressed!");
     decline();
   };
 

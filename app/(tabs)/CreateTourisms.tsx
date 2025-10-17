@@ -879,7 +879,7 @@ const CreateTourisms: React.FC = () => {
           />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
-          Crear Paquete Turístico
+          Crear paquete turístico
         </Text>
         <View style={styles.headerSpacer} />
       </View>
@@ -895,7 +895,7 @@ const CreateTourisms: React.FC = () => {
           
           {/* SECCIÓN INFORMACIÓN BÁSICA */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Información Básica</Text>
+            <Text style={styles.sectionTitle}>Información básica</Text>
             
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Nombre del paquete</Text>
@@ -989,7 +989,7 @@ const CreateTourisms: React.FC = () => {
 
           {/* SECCIÓN SERVICIOS INCLUIDOS */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Servicios Incluidos</Text>
+            <Text style={styles.sectionTitle}>Servicios incluidos</Text>
             
             {[
               { key: 'alimentacion', label: 'Alimentación', desc: 'descripcionAlimentacion' },
@@ -1028,7 +1028,7 @@ const CreateTourisms: React.FC = () => {
 
           {/* SECCIÓN DESTINO Y RECOGIDA */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Destino y Recogida</Text>
+            <Text style={styles.sectionTitle}>Destino y recogida</Text>
             
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Destino del paquete</Text>
@@ -1069,7 +1069,7 @@ const CreateTourisms: React.FC = () => {
 
           {/* SECCIÓN PAQUETE DIARIO CON CUPOS */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Configuración del Paquete</Text>
+            <Text style={styles.sectionTitle}>Configuración del paquete</Text>
             
             <View style={styles.switchRow}>
               <Text style={styles.switchLabel}>Paquete turístico diario</Text>
@@ -1215,7 +1215,7 @@ const CreateTourisms: React.FC = () => {
 
           {/* SECCIÓN FECHAS Y HORAS */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Fechas y Horarios</Text>
+            <Text style={styles.sectionTitle}>Fechas y horarios</Text>
             
             <View style={styles.dateRow}>
               <View style={styles.dateInput}>
@@ -1303,7 +1303,7 @@ const CreateTourisms: React.FC = () => {
 
           {/* SECCIÓN INFORMACIÓN ADICIONAL */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Información Adicional</Text>
+            <Text style={styles.sectionTitle}>Información adicional</Text>
             
             <View style={styles.gridRow}>
               <View style={styles.gridInput}>

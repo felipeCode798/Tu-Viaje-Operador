@@ -62,7 +62,6 @@ const CardEnterpriceConfirmed = ({
   }, [programming]);
 
   useEffect(() => {
-    console.log('confirmados', confirmados);
   }, [confirmados]);
 
   if (confirmados.length === 0) {
@@ -110,7 +109,6 @@ const CardEnterpriceConfirmed = ({
                 <TouchableOpacity
                   key={item._id}
                   onPress={() => {
-                    console.log('===============================================>item', item);
                     infoItems(item);
                     ModalPermissions();
                     cordsFin(item);

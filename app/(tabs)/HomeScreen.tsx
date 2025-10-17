@@ -41,13 +41,7 @@ const HomeScreen: React.FC = () => {
   const [showPlanillaModal, setShowPlanillaModal] = useState<boolean>(false);
   const [selectedService, setSelectedService] = useState<any>(null);
 
-  console.log('User en HomeScreen:', user);
-  console.log('UserType en HomeScreen:', userType);
-  console.log('🔘 Should show float button:', userType === 'Empresa');
-
   const updateServiceStatus = useCallback((id: string, newStatus: string, newStatusService?: string, type: 'programming' | 'tourism' = 'programming') => {
-    console.log('🔄 Actualizando estado local:', { id, newStatus, newStatusService, type });
-    
     if (type === 'programming') {
       setAllProgrammings(prev => 
         prev.map(item => 
@@ -135,12 +129,6 @@ const HomeScreen: React.FC = () => {
       return;
     }
 
-    console.log('🔄 loadData called', { 
-      userType, 
-      userId: user?.idUser || user?._id,
-      selectedDate: selectedDate.toISOString() 
-    });
-    
     if (showLoader) setLoading(true);
     
     try {
@@ -151,48 +139,34 @@ const HomeScreen: React.FC = () => {
       const endDate = new Date(selectedDate);
       endDate.setDate(endDate.getDate() + 3);
       endDate.setHours(23, 59, 59, 999);
-      
-      console.log('📅 Rango de fechas para carga:', {
-        start: startDate.toISOString(),
-        end: endDate.toISOString()
-      });
-      
+         
       if (userType === 'Conductor') {
-        console.log('🚗 Loading data for Driver...');
-        
+  
         const programmingData = await HomeServices.getProgrammingDriver(
           user.idUser || user._id, 
           startDate.getTime().toString()
         );
-        
-        console.log('📊 Programming data received:', programmingData);
-        
+       
         const processedProgrammings = processData(programmingData || []);
         setAllProgrammings(processedProgrammings);
 
         const tourismDate = `${selectedDate.getFullYear()}-${selectedDate.getMonth() + 1}-${selectedDate.getDate()}`;
-        console.log('🎯 Tourism date:', tourismDate);
         
         const tourismData = await HomeServices.getTourismsDriver(
           user.idUser || user._id, 
           tourismDate
         );
-        
-        console.log('🏨 Tourism data received:', tourismData);
-        
+              
         const processedTourisms = processData(tourismData || []);
         setAllTourisms(processedTourisms);
         
       } else if (userType === 'Empresa') {
-        console.log('🏢 Loading data for Enterprise...');
         
         const programmingData = await HomeServices.getProgrammingsEnterprise(
           user.idUser || user._id, 
           startDate.getTime().toString()
         );
-        
-        console.log('📊 Enterprise programming data:', programmingData);
-        
+      
         const processedProgrammings = processData(programmingData || []);
         setAllProgrammings(processedProgrammings);
 
@@ -201,13 +175,9 @@ const HomeScreen: React.FC = () => {
           startDate.getTime().toString()
         );
         
-        console.log('🏨 Enterprise tourism data:', tourismData);
-        
         const processedTourisms = processData(tourismData || []);
         setAllTourisms(processedTourisms);
       }
-      
-      console.log('✅ Data loaded successfully');
       
     } catch (error) {
       console.error('❌ Error loading data:', error);
@@ -215,35 +185,24 @@ const HomeScreen: React.FC = () => {
     } finally {
       if (showLoader) {
         setLoading(false);
-        console.log('🏁 Loading finished');
       }
     }
   }, [selectedDate, user, userType, processData]);
 
   // Cargar datos cuando cambie la fecha
   useEffect(() => {
-    console.log('🔃 useEffect triggered - Loading data...');
     loadData();
   }, [selectedDate, loadData]);
 
   // Pull to refresh
   const onRefresh = useCallback(async () => {
-    console.log('🔄 Pull to refresh triggered');
     setRefreshing(true);
     await loadData(false);
     setRefreshing(false);
   }, [loadData]);
 
   // Filtrar datos según los filtros aplicados
-  const getFilteredData = useCallback(() => {
-    console.log('=== DEBUG FILTRO ===');
-    console.log('Programmings originales:', allProgrammings.length);
-    console.log('Tourisms originales:', allTourisms.length);
-    console.log('Filtro activo:', activeFilter);
-    console.log('Estado activo:', activeStatus);
-    console.log('Confirmación:', confirmationFilter);
-    console.log('Fecha seleccionada:', selectedDate.toISOString());
-      
+  const getFilteredData = useCallback(() => { 
     let filteredProgrammings = [...allProgrammings];
     let filteredTourisms = [...allTourisms];
 
@@ -252,11 +211,6 @@ const HomeScreen: React.FC = () => {
     selectedDateStart.setHours(0, 0, 0, 0);
     const selectedDateEnd = new Date(selectedDate);
     selectedDateEnd.setHours(23, 59, 59, 999);
-
-    console.log('📅 Rango de fecha seleccionada:', {
-      start: selectedDateStart.getTime(),
-      end: selectedDateEnd.getTime()
-    });
 
     // Filtrar programaciones por fecha exacta
     filteredProgrammings = filteredProgrammings.filter(programming => {
@@ -273,15 +227,6 @@ const HomeScreen: React.FC = () => {
       const selectedDateOnly = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
       
       const isSameDate = programDateOnly.getTime() === selectedDateOnly.getTime();
-      
-      console.log('📊 Programación fecha comparación:', {
-        id: programming._id,
-        programStartTime: programStartTime,
-        programDate: programDate.toISOString(),
-        programDateOnly: programDateOnly.toISOString(),
-        selectedDateOnly: selectedDateOnly.toISOString(),
-        isSameDate: isSameDate
-      });
 
       return isSameDate;
     });
@@ -303,16 +248,11 @@ const HomeScreen: React.FC = () => {
       return tourismDateOnly.getTime() === selectedDateOnly.getTime();
     });
 
-    console.log('📅 Después de filtrar por fecha - Programmings:', filteredProgrammings.length);
-    console.log('📅 Después de filtrar por fecha - Tourisms:', filteredTourisms.length);
-
     // Filtrar por tipo
     if (activeFilter === 'Viajes') {
       filteredTourisms = [];
-      console.log('📍 Filtrado: Mostrando solo Viajes');
     } else if (activeFilter === 'Paquetes') {
       filteredProgrammings = [];
-      console.log('📍 Filtrado: Mostrando solo Paquetes');
     }
 
     // Filtrar por estado
@@ -325,7 +265,6 @@ const HomeScreen: React.FC = () => {
       };
       
       const targetStatus = statusMap[activeStatus];
-      console.log('🎯 Filtrando por estado:', targetStatus);
       
       filteredProgrammings = filteredProgrammings.filter(p => p.status === targetStatus);
       filteredTourisms = filteredTourisms.filter(t => t.status === targetStatus);
@@ -333,7 +272,6 @@ const HomeScreen: React.FC = () => {
 
     // Filtrar por confirmación
     if (confirmationFilter === 'Confirmados') {
-      console.log('✅ Mostrando Confirmados');
       filteredProgrammings = filteredProgrammings.filter(p => 
         p.statusService === 'Confirmado'
       );
@@ -341,7 +279,6 @@ const HomeScreen: React.FC = () => {
         t.statusService === 'Confirmado'
       );
     } else {
-      console.log('❌ Mostrando No Confirmados');
       filteredProgrammings = filteredProgrammings.filter(p => 
         p.statusService !== 'Confirmado'
       );
@@ -349,39 +286,20 @@ const HomeScreen: React.FC = () => {
         t.statusService !== 'Confirmado'
       );
     }
-
-    console.log('📊 Después de todos los filtros - Programmings:', filteredProgrammings.length);
-    console.log('📊 Después de todos los filtros - Tourisms:', filteredTourisms.length);
-    
-    if (filteredProgrammings.length > 0) {
-      console.log('📋 Programmings filtrados:', filteredProgrammings.map(p => ({
-        id: p._id,
-        status: p.status,
-        statusService: p.statusService,
-        start: p.start,
-        startFormatted: p.startFormatted
-      })));
-    }
-    
-    console.log('=== FIN DEBUG ===');
-
+  
     return { programmings: filteredProgrammings, tourisms: filteredTourisms };
   }, [allProgrammings, allTourisms, activeFilter, activeStatus, confirmationFilter, selectedDate]);
 
   // Función para cambiar el estado de un servicio
   const handleStatusChange = useCallback(async (id: string, newStatus: string, type: 'programming' | 'tourism') => {
     try {
-      console.log('🔄 Iniciando cambio:', { id, newStatus, type });
-      
       // Determinar si es una confirmación
       const isConfirmation = newStatus === 'Confirmado' || newStatus === 'NoConfirmado';
       
       let result;
       
       if (isConfirmation) {
-        console.log('🎯 Esto es una CONFIRMACIÓN - Enviar al backend');
-        
-        // Validar que solo empresas puedan confirmar
+        // Validar que solo emresas puedan confirmar
         if (userType !== 'Empresa') {
           Alert.alert('Permiso Denegado', 'Solo las empresas pueden confirmar servicios.');
           return;
@@ -395,9 +313,7 @@ const HomeScreen: React.FC = () => {
           result = await HomeServices.changeStatusTourism(id, newStatus, userTypeForServer, true);
         }
         
-      } else {
-        console.log('🎯 Esto es un CAMBIO DE ESTADO normal - Enviar al backend');
-        
+      } else {  
         // Lógica existente para cambios de estado normales
         const userTypeForServer = userType === 'Conductor' ? 'Conductor' : 'Empresa';
         if (type === 'programming') {
@@ -406,8 +322,6 @@ const HomeScreen: React.FC = () => {
           result = await HomeServices.changeStatusTourism(id, newStatus, userTypeForServer, false);
         }
       }
-      
-      console.log('📩 Resultado:', result);
       
       if (result?.status === 'OK') {
         // ACTUALIZACIÓN DEL ESTADO LOCAL INMEDIATA
@@ -517,7 +431,6 @@ const HomeScreen: React.FC = () => {
           <CalendarComponent
             selectedDate={selectedDate}
             onDateChange={(newDate) => {
-              console.log('📅 Date changed to:', newDate);
               setSelectedDate(newDate);
             }}
           />
@@ -555,13 +468,13 @@ const HomeScreen: React.FC = () => {
             <TouchableOpacity
               style={[
                 styles.confirmationButton,
-                confirmationFilter === 'No confirmados' && styles.confirmationButtonInactive
+                confirmationFilter === 'No confirmados' && styles.confirmationButtonActive
               ]}
               onPress={() => setConfirmationFilter('No confirmados')}
             >
               <Text style={[
                 styles.confirmationText,
-                confirmationFilter === 'No confirmados' && styles.confirmationTextInactive
+                confirmationFilter === 'No confirmados' && styles.confirmationTextActive
               ]}>
                 No confirmados
               </Text>
@@ -585,62 +498,6 @@ const HomeScreen: React.FC = () => {
       {/* ✅ Botón flotante para empresas - POSICIÓN CORREGIDA */}
       {userType === 'Empresa' && <FloatButtonModal />}
 
-      {/* Modal de Planilla */}
-      <Modal
-        visible={showPlanillaModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowPlanillaModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Planilla de Servicio</Text>
-              <TouchableOpacity onPress={() => setShowPlanillaModal(false)}>
-                <MaterialIcons name="close" size={24} color="#666" />
-              </TouchableOpacity>
-            </View>
-            {selectedService && (
-              <View style={styles.modalBody}>
-                <Text style={styles.serviceInfo}>
-                  Servicio: {selectedService._id}
-                </Text>
-                <Text style={styles.serviceInfo}>
-                  Estado: {selectedService.status}
-                </Text>
-                {/* Aquí puedes agregar más información de la planilla */}
-              </View>
-            )}
-          </View>
-        </View>
-      </Modal>
-
-      {/* Modal de Mapa */}
-      <Modal
-        visible={showMapsModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowMapsModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Mapa del Servicio</Text>
-              <TouchableOpacity onPress={() => setShowMapsModal(false)}>
-                <MaterialIcons name="close" size={24} color="#666" />
-              </TouchableOpacity>
-            </View>
-            {selectedService && (
-              <View style={styles.modalBody}>
-                <Text style={styles.serviceInfo}>
-                  Mostrando mapa para el servicio: {selectedService._id}
-                </Text>
-                {/* Aquí integrarías tu componente de mapa */}
-              </View>
-            )}
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 };

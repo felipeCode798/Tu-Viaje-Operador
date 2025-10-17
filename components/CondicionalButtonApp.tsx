@@ -95,7 +95,6 @@ const CondicionalButtonApp: React.FC<Props> = ({ _onRefresh }) => {
         statusMessage = '¿Desea cancelar el viaje?';
       }
     }
-    console.log('title', statusTitle, 'message', statusMessage);
     return { statusTitle, statusMessage };
   };
 
@@ -149,7 +148,6 @@ const CondicionalButtonApp: React.FC<Props> = ({ _onRefresh }) => {
             type,
           )
             .then((resp: any) => {
-              console.log("----->ZZZZZZZres", resp);
               
               if (resp.status === 'OK') {
                 setButtonState('Progreso');
@@ -191,10 +189,6 @@ const CondicionalButtonApp: React.FC<Props> = ({ _onRefresh }) => {
           type,
         )
           .then((resp: any) => {
-            console.log(
-              'reeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeesp',
-              resp,
-            );
             if (resp.status === 'OK') {
               setButtonState('Progreso');
               setMessage(resp.message);
@@ -219,10 +213,7 @@ const CondicionalButtonApp: React.FC<Props> = ({ _onRefresh }) => {
           type,
         )
           .then((resp: any) => {
-            console.log(
-              'reeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeesp',
-              resp,
-            );
+
             if (resp.status === 'OK') {
               setButtonState('Finalizado');
               setMessage(resp.message);
@@ -244,10 +235,7 @@ const CondicionalButtonApp: React.FC<Props> = ({ _onRefresh }) => {
             type,
           )
             .then((resp: any) => {
-              console.log(
-                'reeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeesp',
-                resp,
-              );
+
 
               if (resp.status === 'OK') {
                 setButtonState('Cancelado');
@@ -278,9 +266,9 @@ const CondicionalButtonApp: React.FC<Props> = ({ _onRefresh }) => {
             });
         }
       }
-      console.log('Se cambió el estado del elemento correctamente.');
+      
     } catch (error) {
-      console.log('Hubo un error al cambiar el estado del elemento:', error);
+      
     } finally {
       setLoading(false);
     }

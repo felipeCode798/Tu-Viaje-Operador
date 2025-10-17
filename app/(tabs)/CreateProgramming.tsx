@@ -414,7 +414,7 @@ const CreateProgramming: React.FC = () => {
           />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
-          Crear Programación
+          Crear programación
         </Text>
         <View style={styles.headerSpacer} />
       </View>
@@ -430,7 +430,7 @@ const CreateProgramming: React.FC = () => {
           
           {/* SECCIÓN INFORMACIÓN BÁSICA */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Información Básica</Text>
+            <Text style={styles.sectionTitle}>Información básica</Text>
             
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Ruta</Text>
@@ -522,7 +522,7 @@ const CreateProgramming: React.FC = () => {
 
           {/* SECCIÓN CAPACIDAD Y PRECIOS */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Capacidad y Precios</Text>
+            <Text style={styles.sectionTitle}>Capacidad y precios</Text>
             
             <View style={styles.gridRow}>
               <View style={styles.gridInput}>
@@ -652,7 +652,7 @@ const CreateProgramming: React.FC = () => {
 
           {/* SECCIÓN FECHAS Y HORAS */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Fechas y Horarios</Text>
+            <Text style={styles.sectionTitle}>Fechas y horarios</Text>
             
             <View style={styles.dateRow}>
               <View style={styles.dateInput}>
@@ -754,7 +754,7 @@ const CreateProgramming: React.FC = () => {
             style={styles.createButton}
             onPress={onHandleSubmit}
           >
-            <Text style={styles.createButtonText}>Crear Programación</Text>
+            <Text style={styles.createButtonText}>Crear programación</Text>
           </TouchableOpacity>
 
         </View>
