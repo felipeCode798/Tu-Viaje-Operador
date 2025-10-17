@@ -222,25 +222,121 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
 
   // Función mejorada para cambiar estado
   const handleStatusPress = () => {
-    const statusOptions = [
-      { label: 'Pendiente', value: 'Pendiente' },
-      { label: 'En Progreso', value: 'Progreso' },
-      { label: 'Finalizado', value: 'Finalizado' },
-      { label: 'Cancelado', value: 'Cancelado' }
-    ];
+    const currentStatus = item.status;
+    const currentStatusService = (item as any).statusService;
+    const isConfirmed = currentStatusService === 'Confirmado';
 
-    Alert.alert(
-      'Cambiar Estado',
-      'Selecciona el nuevo estado:',
-      statusOptions.map(option => ({
-        text: option.label,
-        onPress: () => {
-          console.log(`🔄 Cambiando estado a: ${option.value}`);
-          onStatusChange(item._id, option.value, type);
-        }
-      })).concat([{ text: 'Cancelar', style: 'cancel' }])
-    );
+    console.log('🔍 Estado de confirmación actual:', {
+      id: item._id,
+      status: currentStatus,
+      statusService: currentStatusService,
+      isConfirmed: isConfirmed,
+      userType: userType
+    });
+
+    // SOLO PARA EMPRESAS - CONFIRMACIONES
+    if (userType === 'Empresa') {
+      if (!isConfirmed) {
+        Alert.alert(
+          'Confirmar Servicio',
+          '¿Confirmar este servicio para que el conductor pueda iniciarlo?',
+          [
+            { 
+              text: 'Cancelar', 
+              style: 'cancel' 
+            },
+            {
+              text: '✅ Confirmar',
+              onPress: async () => {
+                console.log(`🔄 Confirmando servicio: ${item._id}`);
+                try {
+                  // Enviar 'Confirmado' como nuevo estado
+                  await onStatusChange(item._id, 'Confirmado', type);
+                } catch (error) {
+                  console.error('❌ Error al confirmar:', error);
+                  Alert.alert('Error', 'No se pudo confirmar el servicio');
+                }
+              }
+            }
+          ]
+        );
+      } else {
+        Alert.alert(
+          'Desconfirmar Servicio',
+          '¿Marcar este servicio como no confirmado?',
+          [
+            { 
+              text: 'Cancelar', 
+              style: 'cancel' 
+            },
+            {
+              text: '❌ Desconfirmar',
+              style: 'destructive',
+              onPress: async () => {
+                console.log(`🔄 Desconfirmando servicio: ${item._id}`);
+                try {
+                  // Enviar 'NoConfirmado' como nuevo estado
+                  await onStatusChange(item._id, 'NoConfirmado', type);
+                } catch (error) {
+                  console.error('❌ Error al desconfirmar:', error);
+                  Alert.alert('Error', 'No se pudo desconfirmar el servicio');
+                }
+              }
+            }
+          ]
+        );
+      }
+    } else {
+      // PARA CONDUCTORES - mantener lógica existente
+      let statusOptions = [];
+      
+      // Solo permitir cambiar estado si el servicio está confirmado
+      if (!isConfirmed) {
+        Alert.alert(
+          'Servicio No Confirmado',
+          'Este servicio debe ser confirmado por la empresa antes de poder iniciarlo.',
+          [{ text: 'Entendido', style: 'default' }]
+        );
+        return;
+      }
+      
+      if (currentStatus === 'Pendiente') {
+        statusOptions.push({ label: 'Iniciar Viaje', value: 'Progreso' });
+      }
+      if (currentStatus === 'Progreso') {
+        statusOptions.push({ label: 'Finalizar Viaje', value: 'Finalizado' });
+      }
+      statusOptions.push({ 
+        label: 'Cancelar Viaje', 
+        value: 'Cancelado', 
+        style: 'destructive' as const 
+      });
+
+      if (statusOptions.length === 0) {
+        Alert.alert('Info', 'No hay acciones disponibles para el estado actual');
+        return;
+      }
+
+      Alert.alert(
+        'Cambiar Estado del Viaje',
+        'Selecciona el nuevo estado:',
+        statusOptions.map(option => ({
+          text: option.label,
+          style: option.style,
+          onPress: async () => {
+            console.log(`🔄 Cambiando estado a: ${option.value}`);
+            try {
+              await onStatusChange(item._id, option.value, type);
+            } catch (error) {
+              console.error('❌ Error al cambiar estado:', error);
+              Alert.alert('Error', 'No se pudo cambiar el estado');
+            }
+          }
+        })).concat([{ text: 'Cancelar', style: 'cancel' }])
+      );
+    }
   };
+
 
   // Función para abrir planilla
   const handleOpenPlanilla = () => {
@@ -282,9 +378,28 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
     } else {
       const tourism = item as Tourism;
       return {
-        origin: tourism.origen?.name || 'N/A',
         destination: tourism.destino?.name || 'N/A'
       };
+    }
+  };
+
+  const getNextStatus = (currentStatus: string, isConfirmed: boolean): string => {
+    if (!isConfirmed) {
+      return 'Confirmado'; // Solo confirmar si no está confirmado
+    }
+
+    switch (currentStatus?.toLowerCase()) {
+      case 'pendiente':
+        return 'Progreso'; // Pendiente → En Progreso
+      case 'progreso':
+      case 'iniciado':
+        return 'Finalizado'; // En Progreso → Finalizado
+      case 'finalizado':
+        return 'Pendiente'; // Finalizado → Pendiente (reiniciar)
+      case 'cancelado':
+        return 'Pendiente'; // Cancelado → Pendiente (reiniciar)
+      default:
+        return 'Progreso'; // Por defecto, iniciar
     }
   };
 
@@ -307,8 +422,10 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
           </View>
           
           <View style={styles.serviceInfo}>
-            <Text style={styles.routeText} numberOfLines={1}>
-              {origin} → {destination}
+            <Text style={styles.routeText}>
+              {type === 'programming' 
+                ? `${origin} → ${destination}` 
+                : `${destination}`}
             </Text>
             <View style={styles.serviceMetrics}>
               <Text style={styles.timeText}>
@@ -437,7 +554,7 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
               <View style={styles.actionButtons}>
                 <TouchableOpacity
                   style={[styles.actionButton, styles.planillaButton]}
-                  onPress={() => onOpenPlanilla(item)}
+                  onPress={handleOpenPlanilla}
                 >
                   <MaterialIcons name="description" size={20} color="white" />
                   <Text style={styles.actionButtonText}>Planilla</Text>
@@ -445,7 +562,7 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
                 
                 <TouchableOpacity
                   style={[styles.actionButton, styles.mapButton]}
-                  onPress={() => onOpenMap(item)}
+                  onPress={handleOpenMap}
                 >
                   <MaterialIcons name="map" size={20} color="white" />
                   <Text style={styles.actionButtonText}>Mapa</Text>
@@ -453,10 +570,12 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
 
                 <TouchableOpacity
                   style={[styles.actionButton, styles.statusButton]}
-                  onPress={() => onStatusChange(item._id, getNextStatus(item.status), type)}
+                  onPress={handleStatusPress}
                 >
                   <MaterialIcons name="swap-vert" size={20} color="white" />
-                  <Text style={styles.actionButtonText}>Cambiar Estado</Text>
+                  <Text style={styles.actionButtonText}>
+                    {(item as any).statusService === 'Confirmado' ? 'Cambiar Estado' : 'Confirmar'}
+                  </Text>
                 </TouchableOpacity>
               </View>
             )}

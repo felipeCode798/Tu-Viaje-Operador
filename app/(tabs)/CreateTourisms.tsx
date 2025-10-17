@@ -18,11 +18,9 @@ import {
   View
 } from 'react-native';
 import {
-  Header,
   Icon,
-  Overlay,
+  Overlay
 } from 'react-native-elements';
-import ModalSelector from 'react-native-modal-selector';
 
 import moment from 'moment';
 import { Calendar } from 'react-native-calendars';
@@ -35,7 +33,6 @@ import { helpers } from '../../utils/helpers';
 
 import { Picker } from '@react-native-picker/picker';
 import { useSelector } from 'react-redux';
-import { ConfigDay } from '../../components/ConfigDay';
 import { Loader } from '../../components/Loader';
 import { useAuth } from '../../contexts/AuthContext';
 import { RootState } from '../../redux/store';
@@ -278,11 +275,7 @@ const CreateTourisms: React.FC = () => {
   };
 
   useEffect(() => {
-    console.log("🔄 Iniciando carga de destinos...");
-    console.log("👤 User ID disponible:", userId);
-    
-    if (userId) {
-      console.log("✅ User ID válido encontrado:", userId);
+    if (userId) {;
       setStateValue('user', userId);
       getDestinations();
     } else {
@@ -297,19 +290,14 @@ const CreateTourisms: React.FC = () => {
       return;
     }
     
-    console.log("📡 Llamando getDestinations con user:", state.user);
-    
     TourismServices.getDestinationsWithoutPaginate(state.user)
       .then((data: Destination[]) => {
-        console.log("✅ Destinos recibidos:", data);
-        
         const destinations = data.map(destination => ({
           ...destination,
           key: destination.id,
           label: destination.name,
         }));
         
-        console.log(`📍 ${destinations.length} destinos formateados`);
         setStateValue('destinos', destinations);
       })
       .catch(error => {
@@ -320,17 +308,13 @@ const CreateTourisms: React.FC = () => {
 
   const chooseImage = async (type: string, limit: number) => {
     try {
-      console.log(`📸 Iniciando selección de imagen para: ${type}`);
-      
       const resp = await helpers.pickImages(limit, [4, 3]);
       
       if (!resp || !resp.uri || resp.uri.length === 0) {
         console.error("❌ No se seleccionó ninguna imagen");
         return;
       }
-
       let url = resp.uri[0];
-      console.log(`✅ URI de imagen obtenida: ${url}`);
 
       // Verifica que la URI sea válida
       if (!url || typeof url !== 'string' || !url.startsWith('file://')) {
@@ -346,8 +330,6 @@ const CreateTourisms: React.FC = () => {
         fileF: resp.file || { assets: [{ uri: url }] }, // Estructura compatible
         base64: resp.base64 || '',
       };
-
-      console.log(`✅ Imagen procesada correctamente para: ${type}`, options);
 
       switch (type) {
         case 'principal':
@@ -410,6 +392,41 @@ const CreateTourisms: React.FC = () => {
     setStateValue('infoHoraLlegada', OnlyInfoTime(date));
   };
 
+  const handleCuposChange = (dia: string, valor: string) => {
+    const cuposNum = valor === '' ? 0 : parseInt(valor.replace(/\D/g, ''), 10);
+    setState(prev => ({
+      ...prev,
+      cuposPorDiaConfig: {
+        ...prev.cuposPorDiaConfig,
+        [dia]: isNaN(cuposNum) ? 0 : cuposNum,
+      },
+    }));
+  };
+
+  const getDiasSeleccionados = () => {
+    const { configurationDay, lunes, martes, miercoles, jueves, viernes, sabado, domingo } = state;
+    
+    if (configurationDay === 'everyDay') {
+      return ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
+    } else if (configurationDay === 'sl') {
+      return ['lunes', 'martes', 'miércoles', 'jueves', 'viernes'];
+    } else if (configurationDay === 'fds') {
+      return ['sábado', 'domingo'];
+    } else if (configurationDay === 'configDay') {
+      const dias = [];
+      if (lunes) dias.push('lunes');
+      if (martes) dias.push('martes');
+      if (miercoles) dias.push('miércoles');
+      if (jueves) dias.push('jueves');
+      if (viernes) dias.push('viernes');
+      if (sabado) dias.push('sábado');
+      if (domingo) dias.push('domingo');
+      return dias;
+    }
+    return [];
+  };
+
+
   const changeFormat = (number: string): number => {
     if (!number || number === '' || number === 'NaN') return 0;
     
@@ -417,8 +434,6 @@ const CreateTourisms: React.FC = () => {
       // Remover puntos de formato y solo dejar números
       const numeroSinFormato = number.replace(/\./g, '').replace(/\D/g, "");
       const precio = parseInt(numeroSinFormato, 10);
-      
-      console.log(`💰 Conversión de precio: "${number}" -> ${precio}`);
       
       if (isNaN(precio)) {
         console.warn("⚠️ No se pudo convertir el precio:", number);
@@ -436,15 +451,12 @@ const CreateTourisms: React.FC = () => {
   const sendUpload = async (id: string): Promise<{imgPrincipal: string, imgBanner: string, imgGallery: string[]}> => {
     return new Promise(async (resolve, reject) => {
       try {
-        console.log('🔄 Subiendo imágenes al servidor...');
-
         let imgPrincipal = '';
         let imgBanner = '';
         let imgGallery: string[] = [];
 
         // ✅ Subir imagen principal
         if (state.imgPrincipal && state.imgPrincipal.file) {
-          console.log('📤 Subiendo imagen principal...');
           imgPrincipal = await helpers.uploadImages(
             state.imgPrincipal,
             id,
@@ -452,12 +464,10 @@ const CreateTourisms: React.FC = () => {
             state.nombrePaquete,
             'principal'
           );
-          console.log('✅ Imagen principal subida:', imgPrincipal);
         }
 
         // ✅ Subir imagen banner
         if (state.imgBanner && state.imgBanner.file) {
-          console.log('📤 Subiendo imagen banner...');
           imgBanner = await helpers.uploadImages(
             state.imgBanner,
             id,
@@ -465,13 +475,10 @@ const CreateTourisms: React.FC = () => {
             state.nombrePaquete,
             'banner'
           );
-          console.log('✅ Imagen banner subida:', imgBanner);
         }
 
         // ✅ Subir galería de imágenes
         if (state.imgGallery && Array.isArray(state.imgGallery) && state.imgGallery.length > 0) {
-          console.log(`📤 Subiendo ${state.imgGallery.length} imágenes de galería...`);
-          
           for (let i = 0; i < state.imgGallery.length; i++) {
             const galleryItem = state.imgGallery[i];
             
@@ -485,7 +492,6 @@ const CreateTourisms: React.FC = () => {
               );
               
               imgGallery.push(galleryImage);
-              console.log(`✅ Imagen ${i + 1} de galería subida:`, galleryImage);
             }
           }
         }
@@ -496,11 +502,9 @@ const CreateTourisms: React.FC = () => {
           imgGallery
         };
 
-        console.log('✅ Todas las imágenes subidas:', result);
         resolve(result);
         
       } catch (error) {
-        console.error('❌ Error subiendo imágenes:', error);
         reject(error);
       }
     });
@@ -513,8 +517,6 @@ const CreateTourisms: React.FC = () => {
     let diff = validEndtDate.diff(validStartDate, 'months');
 
     setStateValue('validDate', diff);
-
-    console.log('--------------validDate', state.validDate);
 
     const regexName = /^[a-zA-Z0-9\s\-\:]+$/;
     const regexGuia = /^[a-zA-ZñÑ\s]+$/;
@@ -734,14 +736,13 @@ const CreateTourisms: React.FC = () => {
       }
     }
 
-    // ✅ CORRECCIÓN: Usar Date directamente para las fechas
     if (
       state.startDate.trim().length !== 0 &&
       state.horaSalida.trim().length !== 0
     ) {
-      obj.ida = new Date(`${state.startDate}T${state.horaSalida}:00.000+00:00`);
-      console.log('📅 Fecha salida (Date):', obj.ida);
-      console.log('📅 Timestamp salida:', obj.ida.getTime());
+      // ✅ CORRECCIÓN: Crear fecha correctamente para Date.parse()
+      const fechaHoraSalida = new Date(`${state.startDate}T${state.horaSalida}:00.000+00:00`);
+      obj.ida = fechaHoraSalida;
     } else {
       mensaje.push('*Debe seleccionar una fecha y hora de salida.');
     }
@@ -750,9 +751,9 @@ const CreateTourisms: React.FC = () => {
       state.endDate.trim().length !== 0 &&
       state.horaLlegada.trim().length !== 0
     ) {
-      obj.vuelta = new Date(`${state.endDate}T${state.horaLlegada}:00.000+00:00`);
-      console.log('📅 Fecha llegada (Date):', obj.vuelta);
-      console.log('📅 Timestamp llegada:', obj.vuelta.getTime());
+      // ✅ CORRECCIÓN: Crear fecha correctamente para Date.parse()
+      const fechaHoraLlegada = new Date(`${state.endDate}T${state.horaLlegada}:00.000+00:00`);
+      obj.vuelta = fechaHoraLlegada;
     } else {
       mensaje.push('*Debe seleccionar una fecha y hora de llegada.');
     }
@@ -792,51 +793,24 @@ const CreateTourisms: React.FC = () => {
       );
     } else {
       obj.paqueteDiario = state.paqueteDiario;
-      console.log('estos es la configuracion de los cupos ', state.cuposPorDiaConfig);
     }
 
     obj.precio = changeFormat(state.precio);
     obj.precioNino = changeFormat(state.precioNino);
     obj.precioDcto = changeFormat(state.precioDcto);
 
-    console.log('>>>>>>>>>>>>>>>_____________objecto creado___________<<<<<<<<<<<<<<<<<<<<<<', {
-      ...obj,
-      ida: obj.ida?.getTime ? obj.ida.getTime() : obj.ida,
-      vuelta: obj.vuelta?.getTime ? obj.vuelta.getTime() : obj.vuelta,
-      places: obj.places.map((p: any) => ({
-        name: p.name,
-        latitude: p.latitude,
-        longitude: p.longitude
-        // ❌ address removido
-      }))
-    });
-
     if (mensaje.length !== 0) {
       Alert.alert('Alerta', mensaje.join('\n'));
     } else {
-      console.log("ENVIANDO DATOS", state.precio, state.precioNino, state.cuposPorDiaConfig);
       setStateValue('loading', true);
       
       try {
-        // ✅ CORRECCIÓN: Subir imágenes primero y obtener URLs
-        console.log('📤 Iniciando subida de imágenes...');
         const uploadedImages = await sendUpload(state.user);
         
-        console.log('✅ URLs de imágenes subidas:', uploadedImages);
-
-        // ✅ CORRECCIÓN: Preparar objeto con las URLs de imágenes subidas
+        // Preparar objeto con las URLs de imágenes subidas
         obj.imagen = uploadedImages.imgPrincipal;
         obj.banner = uploadedImages.imgBanner;
         obj.gallery = uploadedImages.imgGallery;
-        
-        // ✅ CORRECCIÓN: Limpiar los lugares (remover address)
-        const placesLimpios = state.places.map(place => ({
-          name: place.name || '',
-          latitude: place.latitude || 0,
-          longitude: place.longitude || 0
-          // ❌ address removido porque no está en el schema GraphQL
-        }));
-        obj.places = placesLimpios;
         
         const diasSinTildes: any = {};
         for (let dia in state.cuposPorDiaConfig) {
@@ -847,39 +821,14 @@ const CreateTourisms: React.FC = () => {
         }
         obj.cuposPorDiaConfig = diasSinTildes;
 
-        console.log('----------------obj justo antes de enviar--------------------------', {
-          ...obj,
-          ida: obj.ida?.getTime ? obj.ida.getTime() : obj.ida,
-          vuelta: obj.vuelta?.getTime ? obj.vuelta.getTime() : obj.vuelta,
-          places: obj.places // Ya están limpios sin address
-        });
-
-        // ✅ CORRECCIÓN: Llamar al servicio SIN subir imágenes nuevamente
-        console.log('🚀 Enviando datos a TourismServices.createTourism...');
+        // Llamar al servicio con los datos completos
         const resp = await TourismServices.createTourism(obj);
-        console.log('-------respuesta de la creacion del turismo --------------', resp);
+        Alert.alert("Éxito", "Paquete turístico creado correctamente");
+        router.back();
         
-        if (resp && resp.result) {
-          Alert.alert("Éxito", "Paquete turístico creado correctamente");
-          router.back();
-        } else {
-          Alert.alert("Error", resp?.message || "No se pudo crear el paquete turístico");
-        }
-        
-      } catch (error: any) {
+      } catch (error) {
         console.error('❌ Error creando turismo:', error);
-        
-        let errorMessage = "No se pudo crear el paquete turístico. Verifica los datos.";
-        
-        if (error.message?.includes('400')) {
-          errorMessage = "Error en los datos enviados. Verifica que toda la información sea correcta.";
-        } else if (error.message?.includes('network')) {
-          errorMessage = "Error de conexión. Verifica tu internet e intenta nuevamente.";
-        } else if (error.networkError) {
-          errorMessage = "Error de servidor. Intenta nuevamente en unos momentos.";
-        }
-        
-        Alert.alert("Error", errorMessage);
+        Alert.alert("Error", "No se pudo crear el paquete turístico. Verifica los datos.");
       } finally {
         setStateValue('loading', false);
       }
@@ -913,1484 +862,1198 @@ const CreateTourisms: React.FC = () => {
     return <Loader />;
   }
   
-  return (
-    <View style={{ backgroundColor: '#4f4f4f' }}>
+ return (
+    <View style={styles.container}>
       <StatusBar barStyle={'light-content'} />
-      <Header containerStyle={styles.containerHeader}>
-        <View style={styles.header}>
-          <Text style={[styles.colorW, { fontSize: height * 0.03 }]}>
-            Crear Paquete Turístico
-          </Text>
-        </View>
-        <View style={styles.icon}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <FontAwesome5
-              style={{ borderRadius: 100 }}
-              name={'arrow-left'}
-              size={width * 0.1}
-              color="#fff"
-            />
-          </TouchableOpacity>
-        </View>
-      </Header>
+      
+      {/* HEADER MEJORADO */}
+      <View style={styles.headerContainer}>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <FontAwesome5
+            name={'arrow-left'}
+            size={20}
+            color="#fff"
+          />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>
+          Crear Paquete Turístico
+        </Text>
+        <View style={styles.headerSpacer} />
+      </View>
 
       <KeyboardAwareScrollView
         enableOnAndroid={true}
-        contentContainerStyle={{flexGrow: 1, paddingBottom: 150,}}
+        contentContainerStyle={styles.scrollContent}
         enableAutomaticScroll={true}
-        viewIsInsideTabBar={false}
         showsVerticalScrollIndicator={false}
         extraScrollHeight={100}>
-        <View style={[styles.container]}>
-          <ScrollView>
-            <View>
-              <Text style={[styles.textLabel, styles.texColorWite]}>
-                Nombre del paquete
-              </Text>
+        
+        <View style={styles.formContainer}>
+          
+          {/* SECCIÓN INFORMACIÓN BÁSICA */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Información Básica</Text>
+            
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Nombre del paquete</Text>
               <TextInput
-                style={[styles.texColorWite, styles.textInput]}
-                keyboardType="default"
-                placeholder="Nombre del paquete"
-                placeholderTextColor="gray"
-                autoCapitalize="none"
-                numberOfLines={1}
-                onChangeText={text =>
-                  setStateValue('nombrePaquete', text)
-                }></TextInput>
+                style={styles.textInput}
+                placeholder="Ingresa el nombre del paquete"
+                placeholderTextColor="#999"
+                value={state.nombrePaquete}
+                onChangeText={text => setStateValue('nombrePaquete', text)}
+              />
             </View>
-            <View>
-              <Text style={[styles.textLabel, styles.texColorWite]}>
-                Tipo de transporte
-              </Text>
-              <View style={styles.checkboxContainer}>
-                <Text style={[styles.label, styles.texColorWite]}>
-                  vehículo
-                </Text>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Descripción general</Text>
+              <TextInput
+                style={styles.textArea}
+                multiline={true}
+                numberOfLines={4}
+                placeholder="Describe el paquete turístico..."
+                placeholderTextColor="#999"
+                value={state.descPaquete}
+                onChangeText={text => setStateValue('descPaquete', text)}
+              />
+            </View>
+          </View>
+
+          {/* SECCIÓN TRANSPORTE */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Transporte</Text>
+            
+            <View style={styles.switchGroup}>
+              <View style={styles.switchContainer}>
+                <Text style={styles.switchLabel}>Vehículo</Text>
                 <Switch
-                  style={styles.switch}
-                  trackColor={{false: '#767577', true: '#E2770f'}}
+                  trackColor={{false: '#767577', true: '#E2991C'}}
                   thumbColor={state.vehiculo ? '#f4f3f4' : '#f4f3f4'}
                   value={state.vehiculo}
-                  onValueChange={() =>
-                    setState(prev => ({
-                      ...prev,
-                      vehiculo: !state.vehiculo,
-                      avion: false,
-                    }))
-                  }
+                  onValueChange={() => setState(prev => ({
+                    ...prev,
+                    vehiculo: !state.vehiculo,
+                    avion: false,
+                  }))}
                 />
-                <View></View>
-
-                <Text style={[styles.label, styles.texColorWite]}>Avión</Text>
+              </View>
+              
+              <View style={styles.switchContainer}>
+                <Text style={styles.switchLabel}>Avión</Text>
                 <Switch
-                  style={styles.switch}
-                  trackColor={{false: '#767577', true: '#E2770f'}}
+                  trackColor={{false: '#767577', true: '#E2991C'}}
                   thumbColor={state.avion ? '#f4f3f4' : '#f4f3f4'}
                   value={state.avion}
-                  onValueChange={() =>
-                    setState(prev => ({
-                      ...prev,
-                      avion: !state.avion,
-                      vehiculo: false,
-                    }))
-                  }
+                  onValueChange={() => setState(prev => ({
+                    ...prev,
+                    avion: !state.avion,
+                    vehiculo: false,
+                  }))}
                 />
               </View>
+            </View>
 
-              {state.vehiculo && (
-                <View
-                  style={{
-                    paddingTop:
-                      Platform.OS === 'ios' ? height * 0.02 : height * 0.03,
-                  }}>
-                  <Text style={[styles.textLabel, styles.texColorWite]}>
-                    Marca del vehículo
+            {(state.vehiculo || state.avion) && (
+              <View style={styles.transportDetails}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>
+                    {state.vehiculo ? 'Marca del vehículo' : 'Nombre de la aerolínea'}
                   </Text>
                   <TextInput
-                    style={[styles.texColorWite, styles.textInput]}
-                    keyboardType="default"
-                    placeholder="Marca del vehículo"
-                    placeholderTextColor="gray"
-                    autoCapitalize="none"
-                    onChangeText={text =>
-                      setStateValue('nombreVehi', text)
-                    }></TextInput>
+                    style={styles.textInput}
+                    placeholder={state.vehiculo ? "Ej: Toyota" : "Ej: Avianca"}
+                    placeholderTextColor="#999"
+                    value={state.nombreVehi}
+                    onChangeText={text => setStateValue('nombreVehi', text)}
+                  />
+                </View>
 
-                  <Text style={[styles.textLabel, styles.texColorWite]}>
-                    Placa del vehículo
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>
+                    {state.vehiculo ? 'Placa del vehículo' : 'Número de vuelo'}
                   </Text>
                   <TextInput
-                    style={[styles.texColorWite, styles.textInput]}
-                    keyboardType="default"
-                    placeholder="Placa del vehículo"
-                    placeholderTextColor="gray"
-                    autoCapitalize="none"
-                    onChangeText={text =>
-                      setStateValue('placa', text)
-                    }></TextInput>
+                    style={styles.textInput}
+                    placeholder={state.vehiculo ? "Ej: ABC123" : "Ej: AV815"}
+                    placeholderTextColor="#999"
+                    value={state.placa}
+                    onChangeText={text => setStateValue('placa', text)}
+                  />
                 </View>
-              )}
-              {state.avion && (
-                <View
-                  style={{
-                    paddingTop:
-                      Platform.OS === 'ios' ? height * 0.02 : height * 0.03,
-                  }}>
-                  <Text style={[styles.textLabel, styles.texColorWite]}>
-                    Nombre de la aerolínea
-                  </Text>
-                  <TextInput
-                    style={[styles.texColorWite, styles.textInput]}
-                    keyboardType="default"
-                    placeholder="Nombre de la aerolinea"
-                    placeholderTextColor="gray"
-                    autoCapitalize="none"
-                    onChangeText={text =>
-                      setStateValue('nombreVehi', text)
-                    }></TextInput>
+              </View>
+            )}
+          </View>
 
-                  <Text style={[styles.textLabel, styles.texColorWite]}>
-                    Número de vuelo
-                  </Text>
-                  <TextInput
-                    style={[styles.texColorWite, styles.textInput]}
-                    keyboardType="default"
-                    placeholder="Número de vuelo"
-                    placeholderTextColor="gray"
-                    autoCapitalize="none"
-                    onChangeText={text =>
-                      setStateValue('placa', text)
-                    }></TextInput>
+          {/* SECCIÓN SERVICIOS INCLUIDOS */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Servicios Incluidos</Text>
+            
+            {[
+              { key: 'alimentacion', label: 'Alimentación', desc: 'descripcionAlimentacion' },
+              { key: 'tiquetes', label: 'Tiquetes o pasajes', desc: 'descripcionTiquetes' },
+              { key: 'hospedaje', label: 'Hospedaje', desc: 'descripcionHospedaje' },
+              { key: 'traslados', label: 'Traslados', desc: 'descripcionTraslado' },
+              { key: 'entradas', label: 'Entradas turísticas', desc: 'descripcionEntradas' },
+            ].map(service => (
+              <View key={service.key}>
+                <View style={styles.switchRow}>
+                  <Text style={styles.switchLabel}>{service.label}</Text>
+                  <Switch
+                    trackColor={{false: '#767577', true: '#E2991C'}}
+                    thumbColor={state[service.key as keyof typeof state] ? '#f4f3f4' : '#f4f3f4'}
+                    value={state[service.key as keyof typeof state] as boolean}
+                    onValueChange={() => setStateValue(service.key as keyof typeof state, !state[service.key as keyof typeof state])}
+                  />
                 </View>
-              )}
-              <View
-                style={{
-                  paddingTop:
-                    Platform.OS === 'ios' ? height * 0.015 : height * 0.025,
-                  marginBottom:
-                    Platform.OS === 'ios' ? height * 0.02 : height * 0.01,
-                }}>
-                <Text style={[styles.textLabel, styles.texColorWite]}>
-                  Descripción general del paquete turístico
-                </Text>
-                <TextInput
-                  style={[styles.texColorWite, styles.textDes]}
-                  keyboardType="default"
-                  multiline={true}
-                  placeholder="Descripción general del paquete turístico"
-                  placeholderTextColor="gray"
-                  autoCapitalize="none"
-                  onChangeText={text =>
-                    setStateValue('descPaquete', text)
-                  }></TextInput>
-              </View>
-              <View>
-                <Text style={[styles.label, styles.texColorWite]}>
-                  Incluye alimentación
-                </Text>
-                <Switch
-                  style={styles.containerSwitch}
-                  trackColor={{false: '#767577', true: '#E2770f'}}
-                  thumbColor={state.desc ? '#E2991C' : '#f4f3f4'}
-                  value={state.alimentacion}
-                  onValueChange={() =>
-                    setStateValue('alimentacion', !state.alimentacion)
-                  }
-                />
-              </View>
-              {state.alimentacion && (
-                <View>
-                  <Text style={[styles.textLabel, styles.texColorWite]}>
-                    Descripción sobre alimentación
-                  </Text>
-                  <TextInput
-                    style={[styles.texColorWite, styles.textDes]}
-                    keyboardType="default"
-                    multiline={true}
-                    placeholder="Descripción sobre alimentacin"
-                    placeholderTextColor="gray"
-                    autoCapitalize="none"
-                    onChangeText={text =>
-                      setStateValue('descripcionAlimentacion', text)
-                    }></TextInput>
-                </View>
-              )}
-              <View>
-                <Text style={[styles.label, styles.texColorWite]}>
-                  Incluye tiquetes o pasajes
-                </Text>
-                <Switch
-                  style={styles.containerSwitch}
-                  trackColor={{false: '#767577', true: '#E2770f'}}
-                  thumbColor={state.desc ? '#E2991C' : '#f4f3f4'}
-                  value={state.tiquetes}
-                  onValueChange={() =>
-                    setStateValue('tiquetes', !state.tiquetes)
-                  }
-                />
-              </View>
-              {state.tiquetes && (
-                <View>
-                  <Text style={[styles.textLabel, styles.texColorWite]}>
-                    Descripción sobre tiquetes o pasajes
-                  </Text>
-                  <TextInput
-                    style={[styles.texColorWite, styles.textDes]}
-                    keyboardType="default"
-                    numberOfLines={5}
-                    multiline={true}
-                    placeholder="Descripción sobre tiquetes o pasajes"
-                    placeholderTextColor="gray"
-                    autoCapitalize="none"
-                    onChangeText={text =>
-                      setStateValue('descripcionTiquetes', text)
-                    }></TextInput>
-                </View>
-              )}
-              <View>
-                <Text style={[styles.label, styles.texColorWite]}>
-                  Incluye hospedaje
-                </Text>
-                <Switch
-                  style={styles.containerSwitch}
-                  trackColor={{false: '#767577', true: '#E2770f'}}
-                  thumbColor={state.desc ? '#E2991C' : '#f4f3f4'}
-                  value={state.hospedaje}
-                  onValueChange={() =>
-                    setStateValue('hospedaje', !state.hospedaje)
-                  }
-                />
-              </View>
-              {state.hospedaje && (
-                <View>
-                  <Text style={[styles.textLabel, styles.texColorWite]}>
-                    Descripción sobre los hospedaje
-                  </Text>
-                  <TextInput
-                    style={[styles.texColorWite, styles.textDes]}
-                    keyboardType="default"
-                    numberOfLines={5}
-                    multiline={true}
-                    placeholder="Descripción sobre hospedaje"
-                    placeholderTextColor="gray"
-                    autoCapitalize="none"
-                    onChangeText={text =>
-                      setStateValue('descripcionHospedaje', text)
-                    }></TextInput>
-                </View>
-              )}
-              <View>
-                <Text style={[styles.label, styles.texColorWite]}>
-                  Incluye traslados
-                </Text>
-                <Switch
-                  style={styles.containerSwitch}
-                  trackColor={{false: '#767577', true: '#E2770f'}}
-                  thumbColor={state.desc ? '#E2991C' : '#f4f3f4'}
-                  value={state.traslados}
-                  onValueChange={() =>
-                    setStateValue('traslados', !state.traslados)
-                  }
-                />
-              </View>
-              {state.traslados && (
-                <View>
-                  <Text style={[styles.textLabel, styles.texColorWite]}>
-                    Descripción sobre los traslados
-                  </Text>
-                  <TextInput
-                    style={[styles.texColorWite, styles.textDes]}
-                    keyboardType="default"
-                    numberOfLines={5}
-                    multiline={true}
-                    placeholder="Descripción sobre los traslados"
-                    placeholderTextColor="gray"
-                    autoCapitalize="none"
-                    onChangeText={text =>
-                      setStateValue('descripcionTraslado', text)
-                    }></TextInput>
-                </View>
-              )}
-              <View>
-                <Text style={[styles.label, styles.texColorWite]}>
-                  Incluye entradas turísticas
-                </Text>
-                <Switch
-                  style={styles.containerSwitch}
-                  trackColor={{false: '#767577', true: '#E2770f'}}
-                  thumbColor={state.desc ? '#E2991C' : '#f4f3f4'}
-                  value={state.entradas}
-                  onValueChange={() =>
-                    setStateValue('entradas', !state.entradas)
-                  }
-                />
-              </View>
-              {state.entradas && (
-                <View>
-                  <Text style={[styles.textLabel, styles.texColorWite]}>
-                    Descripción sobre las entradas turísticas
-                  </Text>
-                  <TextInput
-                    style={[styles.texColorWite, styles.textDes]}
-                    keyboardType="default"
-                    numberOfLines={5}
-                    multiline={true}
-                    placeholder="Descripción sobre las entradas turísticas"
-                    placeholderTextColor="gray"
-                    autoCapitalize="none"
-                    onChangeText={text =>
-                      setStateValue('descripcionEntradas', text)
-                    }></TextInput>
-                </View>
-              )}
-              <View
-                style={{
-                  paddingTop:
-                    Platform.OS === 'ios' ? height * 0.015 : height * 0.025,
-                  marginBottom:
-                    Platform.OS === 'ios' ? height * 0.004 : height * 0.01,
-                }}>
-                <Text style={[styles.textLabel, styles.texColorWite]}>
-                  Destino del paquete turístico
-                </Text>
-
-                {state.destinos.length > 0 ? (
-                  <ModalSelector
-                    data={state.destinos}
-                    onChange={option => {
-                      console.log("📍 Destino seleccionado:", option);
-                      setState(prev => ({
-                        ...prev,
-                        destinoPaquete: {
-                          key: option.key,
-                          label: option.label,
-                        },
-                        destino: option.key,
-                      }));
-                    }}
-                    initValue="Seleccionar destino"
-                    cancelText="Cancelar"
-                    optionTextStyle={{color: 'black'}}
-                    optionContainerStyle={{
-                      backgroundColor: 'white',
-                      maxHeight: height * 0.4,
-                    }}>
-                    <Text style={[styles.textSelect, styles.texColorWite, styles.textInput]}>
-                      {state.destinoPaquete.label}
-                    </Text>
-                  </ModalSelector>
-                ) : (
-                  <Text style={[styles.textSelect, styles.texColorWite, styles.textInput, {color: 'gray'}]}>
-                    Cargando destinos...
-                  </Text>
+                
+                {state[service.key as keyof typeof state] && (
+                  <View style={styles.inputGroup}>
+                    <TextInput
+                      style={styles.textArea}
+                      multiline={true}
+                      numberOfLines={3}
+                      placeholder={`Describe ${service.label.toLowerCase()}...`}
+                      placeholderTextColor="#999"
+                      value={state[service.desc as keyof typeof state] as string}
+                      onChangeText={text => setStateValue(service.desc as keyof typeof state, text)}
+                    />
+                  </View>
                 )}
               </View>
-              {/* Puntos de recogida */}
-              <View>
-                <Text style={[styles.textLabel, styles.texColorWite]}>
-                  Puntos de recogida
-                </Text>
-                <Text
-                  style={[styles.texColorWite, styles.textInput]}
-                  onPress={() => setStateValue('modalRecogida', true)}>
-                  Añadir puntos de recogida
-                </Text>
+            ))}
+          </View>
 
-                <View>
-                  {state.places.map((punto, i) => {
-                    return (
-                      <Text
-                        key={i}
-                        style={[styles.textLabel, styles.texColorWite]}>
-                        {punto.name}
-                      </Text>
-                    );
-                  })}
+          {/* SECCIÓN DESTINO Y RECOGIDA */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Destino y Recogida</Text>
+            
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Destino del paquete</Text>
+              <TouchableOpacity 
+                style={styles.selectInput}
+                onPress={() => setStateValue('showDestinationModal', true)}
+              >
+                <Text style={[
+                  styles.selectText,
+                  state.destinoPaquete.key === '-1' && styles.placeholderText
+                ]}>
+                  {state.destinoPaquete.label}
+                </Text>
+                <Icon name="chevron-down" type="material-community" color="#999" size={20} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Puntos de recogida</Text>
+              <TouchableOpacity 
+                style={styles.buttonOutlined}
+                onPress={() => setStateValue('modalRecogida', true)}
+              >
+                <Text style={styles.buttonOutlinedText}>+ Añadir puntos de recogida</Text>
+              </TouchableOpacity>
+              
+              {state.places.length > 0 && (
+                <View style={styles.placesList}>
+                  {state.places.map((punto, i) => (
+                    <View key={i} style={styles.placeItem}>
+                      <Text style={styles.placeText}>📍 {punto.name}</Text>
+                    </View>
+                  ))}
                 </View>
-              </View>
+              )}
+            </View>
+          </View>
 
-              <View>
-                <Text style={[styles.label, styles.texColorWite]}>
-                  Paquete turístico diario
-                </Text>
-                <Switch
-                  style={styles.containerSwitch}
-                  trackColor={{false: '#767577', true: '#E2770f'}}
-                  thumbColor={
-                    state.paqueteDiario ? '#f4f3f4' : '#f4f3f4'
-                  }
-                  value={state.paqueteDiario}
-                  onValueChange={() =>
-                    setStateValue('paqueteDiario', !state.paqueteDiario)
-                  }
-                />
-              </View>
+          {/* SECCIÓN PAQUETE DIARIO CON CUPOS */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Configuración del Paquete</Text>
+            
+            <View style={styles.switchRow}>
+              <Text style={styles.switchLabel}>Paquete turístico diario</Text>
+              <Switch
+                trackColor={{false: '#767577', true: '#E2991C'}}
+                thumbColor={state.paqueteDiario ? '#f4f3f4' : '#f4f3f4'}
+                value={state.paqueteDiario}
+                onValueChange={() => setStateValue('paqueteDiario', !state.paqueteDiario)}
+              />
+            </View>
 
-              {state.paqueteDiario ? (
-                <View style={{color: 'white'}}>
-                  <Text style={[styles.label, styles.texColorWite]}>
-                    Repeticiones
-                  </Text>
-
+            {state.paqueteDiario && (
+              <View style={styles.paqueteDiarioSection}>
+                <Text style={styles.inputLabel}>Repeticiones</Text>
+                <View style={styles.pickerContainer}>
                   <Picker
-                    dropdownIconColor= {'white'}
-                    style={{color: 'white'}}
                     selectedValue={state.configurationDay}
-                    onValueChange={(itemValue, itemIndex) => {
+                    onValueChange={(itemValue) => {
                       setStateValue('configurationDay', itemValue);
-                      console.log(
-                        '---------------------itemaVAlue',
-                        itemValue,
-                      );
-
-                      if (itemValue == 'everyDay') {
+                      // Lógica para configurar días según la selección
+                      if (itemValue === 'everyDay') {
                         setState(prev => ({
                           ...prev,
-                          lunes: true,
-                          martes: true,
-                          miercoles: true,
-                          jueves: true,
-                          viernes: true,
-                          sabado: true,
-                          domingo: true,
-                          cuposPorDiaConfig: {
-                            lunes: 0,
-                            martes: 0,
-                            miércoles: 0,
-                            jueves: 0,
-                            viernes: 0,
-                            sábado: 0,
-                            domingo: 0,
-                          },
+                          lunes: true, martes: true, miercoles: true, jueves: true,
+                          viernes: true, sabado: true, domingo: true,
                         }));
-                      }
-                      if (itemValue == 'sl') {
+                      } else if (itemValue === 'sl') {
                         setState(prev => ({
                           ...prev,
-                          lunes: true,
-                          martes: true,
-                          miercoles: true,
-                          jueves: true,
-                          viernes: true,
-                          sabado: false,
-                          domingo: false,
-                          cuposPorDiaConfig: {
-                            lunes: 0,
-                            martes: 0,
-                            miércoles: 0,
-                            jueves: 0,
-                            viernes: 0,
-                            sábado: 0,
-                            domingo: 0,
-                          },
+                          lunes: true, martes: true, miercoles: true, jueves: true,
+                          viernes: true, sabado: false, domingo: false,
                         }));
-                      }
-                      if (itemValue == 'fds') {
+                      } else if (itemValue === 'fds') {
                         setState(prev => ({
                           ...prev,
-                          lunes: false,
-                          martes: false,
-                          miercoles: false,
-                          jueves: false,
-                          viernes: false,
-                          sabado: true,
-                          domingo: true,
-                          cuposPorDiaConfig: {
-                            lunes: 0,
-                            martes: 0,
-                            miércoles: 0,
-                            jueves: 0,
-                            viernes: 0,
-                            sábado: 0,
-                            domingo: 0,
-                          },
+                          lunes: false, martes: false, miercoles: false, jueves: false,
+                          viernes: false, sabado: true, domingo: true,
                         }));
-                      }
-                      if (itemValue == 'configDay') {
+                      } else if (itemValue === 'configDay') {
                         setState(prev => ({
                           ...prev,
-                          lunes: false,
-                          martes: false,
-                          miercoles: false,
-                          jueves: false,
-                          viernes: false,
-                          sabado: false,
-                          domingo: false,
-                          cuposPorDiaConfig: {
-                            lunes: 0,
-                            martes: 0,
-                            miércoles: 0,
-                            jueves: 0,
-                            viernes: 0,
-                            sábado: 0,
-                            domingo: 0,
-                          },
+                          lunes: false, martes: false, miercoles: false, jueves: false,
+                          viernes: false, sabado: false, domingo: false,
                         }));
                       }
-                    }}>
+                    }}
+                    style={styles.picker}
+                  >
                     <Picker.Item label="Seleccione" value="nothing" />
                     <Picker.Item label="Todos los días" value="everyDay" />
                     <Picker.Item label="Semana laboral" value="sl" />
                     <Picker.Item label="Fin de semana" value="fds" />
                     <Picker.Item label="Personalizado" value="configDay" />
-                    
                   </Picker>
-
-                  {state.configurationDay === 'everyDay' && (
-                    <View style={{display: 'flex', flexDirection: 'column'}}>
-                      {daysOfWeek.map(day => (
-                        <ConfigDay
-                          key={day}
-                          title={day}
-                          onCuposChange={cupos =>
-                            setState(prev => ({
-                              ...prev,
-                              cuposPorDiaConfig: {
-                                ...prev.cuposPorDiaConfig,
-                                [day]: cupos,
-                              },
-                            }))
-                          }
-                        />
-                      ))}
-                    </View>
-                  )}
-
-                  {state.configurationDay === 'sl' && (
-                    <View style={{display: 'flex', flexDirection: 'column'}}>
-                      {weekend.map(day => (
-                        <ConfigDay
-                          key={day}
-                          title={day}
-                          onCuposChange={cupos =>
-                            setState(prev => ({
-                              ...prev,
-                              cuposPorDiaConfig: {
-                                ...prev.cuposPorDiaConfig,
-                                [day]: cupos,
-                              },
-                            }))
-                          }
-                        />
-                      ))}
-                    </View>
-                  )}
-
-                  {state.configurationDay === 'fds' && (
-                    <View style={{display: 'flex', flexDirection: 'column'}}>
-                      {weekends.map(day => (
-                        <ConfigDay
-                          key={day}
-                          title={day}
-                          onCuposChange={cupos =>
-                            setState(prev => ({
-                              ...prev,
-                              cuposPorDiaConfig: {
-                                ...prev.cuposPorDiaConfig,
-                                [day]: cupos,
-                              },
-                            }))
-                          }
-                        />
-                      ))}
-                    </View>
-                  )}
-
-                  {state.configurationDay === 'configDay' && (
-                    <View style={{display: 'flex', flexDirection: 'column'}}>
-                      <ConfigDay
-                        title="lunes"
-                        onCuposChange={cupos =>
-                          setState(prev => ({
-                            ...prev,
-                            cuposPorDiaConfig: {
-                              ...prev.cuposPorDiaConfig,
-                              lunes: cupos,
-                            },
-                          }))
-                        }
-                        onSwichChange={() => {
-                          setStateValue('lunes', !state.lunes);
-                        }}
-                        switchDay={true}
-                        active={state.lunes}
-                      />
-                      <ConfigDay
-                        title="martes"
-                        onCuposChange={cupos =>
-                          setState(prev => ({
-                            ...prev,
-                            cuposPorDiaConfig: {
-                              ...prev.cuposPorDiaConfig,
-                              martes: cupos,
-                            },
-                          }))
-                        }
-                        onSwichChange={() => {
-                          setStateValue('martes', !state.martes);
-                        }}
-                        switchDay={true}
-                        active={state.martes}
-                      />
-                      <ConfigDay
-                        title="Miércoles"
-                        onCuposChange={cupos =>
-                          setState(prev => ({
-                            ...prev,
-                            cuposPorDiaConfig: {
-                              ...prev.cuposPorDiaConfig,
-                              miercoles: cupos,
-                            },
-                          }))
-                        }
-                        onSwichChange={() => {
-                          setStateValue('miercoles', !state.miercoles);
-                        }}
-                        switchDay={true}
-                        active={state.miercoles}
-                      />
-                      <ConfigDay
-                        title="jueves"
-                        onCuposChange={cupos =>
-                          setState(prev => ({
-                            ...prev,
-                            cuposPorDiaConfig: {
-                              ...prev.cuposPorDiaConfig,
-                              jueves: cupos,
-                            },
-                          }))
-                        }
-                        onSwichChange={() => {
-                          setStateValue('jueves', !state.jueves);
-                        }}
-                        switchDay={true}
-                        active={state.jueves}
-                      />
-                      <ConfigDay
-                        title="viernes"
-                        onCuposChange={cupos =>
-                          setState(prev => ({
-                            ...prev,
-                            cuposPorDiaConfig: {
-                              ...prev.cuposPorDiaConfig,
-                              viernes: cupos,
-                            },
-                          }))
-                        }
-                        onSwichChange={() => {
-                          setStateValue('viernes', !state.viernes);
-                        }}
-                        switchDay={true}
-                        active={state.viernes}
-                      />
-                      <ConfigDay
-                        title="sábado"
-                        onCuposChange={cupos =>
-                          setState(prev => ({
-                            ...prev,
-                            cuposPorDiaConfig: {
-                              ...prev.cuposPorDiaConfig,
-                              sabado: cupos,
-                            },
-                          }))
-                        }
-                        onSwichChange={() => {
-                          setStateValue('sabado', !state.sabado);
-                        }}
-                        switchDay={true}
-                        active={state.sabado}
-                      />
-                      <ConfigDay
-                        title="domingo"
-                        onCuposChange={cupos =>
-                          setState(prev => ({
-                            ...prev,
-                            cuposPorDiaConfig: {
-                              ...prev.cuposPorDiaConfig,
-                              domingo: cupos,
-                            },
-                          }))
-                        }
-                        onSwichChange={() => {
-                          setStateValue('domingo', !state.domingo);
-                        }}
-                        switchDay={true}
-                        active={state.domingo}
-                      />
-                    </View>
-                  )}
                 </View>
-              ) : null}
 
-              <Text style={[styles.textLabel, styles.texColorWite]}>
-                {state.paqueteDiario
-                  ? 'Rango fechas del paquete diario'
-                  : 'Escoge las fechas de salida y regreso'}
-              </Text>
-              <View
-                style={{
-                  flex: 1,
-                  flexDirection: 'row',
-                  justifyContent: 'space-around',
-                }}>
-                <TouchableOpacity
-                  style={{...styles.input, width: '37%'}}
-                  onPress={() => setStateValue('statusCalendar', true)}>
-                  <View style={styles.textWithIcon}>
-                    <Icon
-                      name="calendar"
-                      size={21}
-                      color="orange"
-                      type="material-community"
-                    />
-                    <Text style={styles.inputTextFiltros}>
-                      {state.startDate}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-                <View style={{paddingTop: 10, marginTop: 10}}>
-                  <Icon
-                    name="arrows-v"
-                    size={10}
-                    color="gray"
-                    type="font-awesome"
-                  />
-                </View>
-                <TouchableOpacity
-                  style={{...styles.input, width: '37%'}}
-                  onPress={() => setStateValue('statusCalendar', true)}>
-                  <View style={styles.textWithIcon}>
-                    <Icon
-                      name="calendar"
-                      size={21}
-                      color="orange"
-                      type="material-community"
-                    />
-                    <Text style={styles.inputTextFiltros}>
-                      {state.endDate}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              </View>
-              {state.statusCalendar && (
-                <Overlay
-                  isVisible={state.statusCalendar}
-                  windowBackgroundColor="rgba(41, 41, 41, .7)"
-                  width={width * 0.9}
-                  height={440}>
-                  <Calendar
-                    minDate={Date()}
-                    monthFormat={'MMMM yyyy'}
-                    markedDates={state.markedDates}
-                    markingType="period"
-                    hideExtraDays={true}
-                    hideDayNames={true}
-                    onDayPress={onDayPress}
-                    style={{
-                      marginBottom: 30,
-                      height: 330,
-                    }}
-                    theme={{
-                      calendarBackground:
-                        colorScheme === 'dark' ? 'while' : 'while',
-                      textDisabledColor:
-                        colorScheme === 'dark' ? 'black' : 'black',
-                    }}
-                  />
-                  <View
-                    style={{
-                      ...styles.inputContainer,
-                      justifyContent: 'space-between',
-                    }}>
-                    <TouchableOpacity
-                      style={{
-                        ...styles.Botton,
-                        backgroundColor: '#000',
-                        width: '47%',
-                      }}
-                      onPress={() => {
-                        setState(prev => ({
-                          ...prev,
-                          statusCalendar: false,
-                          startDate: moment(Date()).format('YYYY-MM-DD'),
-                          endDate: moment(Date()).format('YYYY-MM-DD'),
-                        }));
-                      }}>
-                      <Text style={styles.buttonText}>Cancelar</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={{...styles.button, width: '47%'}}
-                      onPress={() => {
-                        setStateValue('statusCalendar', false);
-                      }}>
-                      <Text style={styles.buttonText}>Aceptar</Text>
-                    </TouchableOpacity>
-                  </View>
-                </Overlay>
-              )}
+                {/* CONFIGURACIÓN DE DÍAS Y CUPOS */}
+                {state.configurationDay && state.configurationDay !== 'nothing' && (
+                  <View style={styles.cuposConfiguration}>
+                    <Text style={styles.configurationTitle}>Cupos por día:</Text>
+                    
+                    {/* Para configuración personalizada */}
+                    {state.configurationDay === 'configDay' && (
+                      <View style={styles.diasConfig}>
+                        {[
+                          { key: 'lunes', label: 'Lunes', value: state.lunes },
+                          { key: 'martes', label: 'Martes', value: state.martes },
+                          { key: 'miercoles', label: 'Miércoles', value: state.miercoles },
+                          { key: 'jueves', label: 'Jueves', value: state.jueves },
+                          { key: 'viernes', label: 'Viernes', value: state.viernes },
+                          { key: 'sabado', label: 'Sábado', value: state.sabado },
+                          { key: 'domingo', label: 'Domingo', value: state.domingo },
+                        ].map(dia => (
+                          <View key={dia.key} style={styles.diaConfigRow}>
+                            <View style={styles.diaSwitch}>
+                              <Text style={styles.diaLabel}>{dia.label}</Text>
+                              <Switch
+                                value={dia.value}
+                                onValueChange={() => setStateValue(dia.key as keyof typeof state, !dia.value)}
+                              />
+                            </View>
+                            {dia.value && (
+                              <View style={styles.cuposInputContainer}>
+                                <Text style={styles.cuposLabel}>Cupos:</Text>
+                                <TextInput
+                                  style={styles.cuposInput}
+                                  keyboardType="numeric"
+                                  placeholder="0"
+                                  placeholderTextColor="#999"
+                                  value={state.cuposPorDiaConfig[dia.key as keyof CuposPorDiaConfig]?.toString() || '0'}
+                                  onChangeText={(text) => handleCuposChange(dia.key, text)}
+                                />
+                              </View>
+                            )}
+                          </View>
+                        ))}
+                      </View>
+                    )}
 
-              <View
-                style={{
-                  flex: 1,
-                  flexDirection: 'row',
-                  justifyContent: 'center',
-                  paddingTop:
-                    Platform.OS === 'ios' ? height * 0.01 : height * 0.015,
-                }}>
-                <TouchableOpacity
-                  style={{
-                    ...styles.Botton,
-                    backgroundColor: '#4f4f4f',
-                    width: '100%',
-                  }}
-                  onPress={() => {
-                    showDatePickerLlegada();
-                  }}>
-                  <DateTimePickerModal
-                    isVisible={state.DatePickerVisibleLlegada}
-                    mode="time"
-                    onConfirm={handleConfirmLlegada}
-                    onCancel={hideDatePickerLlegada}
-                    locale='es_CO'
-                  />
-                  <Text
-                    style={{
-                      ...styles.texColorWite,
-                      ...styles.textInput,
-                      backgroundColor: 'rgba(41, 41, 41, .7)',
-                      width: width * 0.8,
-                    }}>
-                    Hora de llegada:
-                    {state.infoHoraLlegada}
-                  
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <View
-                style={{
-                  flex: 1,
-                  flexDirection: 'row',
-                  justifyContent: 'center',
-                  paddingTop:
-                    Platform.OS === 'ios' ? height * 0.01 : height * 0.015,
-                }}>
-                <TouchableOpacity
-                  style={{
-                    ...styles.Botton,
-                    backgroundColor: '#4f4f4f',
-                    width: '100%',
-                  }}
-                  onPress={() => {
-                    showDatePicker();
-                  }}>
-                  <DateTimePickerModal
-                    isVisible={state.DatePickerVisibility}
-                    mode="time"
-                    onConfirm={handleConfirm}
-                    onCancel={hideDatePicker}
-                    locale = 'es_CO'
-                  
-                  />
-                  <Text
-                    style={{
-                      ...styles.texColorWite,
-                      ...styles.textInput,
-                      backgroundColor: 'rgba(41, 41, 41, .7)',
-                      width: width * 0.8,
-                    }}>
-                    Hora de salida:
-                    {state.infoHoraSalida}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <Text style={[styles.textLabel, styles.texColorWite]}>
-                Tipo de acomodación
-              </Text>
-              <View style={styles.checkboxContainer}>
-                <Text style={[styles.label, styles.texColorWite]}>Doble</Text>
-                <Switch
-                  style={styles.switch}
-                  trackColor={{false: '#767577', true: '#E2770f'}}
-                  thumbColor={state.doble ? '#f4f3f4' : '#f4f3f4'}
-                  value={state.doble}
-                  onValueChange={() => {
-                    setState(prev => ({
-                      ...prev,
-                      doble: !state.doble,
-                      multiple: false,
-                    }));
-                  }}
-                />
-
-                <Text style={[styles.label, styles.texColorWite]}>
-                  Múltiple
-                </Text>
-                <Switch
-                  style={styles.switch}
-                  trackColor={{false: '#767577', true: '#E2770f'}}
-                  thumbColor={state.multiple ? '#f4f3f4' : '#f4f3f4'}
-                  value={state.multiple}
-                  onValueChange={() => {
-                    setState(prev => ({
-                      ...prev,
-                      multiple: !state.multiple,
-                      doble: false,
-                    }));
-                  }}
-                />
-              </View>
-
-              {!state.paqueteDiario && (
-                <View
-                  style={{
-                    paddingTop:
-                      Platform.OS === 'ios' ? height * 0.015 : height * 0.001,
-                    marginBottom:
-                      Platform.OS === 'ios' ? height * 0.001 : height * 0.001,
-                  }}>
-                  <Text style={[styles.textLabel, styles.texColorWite]}>
-                    Cupos disponibles
-                  </Text>
-                  <TextInput
-                    style={[styles.texColorWite, styles.textInput]}
-                    keyboardType="numeric"
-                    placeholder="Cupos disponibles"
-                    placeholderTextColor="gray"
-                    autoCapitalize="none"
-                    numberOfLines={1}
-                    onChangeText={text =>
-                      setStateValue('cupos', text)
-                    }></TextInput>
-                </View>
-              )}
-
-              <View
-                style={{
-                  paddingTop:
-                    Platform.OS === 'ios' ? height * 0.01 : height * 0.001,
-                  marginBottom:
-                    Platform.OS === 'ios' ? height * 0.001 : height * 0.001,
-                }}>
-                <Text style={[styles.textLabel, styles.texColorWite]}>
-                  Nombre del guía
-                </Text>
-                <TextInput
-                  style={[styles.texColorWite, styles.textInput]}
-                  keyboardType="default"
-                  placeholder="Nombre del guia"
-                  placeholderTextColor="gray"
-                  autoCapitalize="none"
-                  numberOfLines={1}
-                  onChangeText={text =>
-                    setStateValue('nombreGuia', text)
-                  }></TextInput>
-              </View>
-              <View
-                style={{
-                  paddingTop:
-                    Platform.OS === 'ios' ? height * 0.001 : height * 0.001,
-                  marginBottom:
-                    Platform.OS === 'ios' ? height * 0.001 : height * 0.001,
-                }}>
-                <Text style={[styles.textLabel, styles.texColorWite]}>
-                  Días
-                </Text>
-                <TextInput
-                  style={[styles.texColorWite, styles.textInput]}
-                  keyboardType="numeric"
-                  placeholder="Días"
-                  placeholderTextColor="gray"
-                  autoCapitalize="none"
-                  numberOfLines={1}
-                  onChangeText={text =>
-                    setStateValue('dias', text)
-                  }></TextInput>
-              </View>
-              <View
-                style={{
-                  paddingTop:
-                    Platform.OS === 'ios' ? height * 0.001 : height * 0.001,
-                  marginBottom:
-                    Platform.OS === 'ios' ? height * 0.001 : height * 0.001,
-                }}>
-                <Text style={[styles.textLabel, styles.texColorWite]}>
-                  Noches
-                </Text>
-                <TextInput
-                  style={[styles.texColorWite, styles.textInput]}
-                  keyboardType="numeric"
-                  placeholder="Noches"
-                  placeholderTextColor="gray"
-                  autoCapitalize="none"
-                  numberOfLines={1}
-                  onChangeText={text =>
-                    setStateValue('noches', text)
-                  }></TextInput>
-              </View>
-              <View
-                style={{
-                  paddingTop:
-                    Platform.OS === 'ios' ? height * 0.001 : height * 0.001,
-                  marginBottom:
-                    Platform.OS === 'ios' ? height * 0.001 : height * 0.001,
-                }}>
-                <Text style={[styles.textLabel, styles.texColorWite]}>
-                  Precio del paquete por adulto
-                </Text>
-                <TextInput
-                  style={[styles.texColorWite, styles.textInput]}
-                  keyboardType="numeric"
-                  placeholder="$"
-                  placeholderTextColor="gray"
-                  autoCapitalize="none"
-                  numberOfLines={1}
-                  value={state.precio.replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
-                  onChangeText={text =>
-                    setStateValue('precio', text)
-                  }></TextInput>
-              </View>
-              <View>
-                <Text style={[styles.label, styles.texColorWite]}>
-                  Incluye descuento
-                </Text>
-                <Switch
-                  style={styles.containerSwitch}
-                  trackColor={{false: '#767577', true: '#E2770f'}}
-                  thumbColor={state.desc ? '#f4f3f4' : '#f4f3f4'}
-                  value={state.desc}
-                  onValueChange={() =>
-                    setStateValue('desc', !state.desc)
-                  }
-                />
-              </View>
-              {state.desc && (
-                <View>
-                  <Text style={[styles.textLabel, styles.texColorWite]}>
-                    Precio del paquete con descuento por adulto
-                  </Text>
-                  <TextInput
-                    style={[styles.texColorWite, styles.textDes]}
-                    keyboardType="numeric"
-                    numberOfLines={1}
-                    multiline={true}
-                    placeholder="Descuento"
-                    placeholderTextColor="gray"
-                    autoCapitalize="none"
-                    value={state.precioDcto.replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
-                    onChangeText={text =>
-                      setStateValue('precioDcto', text)
-                    }></TextInput>
-                </View>
-              )}
-
-              <View
-                style={{
-                  paddingTop:
-                    Platform.OS === 'ios' ? height * 0.001 : height * 0.001,
-                  marginBottom:
-                    Platform.OS === 'ios' ? height * 0.001 : height * 0.001,
-                }}>
-                <Text style={[styles.textLabel, styles.texColorWite]}>
-                  Precio del paquete por niño
-                </Text>
-                <TextInput
-                  style={[styles.texColorWite, styles.textInput]}
-                  keyboardType="numeric"
-                  placeholder="$"
-                  placeholderTextColor="gray"
-                  autoCapitalize="none"
-                  numberOfLines={1}
-                  value={state.precioNino.replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
-                  onChangeText={text =>
-                    setStateValue('precioNino', text)
-                  }></TextInput>
-              </View>
-
-              <View
-                style={{
-                  paddingTop:
-                    Platform.OS === 'ios' ? height * 0.001 : height * 0.001,
-                  marginBottom:
-                    Platform.OS === 'ios' ? height * 0.001 : height * 0.001,
-                }}>
-                <Text style={[styles.textLabel, styles.texColorWite]}>
-                  Imagen principal
-                </Text>
-
-                {state.imgPrincipal && (
-                  <Image
-                    source={{uri: state.imgPrincipal.file}}
-                    style={{
-                      height: 130,
-                      width: 130,
-                      alignSelf: 'center',
-                      borderRadius: 10,
-                    }}
-                  />
-                )}
-
-                <TouchableOpacity
-                  style={{
-                    ...styles.button,
-                    marginTop: height * 0.01,
-                    width: width * 0.7,
-                    alignSelf: 'center',
-                  }}
-                  onPress={() => chooseImage('principal', 1)}>
-                  <Text style={styles.text}>
-                    {state.imgPrincipal ? 'Cambiar' : 'Seleccionar'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <View
-                style={{
-                  paddingTop:
-                    Platform.OS === 'ios' ? height * 0.001 : height * 0.001,
-                  marginBottom:
-                    Platform.OS === 'ios' ? height * 0.001 : height * 0.001,
-                }}>
-                <Text style={[styles.textLabel, styles.texColorWite]}>
-                  Imagen del banner
-                </Text>
-
-                {state.imgBanner && (
-                  <Image
-                    source={{uri: state.imgBanner.file}}
-                    style={{
-                      height: 130,
-                      width: 130,
-                      alignSelf: 'center',
-                      borderRadius: 10,
-                    }}
-                  />
-                )}
-
-                <TouchableOpacity
-                  style={{
-                    ...styles.button,
-                    marginTop: height * 0.01,
-                    width: width * 0.7,
-                    alignSelf: 'center',
-                  }}
-                  onPress={() => chooseImage('banner', 1)}>
-                  <Text style={styles.text}>
-                    {' '}
-                    {state.imgBanner ? 'Cambiar' : 'Seleccionar'}{' '}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <View
-                style={{
-                  paddingTop: Platform.OS === 'ios' ? height * 0.001 : height * 0.001,
-                  marginBottom: Platform.OS === 'ios' ? height * 0.001 : height * 0.001,
-                }}>
-                <Text style={[styles.textLabel, styles.texColorWite]}>
-                  Galería de imágenes
-                </Text>
-
-                {state.imgGallery.length != 0 && (
-                  // REEMPLAZA el FlatList con esto:
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-evenly' }}>
-                    {state.imgGallery.map((item, index) => (
-                      <Image
-                        key={index.toString()}
-                        source={{ uri: item.file }}
-                        style={{
-                          height: 130,
-                          width: 130,
-                          borderRadius: 10,
-                          margin: 5,
-                        }}
-                      />
-                    ))}
+                    {/* Para configuraciones predefinidas */}
+                    {state.configurationDay !== 'configDay' && (
+                      <View style={styles.diasConfig}>
+                        {getDiasSeleccionados().map(dia => (
+                          <View key={dia} style={styles.diaConfigRow}>
+                            <Text style={styles.diaLabel}>
+                              {dia.charAt(0).toUpperCase() + dia.slice(1)}
+                            </Text>
+                            <View style={styles.cuposInputContainer}>
+                              <Text style={styles.cuposLabel}>Cupos:</Text>
+                              <TextInput
+                                style={styles.cuposInput}
+                                keyboardType="numeric"
+                                placeholder="0"
+                                placeholderTextColor="#999"
+                                value={state.cuposPorDiaConfig[dia as keyof CuposPorDiaConfig]?.toString() || '0'}
+                                onChangeText={(text) => handleCuposChange(dia, text)}
+                              />
+                            </View>
+                          </View>
+                        ))}
+                      </View>
+                    )}
                   </View>
                 )}
+              </View>
+            )}
 
-                <TouchableOpacity
-                  style={{
-                    ...styles.button,
-                    marginTop: height * 0.01,
-                    width: width * 0.7,
-                    alignSelf: 'center',
-                  }}
-                  onPress={() => chooseImage('gallery', 5)}>
-                  <Text style={styles.text}>
-                    {state.imgGallery.length > 0 ? 'Agregar más' : 'Seleccionar'}
-                  </Text>
+            {/* CUPOS DISPONIBLES (solo si NO es paquete diario) */}
+            {!state.paqueteDiario && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Cupos disponibles totales</Text>
+                <TextInput
+                  style={styles.textInput}
+                  keyboardType="numeric"
+                  placeholder="Ingresa el número total de cupos"
+                  placeholderTextColor="#999"
+                  value={state.cupos}
+                  onChangeText={text => setStateValue('cupos', text)}
+                />
+              </View>
+            )}
+          </View>
+
+          {/* SECCIÓN FECHAS Y HORAS */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Fechas y Horarios</Text>
+            
+            <View style={styles.dateRow}>
+              <View style={styles.dateInput}>
+                <Text style={styles.inputLabel}>Fecha inicio</Text>
+                <TouchableOpacity 
+                  style={styles.dateButton}
+                  onPress={() => setStateValue('statusCalendar', true)}
+                >
+                  <Text style={styles.dateButtonText}>{state.startDate}</Text>
                 </TouchableOpacity>
               </View>
-
-              <View>
-                <View
-                  style={{
-                    alignSelf: 'center',
-                    paddingTop: height * 0.01,
-                    justifyContent: 'space-between',
-                  }}>
-                  <TouchableOpacity
-                    style={{...styles.button}}
-                    onPress={onHandleSubmit}>
-                    <Text style={styles.text}>Crear paquete</Text>
-                  </TouchableOpacity>
-                </View>
+              
+              <View style={styles.dateInput}>
+                <Text style={styles.inputLabel}>Fecha fin</Text>
+                <TouchableOpacity 
+                  style={styles.dateButton}
+                  onPress={() => setStateValue('statusCalendar', true)}
+                >
+                  <Text style={styles.dateButtonText}>{state.endDate}</Text>
+                </TouchableOpacity>
               </View>
             </View>
-          </ScrollView>
-        </View>
-      </KeyboardAwareScrollView>
 
-      <View>
-        <Modal
-          animationType="fade"
-          transparent={true}
-          visible={state.modalRecogida || state.modalPuntoFnal}
-          onRequestClose={() => {
-            setStateValue('modalRecogida', false);
-          }}>
-          <View style={styles.centeredView}>
-            <TouchableOpacity
-              onPress={() =>
-                setStateValue('modalRecogida', false)
-              }
-              style={styles.BottonClose}>
-              <Text style={[styles.text, styles.textClose]}>X</Text>
-            </TouchableOpacity>
+            <View style={styles.timeRow}>
+              <View style={styles.timeInput}>
+                <Text style={styles.inputLabel}>Hora salida</Text>
+                <TouchableOpacity 
+                  style={styles.timeButton}
+                  onPress={showDatePicker}
+                >
+                  <Text style={styles.timeButtonText}>
+                    {state.infoHoraSalida || 'Seleccionar'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.timeInput}>
+                <Text style={styles.inputLabel}>Hora llegada</Text>
+                <TouchableOpacity 
+                  style={styles.timeButton}
+                  onPress={showDatePickerLlegada}
+                >
+                  <Text style={styles.timeButtonText}>
+                    {state.infoHoraLlegada || 'Seleccionar'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
 
-            <View style={styles.modal}>
-              {state.modalRecogida && (
-                <GooglePlacesComponent
-                  savePlaces={savePlaces}
-                  cantElements={3}
-                  closeModal={closeModal}
+          {/* SECCIÓN ACOMODACIÓN */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Acomodación</Text>
+            
+            <View style={styles.switchGroup}>
+              <View style={styles.switchContainer}>
+                <Text style={styles.switchLabel}>Doble</Text>
+                <Switch
+                  trackColor={{false: '#767577', true: '#E2991C'}}
+                  thumbColor={state.doble ? '#f4f3f4' : '#f4f3f4'}
+                  value={state.doble}
+                  onValueChange={() => setState(prev => ({
+                    ...prev,
+                    doble: !state.doble,
+                    multiple: false,
+                  }))}
                 />
-              )}
-              {state.modalPuntoFnal && (
-                <GooglePlacesComponent
-                  savePlaces={savePlacesFinal}
-                  cantElements={1}
-                  closeModal={closeModal}
+              </View>
+              
+              <View style={styles.switchContainer}>
+                <Text style={styles.switchLabel}>Múltiple</Text>
+                <Switch
+                  trackColor={{false: '#767577', true: '#E2991C'}}
+                  thumbColor={state.multiple ? '#f4f3f4' : '#f4f3f4'}
+                  value={state.multiple}
+                  onValueChange={() => setState(prev => ({
+                    ...prev,
+                    multiple: !state.multiple,
+                    doble: false,
+                  }))}
                 />
+              </View>
+            </View>
+          </View>
+
+          {/* SECCIÓN INFORMACIÓN ADICIONAL */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Información Adicional</Text>
+            
+            <View style={styles.gridRow}>
+              <View style={styles.gridInput}>
+                <Text style={styles.inputLabel}>Días</Text>
+                <TextInput
+                  style={styles.textInput}
+                  keyboardType="numeric"
+                  placeholder="0"
+                  placeholderTextColor="#999"
+                  value={state.dias}
+                  onChangeText={text => setStateValue('dias', text)}
+                />
+              </View>
+              
+              <View style={styles.gridInput}>
+                <Text style={styles.inputLabel}>Noches</Text>
+                <TextInput
+                  style={styles.textInput}
+                  keyboardType="numeric"
+                  placeholder="0"
+                  placeholderTextColor="#999"
+                  value={state.noches}
+                  onChangeText={text => setStateValue('noches', text)}
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Nombre del guía</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="Nombre completo del guía"
+                placeholderTextColor="#999"
+                value={state.nombreGuia}
+                onChangeText={text => setStateValue('nombreGuia', text)}
+              />
+            </View>
+          </View>
+
+          {/* SECCIÓN PRECIOS */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Precios</Text>
+            
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Precio adulto</Text>
+              <View style={styles.priceInput}>
+                <Text style={styles.currencySymbol}>$</Text>
+                <TextInput
+                  style={[styles.textInput, styles.priceTextInput]}
+                  keyboardType="numeric"
+                  placeholder="0"
+                  placeholderTextColor="#999"
+                  value={state.precio.replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+                  onChangeText={text => setStateValue('precio', text)}
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Precio niño</Text>
+              <View style={styles.priceInput}>
+                <Text style={styles.currencySymbol}>$</Text>
+                <TextInput
+                  style={[styles.textInput, styles.priceTextInput]}
+                  keyboardType="numeric"
+                  placeholder="0"
+                  placeholderTextColor="#999"
+                  value={state.precioNino.replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+                  onChangeText={text => setStateValue('precioNino', text)}
+                />
+              </View>
+            </View>
+
+            <View style={styles.switchRow}>
+              <Text style={styles.switchLabel}>Incluir descuento</Text>
+              <Switch
+                trackColor={{false: '#767577', true: '#E2991C'}}
+                thumbColor={state.desc ? '#f4f3f4' : '#f4f3f4'}
+                value={state.desc}
+                onValueChange={() => setStateValue('desc', !state.desc)}
+              />
+            </View>
+
+            {state.desc && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Precio con descuento</Text>
+                <View style={styles.priceInput}>
+                  <Text style={styles.currencySymbol}>$</Text>
+                  <TextInput
+                    style={[styles.textInput, styles.priceTextInput]}
+                    keyboardType="numeric"
+                    placeholder="0"
+                    placeholderTextColor="#999"
+                    value={state.precioDcto.replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+                    onChangeText={text => setStateValue('precioDcto', text)}
+                  />
+                </View>
+              </View>
+            )}
+          </View>
+
+          {/* SECCIÓN IMÁGENES */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Imágenes</Text>
+            
+            <View style={styles.imageSection}>
+              <Text style={styles.inputLabel}>Imagen principal</Text>
+              <TouchableOpacity 
+                style={styles.imageUpload}
+                onPress={() => chooseImage('principal', 1)}
+              >
+                {state.imgPrincipal ? (
+                  <Image
+                    source={{uri: state.imgPrincipal.file}}
+                    style={styles.imagePreview}
+                  />
+                ) : (
+                  <View style={styles.imagePlaceholder}>
+                    <Icon name="camera" type="material-community" color="#999" size={30} />
+                    <Text style={styles.imagePlaceholderText}>Seleccionar imagen</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.imageSection}>
+              <Text style={styles.inputLabel}>Imagen banner</Text>
+              <TouchableOpacity 
+                style={styles.imageUpload}
+                onPress={() => chooseImage('banner', 1)}
+              >
+                {state.imgBanner ? (
+                  <Image
+                    source={{uri: state.imgBanner.file}}
+                    style={styles.imagePreview}
+                  />
+                ) : (
+                  <View style={styles.imagePlaceholder}>
+                    <Icon name="image" type="material-community" color="#999" size={30} />
+                    <Text style={styles.imagePlaceholderText}>Seleccionar banner</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.imageSection}>
+              <Text style={styles.inputLabel}>Galería de imágenes</Text>
+              <TouchableOpacity 
+                style={styles.imageUpload}
+                onPress={() => chooseImage('gallery', 5)}
+              >
+                <View style={styles.galleryPlaceholder}>
+                  <Icon name="image-multiple" type="material-community" color="#999" size={30} />
+                  <Text style={styles.imagePlaceholderText}>
+                    {state.imgGallery.length > 0 ? 
+                      `${state.imgGallery.length} imágenes` : 
+                      'Agregar imágenes'
+                    }
+                  </Text>
+                </View>
+              </TouchableOpacity>
+              
+              {state.imgGallery.length > 0 && (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.galleryScroll}>
+                  {state.imgGallery.map((item, index) => (
+                    <Image
+                      key={index.toString()}
+                      source={{ uri: item.file }}
+                      style={styles.galleryImage}
+                    />
+                  ))}
+                </ScrollView>
               )}
             </View>
           </View>
-        </Modal>
-      </View>
+
+          {/* BOTÓN CREAR */}
+          <TouchableOpacity 
+            style={styles.createButton}
+            onPress={onHandleSubmit}
+          >
+            <Text style={styles.createButtonText}>Crear Paquete Turístico</Text>
+          </TouchableOpacity>
+
+        </View>
+      </KeyboardAwareScrollView>
+
+      {/* MODAL DE DESTINOS */}
+      <Modal
+        visible={state.showDestinationModal}
+        transparent={true}
+        animationType="slide"
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.destinationModal}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Seleccionar Destino</Text>
+              <TouchableOpacity 
+                onPress={() => setStateValue('showDestinationModal', false)}
+                style={styles.modalCloseButton}
+              >
+                <Text style={styles.modalCloseText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.destinosList}>
+              {state.destinos.map((destino) => (
+                <TouchableOpacity
+                  key={destino.key}
+                  style={[
+                    styles.destinoItem,
+                    state.destinoPaquete.key === destino.key && styles.destinoItemSelected
+                  ]}
+                  onPress={() => {
+                    setState(prev => ({
+                      ...prev,
+                      destinoPaquete: destino,
+                      destino: destino.key,
+                      showDestinationModal: false
+                    }));
+                  }}
+                >
+                  <Text style={[
+                    styles.destinoText,
+                    state.destinoPaquete.key === destino.key && styles.destinoTextSelected
+                  ]}>
+                    {destino.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODALES EXISTENTES */}
+      <DateTimePickerModal
+        isVisible={state.DatePickerVisibility}
+        mode="time"
+        onConfirm={handleConfirm}
+        onCancel={hideDatePicker}
+        locale='es_CO'
+      />
+      
+      <DateTimePickerModal
+        isVisible={state.DatePickerVisibleLlegada}
+        mode="time"
+        onConfirm={handleConfirmLlegada}
+        onCancel={hideDatePickerLlegada}
+        locale='es_CO'
+      />
+
+      {state.statusCalendar && (
+        <Overlay
+          isVisible={state.statusCalendar}
+          windowBackgroundColor="rgba(0, 0, 0, 0.7)"
+          overlayStyle={styles.calendarOverlay}
+        >
+          <Calendar
+            minDate={Date()}
+            monthFormat={'MMMM yyyy'}
+            markedDates={state.markedDates}
+            markingType="period"
+            hideExtraDays={true}
+            onDayPress={onDayPress}
+            style={styles.calendar}
+            theme={{
+              calendarBackground: '#2d2d2d',
+              textSectionTitleColor: '#fff',
+              dayTextColor: '#fff',
+              todayTextColor: '#E2991C',
+              selectedDayTextColor: '#fff',
+              monthTextColor: '#fff',
+              arrowColor: '#E2991C',
+            }}
+          />
+          <View style={styles.calendarButtons}>
+            <TouchableOpacity 
+              style={[styles.calendarButton, styles.cancelButton]}
+              onPress={() => setStateValue('statusCalendar', false)}
+            >
+              <Text style={styles.calendarButtonText}>Cancelar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.calendarButton, styles.confirmButton]}
+              onPress={() => setStateValue('statusCalendar', false)}
+            >
+              <Text style={styles.calendarButtonText}>Aceptar</Text>
+            </TouchableOpacity>
+          </View>
+        </Overlay>
+      )}
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={state.modalRecogida || state.modalPuntoFnal}
+        onRequestClose={() => setStateValue('modalRecogida', false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <TouchableOpacity 
+              style={styles.modalCloseButton}
+              onPress={() => setStateValue('modalRecogida', false)}
+            >
+              <Text style={styles.modalCloseText}>✕</Text>
+            </TouchableOpacity>
+            
+            {state.modalRecogida && (
+              <GooglePlacesComponent
+                savePlaces={savePlaces}
+                cantElements={3}
+                closeModal={closeModal}
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 };
 
-// Los estilos permanecen exactamente igual
+// ESTILOS MEJORADOS CON LAS CORRECCIONES
 const styles = StyleSheet.create({
   container: {
-    padding: 25,
-    marginBottom: 100,
-    backgroundColor: '#4f4f4f',
-  },
-  containerHeader: {
-    flexDirection: 'row',
-    backgroundColor: 'black',
-    borderBottomWidth: 0,
-    justifyContent: 'center',
-  },
-  header: {
-    position: 'relative',
-    top: -height * 0.004,
-    width: width * 1,
-    alignItems: 'center',
-  },
-  out: {
-    position: 'absolute',
-    right: -width * 0.15,
-    top: height * -0.02,
-  },
-  modal: {
-    backgroundColor: '#4f4f4f',
-    borderRadius: width * 0.05,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: height * 0.1,
-    elevation: 5,
-    padding: width * 0.05,
-    width: width * 0.9,
-    height: height * 0.9,
-    alignContent: 'center',
-  },
-  textLabel: {
-    fontSize: Platform.OS === 'ios' ? height * 0.024 : height * 0.028,
-    marginTop: Platform.OS === 'ios' ? height * 0.015 : height * 0.02,
-    marginBottom: Platform.OS === 'ios' ? height * 0.01 : height * 0.01,
-    textAlign: 'center',
-  },
-  textSelect: {
-    fontSize: Platform.OS === 'ios' ? height * 0.015 : height * 0.013,
-    marginVertical: 7,
-    paddingVertical: 7,
-    textAlign: 'center',
-    borderColor: 'white',
-    lineHeight: Platform.OS === 'ios' ? height * 0.02 : height * 0.05,
-    borderWidth: width * 0.002,
-    borderRadius: Platform.OS === 'ios' ? height * 0.02 : height * 0.022,
-  },
-  centeredView: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 22,
+    backgroundColor: '#1a1a1a',
   },
-  inputContainer: {
+  headerContainer: {
     flexDirection: 'row',
-    marginVertical: 0,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'ios' ? 50 : 20,
+    paddingBottom: 16,
+    backgroundColor: '#2d2d2d',
+    borderBottomWidth: 1,
+    borderBottomColor: '#404040',
+  },
+  backButton: {
+    padding: 8,
+  },
+  headerTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  headerSpacer: {
+    width: 40,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 100,
+  },
+  formContainer: {
+    padding: 16,
+  },
+  section: {
+    backgroundColor: '#2d2d2d',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#404040',
+  },
+  sectionTitle: {
+    color: '#E2991C',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
   },
   textInput: {
-    fontSize: Platform.OS === 'ios' ? height * 0.015 : height * 0.016,
-    marginVertical: 7,
-    paddingVertical: 7,
-    textAlign: 'center',
-    borderColor: 'white',
-    lineHeight: Platform.OS === 'ios' ? height * 0.02 : height * 0.02,
-    borderWidth: width * 0.002,
-    borderRadius: height * 0.02,
+    backgroundColor: '#3a3a3a',
+    color: '#fff',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#555',
   },
-  textDes: {
-    fontSize: Platform.OS === 'ios' ? height * 0.015 : height * 0.013,
-    marginVertical: 7,
-    paddingVertical: 7,
-    textAlign: 'center',
-    borderColor: 'white',
-    lineHeight: Platform.OS === 'ios' ? height * 0.02 : height * 0.05,
-    borderWidth: Platform.OS === 'ios' ? height * 0.001 : height * 0.0015,
-    borderRadius: Platform.OS === 'ios' ? height * 0.01 : height * 0.02,
+  textArea: {
+    backgroundColor: '#3a3a3a',
+    color: '#fff',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#555',
+    minHeight: 80,
+    textAlignVertical: 'top',
   },
-  textSwitch: {
-    width: width * 0.1,
-  },
-  switch: {
-    borderWidth: width * 0.0003,
-    borderRadius: width * 0.03,
-    top: Platform.OS === 'ios' ? height * 0.02 : height * 0.013,
-  },
-  disable: {
-    borderColor: 'red',
-    color: 'red',
-  },
-  texColorWite: {
-    color: 'white',
-  },
-  checkboxContainer: {
+  switchGroup: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  checkbox: {
-    alignSelf: 'center',
-  },
-  label: {
-    margin: 3,
-    top: Platform.OS === 'ios' ? height * 0.005 : height * 0.015,
-  },
-  containerSwitch: {
-    borderWidth: width * 0.0003,
-    borderRadius: width * 0.03,
-    left: Platform.OS === 'ios' ? width * 0.7 : width * 0.001,
-    top: Platform.OS === 'ios' ? -height * 0.02 : -height * 0.013,
-  },
-  Botton: {
-    backgroundColor: 'orange',
-    borderRadius: 20,
-    width: 325,
-    padding: 15,
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
-  textClose: {
-    lineHeight: Platform.OS === 'ios' ? width * 0.09 : width * 0.076,
-  },
-  btnDates: {
+  switchContainer: {
     alignItems: 'center',
-    flexDirection: 'row',
-    alignContent: 'center',
-  },
-  button: {
-    backgroundColor: 'orange',
-    borderRadius: 20,
-    width: width * 0.5,
-    padding: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  MainContainer: {
     flex: 1,
-    padding: 6,
-    alignItems: 'center',
-    backgroundColor: 'white',
   },
-  text: {
-    fontSize: Platform.OS === 'ios' ? height * 0.015 : height * 0.02,
-    color: 'black',
-    padding: 3,
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  input: {
-    backgroundColor: 'white',
-    borderRadius: 30,
-    padding: 15,
-    width: width * 0.35,
-    height: width * 0.123,
-  },
-  textWithIcon: {
-    width: '100%',
+  switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    fontSize: 18,
-    height: width * 0.05,
+    justifyContent: 'space-between',
+    marginBottom: 12,
   },
-  buttonText: {
-    color: '#FFF',
-    fontSize: 15,
+  switchLabel: {
+    color: '#fff',
+    fontSize: 16,
+    marginBottom: 8,
   },
-  colorW: {
+  transportDetails: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#404040',
+  },
+  selectInput: {
+    backgroundColor: '#3a3a3a',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#555',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  selectText: {
+    color: '#fff',
+    fontSize: 16,
+  },
+  placeholderText: {
+    color: '#999',
+  },
+  loadingText: {
+    color: '#999',
+    fontSize: 14,
+    textAlign: 'center',
+    paddingVertical: 12,
+  },
+  buttonOutlined: {
+    borderWidth: 2,
+    borderColor: '#E2991C',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  buttonOutlinedText: {
+    color: '#E2991C',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  placesList: {
+    marginTop: 8,
+  },
+  placeItem: {
+    backgroundColor: '#3a3a3a',
+    borderRadius: 6,
+    padding: 8,
+    marginBottom: 4,
+  },
+  placeText: {
+    color: '#fff',
+    fontSize: 14,
+  },
+  // NUEVOS ESTILOS PARA PAQUETE DIARIO Y CUPOS
+  paqueteDiarioSection: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#404040',
+  },
+  pickerContainer: {
+    backgroundColor: '#3a3a3a',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#555',
+    marginBottom: 16,
+  },
+  picker: {
     color: '#fff',
   },
-  icon: {
-    borderRadius: 100,
-    backgroundColor: 'transparent',
-    color: 'transparent',
-    position: 'absolute',
-    top: -height * 0.028,
-    left: -width * 0.17,
-    alignItems: 'flex-start',
-    zIndex: 1,
+  cuposConfiguration: {
+    marginTop: 16,
   },
-  inputTextFiltros: {
-    color: 'black',
+  configurationTitle: {
+    color: '#E2991C',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 12,
   },
-  containerDay: {
-    display: 'flex',
+  diasConfig: {
+    marginTop: 8,
+  },
+  diaConfigRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-evenly',
-    alignContent: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#404040',
   },
-  BottonClose: {
-    position: 'absolute',
-    top: 40,
-    right: 20,
-    zIndex: 1,
-    backgroundColor: 'orange',
-    borderRadius: 20,
-    width: 40,
-    height: 40,
+  diaSwitch: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flex: 1,
+  },
+  diaLabel: {
+    color: '#fff',
+    fontSize: 14,
+    textTransform: 'capitalize',
+    flex: 1,
+  },
+  cuposInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 10,
+  },
+  cuposLabel: {
+    color: '#fff',
+    fontSize: 12,
+    marginRight: 8,
+  },
+  cuposInput: {
+    backgroundColor: '#3a3a3a',
+    color: '#fff',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    fontSize: 14,
+    borderWidth: 1,
+    borderColor: '#555',
+    width: 60,
+    textAlign: 'center',
+  },
+  dateRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  dateInput: {
+    flex: 0.48,
+  },
+  dateButton: {
+    backgroundColor: '#3a3a3a',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#555',
+  },
+  dateButtonText: {
+    color: '#fff',
+    fontSize: 14,
+  },
+  timeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  timeInput: {
+    flex: 0.48,
+  },
+  timeButton: {
+    backgroundColor: '#3a3a3a',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#555',
+  },
+  timeButtonText: {
+    color: '#fff',
+    fontSize: 14,
+  },
+  gridRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  gridInput: {
+    flex: 0.48,
+  },
+  priceInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  currencySymbol: {
+    color: '#fff',
+    fontSize: 16,
+    marginRight: 8,
+  },
+  priceTextInput: {
+    flex: 1,
+  },
+  imageSection: {
+    marginBottom: 20,
+  },
+  imageUpload: {
+    backgroundColor: '#3a3a3a',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#555',
+    overflow: 'hidden',
+  },
+  imagePreview: {
+    width: '100%',
+    height: 150,
+    borderRadius: 8,
+  },
+  imagePlaceholder: {
+    height: 150,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  galleryPlaceholder: {
+    height: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imagePlaceholderText: {
+    color: '#999',
+    marginTop: 8,
+    fontSize: 14,
+  },
+  galleryScroll: {
+    marginTop: 8,
+  },
+  galleryImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    marginRight: 8,
+  },
+  createButton: {
+    backgroundColor: '#E2991C',
+    borderRadius: 12,
+    padding: 18,
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 30,
+  },
+  createButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  // NUEVOS ESTILOS PARA MODAL DE DESTINOS
+  destinationModal: {
+    backgroundColor: '#2d2d2d',
+    margin: 20,
+    borderRadius: 12,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#404040',
+  },
+  modalTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  destinosList: {
+    maxHeight: 400,
+  },
+  destinoItem: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#404040',
+  },
+  destinoItemSelected: {
+    backgroundColor: '#E2991C',
+  },
+  destinoText: {
+    color: '#fff',
+    fontSize: 16,
+  },
+  destinoTextSelected: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
+  },
+  modalContent: {
+    width: '90%',
+    height: '80%',
+    backgroundColor: '#2d2d2d',
+    borderRadius: 12,
+    overflow: 'hidden',
+    alignSelf: 'center',
+  },
+  modalCloseButton: {
+    padding: 8,
+  },
+  modalCloseText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  calendarOverlay: {
+    backgroundColor: '#2d2d2d',
+    borderRadius: 12,
+    padding: 16,
+    width: '90%',
+  },
+  calendar: {
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  calendarButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  calendarButton: {
+    flex: 0.48,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#666',
+  },
+  confirmButton: {
+    backgroundColor: '#E2991C',
+  },
+  calendarButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

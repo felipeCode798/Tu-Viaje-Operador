@@ -17,7 +17,7 @@ import {
   View,
 } from "react-native";
 import { Calendar } from "react-native-calendars";
-import { Header, Icon, Overlay } from "react-native-elements";
+import { Icon, Overlay } from "react-native-elements";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import ModalSelector from "react-native-modal-selector";
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
@@ -104,9 +104,9 @@ const CreateProgramming: React.FC = () => {
   const [listRutas, setListRutas] = useState<Route[]>([]);
   const [listConductores, setListConductores] = useState<Driver[]>([]);
 
-  const [rutaSelected, setRutaSelected] = useState({ key: "-1", label: "Debes seleccionar una ruta" });
-  const [busSelected, setBusSelected] = useState({ key: "-1", label: "Debes seleccionar un bus", capacity: 0 });
-  const [conductorSelected, setConductorSelected] = useState({ key: "-1", label: "Debes seleccionar un Conductor" });
+  const [rutaSelected, setRutaSelected] = useState({ key: "-1", label: "Seleccionar ruta" });
+  const [busSelected, setBusSelected] = useState({ key: "-1", label: "Seleccionar bus", capacity: 0 });
+  const [conductorSelected, setConductorSelected] = useState({ key: "-1", label: "Seleccionar conductor" });
 
   const [startDate, setStartDate] = useState(moment(new Date()).format("YYYY-MM-DD"));
   const [endDate, setEndDate] = useState(moment(new Date()).format("YYYY-MM-DD"));
@@ -148,7 +148,7 @@ const CreateProgramming: React.FC = () => {
         const formattedRoutes = result.map(route => ({
           ...route,
           key: route.id,
-          label: `${route.origin.name}-${route.destination.name}`,
+          label: `${route.origin.name} - ${route.destination.name}`,
         }));
         setListRutas(formattedRoutes);
         getBuses(userIdParam);
@@ -224,29 +224,7 @@ const CreateProgramming: React.FC = () => {
 
   const chooseImage = async (type: string, limit: number) => {
     try {
-      console.log("🖼️ Intentando seleccionar imagen para:", type);
-      
-      // ✅ Verificar disponibilidad primero
-      const availability = await helpers.checkImagePickerAvailability();
-      console.log("🔍 Disponibilidad de image picker:", availability);
-      
-      if (!availability.launchImageLibrary) {
-        Alert.alert(
-          "Función no disponible", 
-          "La selección de imágenes no está disponible en este momento. Puedes continuar sin imágenes o contactar al soporte."
-        );
-        return;
-      }
-
-      console.log("🔄 Iniciando selección de imagen...");
       const resp = await helpers.pickImages(limit, [4, 3]);
-      
-      console.log("📸 Respuesta de pickImages:", {
-        hasUri: !!resp?.uri,
-        uriCount: resp?.uri?.length,
-        hasFile: !!resp?.file,
-        hasBase64: !!resp?.base64
-      });
       
       if (!resp || !resp.uri || !resp.uri[0]) {
         throw new Error("No se pudo obtener la imagen seleccionada");
@@ -259,22 +237,17 @@ const CreateProgramming: React.FC = () => {
         base64: resp.base64 || '',
       };
 
-      console.log("✅ Imagen procesada exitosamente para:", type);
-
       switch (type) {
         case "principal":
           setImgPrincipal(options);
-          Alert.alert("Éxito", "Imagen principal seleccionada correctamente");
           break;
         case "banner":
           setImgBanner(options);
-          Alert.alert("Éxito", "Imagen de banner seleccionada correctamente");
           break;
         case "gallery":
           let gallery = [...imgGallery];
           if (gallery.length > 5) gallery.shift();
           setImgGallery([...gallery, options]);
-          Alert.alert("Éxito", "Imagen agregada a la galería");
           break;
       }
       
@@ -299,12 +272,8 @@ const CreateProgramming: React.FC = () => {
 
   const sendUpload = async (id: string): Promise<boolean> => {
     try {
-      console.log("🔄 Iniciando upload de imágenes...");
-      
       const uploadPromises = [];
-
       if (imgPrincipal) {
-        console.log("📤 Subiendo imagen principal...");
         uploadPromises.push(
           helpers.uploadImages({
             file: imgPrincipal, 
@@ -317,7 +286,6 @@ const CreateProgramming: React.FC = () => {
       }
 
       if (imgBanner) {
-        console.log("📤 Subiendo imagen banner...");
         uploadPromises.push(
           helpers.uploadImages({
             file: imgBanner, 
@@ -329,22 +297,8 @@ const CreateProgramming: React.FC = () => {
         );
       }
 
-      for (let i = 0; i < imgGallery.length; i++) {
-        console.log(`📤 Subiendo imagen galería ${i + 1}...`);
-        uploadPromises.push(
-          helpers.uploadImages({
-            file: imgGallery[i], 
-            id, 
-            type: "destino", 
-            nombrepaq: place.name || "programacion", 
-            typeGalery: "gallery"
-          })
-        );
-      }
-
       if (uploadPromises.length > 0) {
         await Promise.all(uploadPromises);
-        console.log("✅ Todas las imágenes subidas exitosamente");
       } else {
         console.log("ℹ️ No hay imágenes para subir");
       }
@@ -411,9 +365,7 @@ const CreateProgramming: React.FC = () => {
               start: `${startDate}T${horaSalida}:00.000+00:00`,
               end: `${endDate}T${horaLlegada}:00.000+00:00`,
             };
-            
-            console.log("📤 Creando programación con datos:", obj);
-            
+                      
             await CreateProgrammingServices.createProgramming(obj);
             Alert.alert("Éxito", "Programación creada correctamente");
             router.back();
@@ -446,127 +398,451 @@ const CreateProgramming: React.FC = () => {
   }, []);
 
   return (
-    <View style={{ backgroundColor: "#4f4f4f", flex: 1 }}>
+    <View style={styles.container}>
       <StatusBar barStyle={"light-content"} />
-      <Header containerStyle={styles.containerHeader}>
-        <View style={styles.header}>
-          <Text style={[styles.colorW, { fontSize: height * 0.03 }]}>Crear programación</Text>
-        </View>
-        <View style={styles.icon}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <FontAwesome5 name="arrow-left" size={width * 0.1} color="#fff" />
-          </TouchableOpacity>
-        </View>
-      </Header>
+      
+      {/* HEADER MEJORADO */}
+      <View style={styles.headerContainer}>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <FontAwesome5
+            name={'arrow-left'}
+            size={20}
+            color="#fff"
+          />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>
+          Crear Programación
+        </Text>
+        <View style={styles.headerSpacer} />
+      </View>
 
-      <KeyboardAwareScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
-        <View style={styles.container}>
-          <View>
-            <Text style={[styles.textLabel, styles.texColorWite]}>Selecciona una ruta</Text>
-            {listRutas?.length ? (
-              <ModalSelector data={listRutas} onChange={(opt: any) => { setRutaSelected(opt); setRuta(opt.key); }} initValue={rutaSelected.label} cancelText="Cancelar" optionTextStyle={{ color: "black" }} optionContainerStyle={{ backgroundColor: "white", height: height * 0.5 }}>
-                <Text style={[styles.textSelect, styles.texColorWite, styles.textInput]}>{rutaSelected.label}</Text>
-              </ModalSelector>
-            ) : <Text style={[styles.textSelect, styles.texColorWite, styles.textInput, { color: 'gray' }]}>Cargando rutas...</Text>}
+      <KeyboardAwareScrollView
+        enableOnAndroid={true}
+        contentContainerStyle={styles.scrollContent}
+        enableAutomaticScroll={true}
+        showsVerticalScrollIndicator={false}
+        extraScrollHeight={100}>
+        
+        <View style={styles.formContainer}>
+          
+          {/* SECCIÓN INFORMACIÓN BÁSICA */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Información Básica</Text>
+            
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Ruta</Text>
+              {listRutas?.length ? (
+                <ModalSelector 
+                  data={listRutas} 
+                  onChange={(opt: any) => { 
+                    setRutaSelected(opt); 
+                    setRuta(opt.key); 
+                  }} 
+                  initValue={rutaSelected.label} 
+                  cancelText="Cancelar" 
+                  optionTextStyle={{ color: "black" }} 
+                  optionContainerStyle={{ backgroundColor: "white", maxHeight: height * 0.4 }}
+                >
+                  <TouchableOpacity style={styles.selectInput}>
+                    <Text style={[
+                      styles.selectText,
+                      rutaSelected.key === "-1" && styles.placeholderText
+                    ]}>
+                      {rutaSelected.label}
+                    </Text>
+                    <Icon name="chevron-down" type="material-community" color="#999" size={20} />
+                  </TouchableOpacity>
+                </ModalSelector>
+              ) : (
+                <Text style={styles.loadingText}>Cargando rutas...</Text>
+              )}
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Vehículo</Text>
+              {listBuses?.length ? (
+                <ModalSelector 
+                  data={listBuses} 
+                  onChange={(opt: any) => { 
+                    setBusSelected({ key: opt.key, label: opt.label, capacity: opt.capacity }); 
+                    setVehiculo(opt.key); 
+                  }} 
+                  initValue={busSelected.label} 
+                  cancelText="Cancelar" 
+                  optionTextStyle={{ color: "black" }} 
+                  optionContainerStyle={{ backgroundColor: "white", maxHeight: height * 0.4 }}
+                >
+                  <TouchableOpacity style={styles.selectInput}>
+                    <Text style={[
+                      styles.selectText,
+                      busSelected.key === "-1" && styles.placeholderText
+                    ]}>
+                      {busSelected.label}
+                    </Text>
+                    <Icon name="chevron-down" type="material-community" color="#999" size={20} />
+                  </TouchableOpacity>
+                </ModalSelector>
+              ) : (
+                <Text style={styles.loadingText}>Cargando vehículos...</Text>
+              )}
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Conductor</Text>
+              {listConductores?.length ? (
+                <ModalSelector 
+                  data={listConductores} 
+                  onChange={(opt: any) => { 
+                    setConductorSelected({ key: opt.key, label: opt.label }); 
+                    setConductor(opt.key); 
+                  }} 
+                  initValue={conductorSelected.label} 
+                  cancelText="Cancelar" 
+                  optionTextStyle={{ color: "black" }} 
+                  optionContainerStyle={{ backgroundColor: "white", maxHeight: height * 0.4 }}
+                >
+                  <TouchableOpacity style={styles.selectInput}>
+                    <Text style={[
+                      styles.selectText,
+                      conductorSelected.key === "-1" && styles.placeholderText
+                    ]}>
+                      {conductorSelected.label}
+                    </Text>
+                    <Icon name="chevron-down" type="material-community" color="#999" size={20} />
+                  </TouchableOpacity>
+                </ModalSelector>
+              ) : (
+                <Text style={styles.loadingText}>Cargando conductores...</Text>
+              )}
+            </View>
           </View>
 
-          <View>
-            <Text style={[styles.textLabel, styles.texColorWite]}>Selecciona un vehículo ({listBuses?.length || 0})</Text>
-            {listBuses?.length ? (
-              <ModalSelector data={listBuses} onChange={(opt: any) => { setBusSelected({ key: opt.key, label: opt.label, capacity: opt.capacity }); setVehiculo(opt.key); }} initValue={busSelected.label} cancelText="Cancelar" optionTextStyle={{ color: "black" }} optionContainerStyle={{ backgroundColor: "white" }}>
-                <Text style={[styles.textSelect, styles.texColorWite, styles.textInput]}>{busSelected.label}</Text>
-              </ModalSelector>
-            ) : <Text style={[styles.textSelect, styles.texColorWite, styles.textInput, { color: 'gray' }]}>Cargando vehículos...</Text>}
-          </View>
-
-          <View>
-            <Text style={[styles.textLabel, styles.texColorWite]}>Selecciona un Conductor ({listConductores?.length || 0})</Text>
-            {listConductores?.length ? (
-              <ModalSelector data={listConductores} onChange={(opt: any) => { setConductorSelected({ key: opt.key, label: opt.label }); setConductor(opt.key); }} initValue={conductorSelected.label} cancelText="Cancelar" optionTextStyle={{ color: "black" }} optionContainerStyle={{ backgroundColor: "white" }}>
-                <Text style={[styles.textSelect, styles.texColorWite, styles.textInput]}>{conductorSelected.label}</Text>
-              </ModalSelector>
-            ) : <Text style={[styles.textSelect, styles.texColorWite, styles.textInput, { color: 'gray' }]}>Cargando conductores...</Text>}
-          </View>
-
-          <View><Text style={[styles.textLabel, styles.texColorWite]}>Asientos disponibles</Text><TextInput style={[styles.texColorWite, styles.textInput]} keyboardType="numeric" placeholder={`${busSelected.capacity || 0}`} placeholderTextColor="gray" onChangeText={setDisponibles} value={disponibles} /></View>
-          <View><Text style={[styles.textLabel, styles.texColorWite]}>Precio Comercial</Text><TextInput style={[styles.texColorWite, styles.textInput]} keyboardType="numeric" placeholder="150000" placeholderTextColor="gray" onChangeText={setPrecio} value={precio} /></View>
-
-          <View style={styles.containerSwitch}><Text style={[styles.textLabel, styles.texColorWite, styles.textSwitch]}>Aplicar Descuento</Text><Switch trackColor={{ false: "#767577", true: "#E2770f" }} thumbColor="#f4f3f4" onValueChange={() => setDcto(!dcto)} value={dcto} /></View>
-          {dcto && <View><Text style={[styles.textLabel, styles.texColorWite]}>Precio Descuento</Text><TextInput style={[styles.texColorWite, styles.textInput]} keyboardType="numeric" placeholder="10000" placeholderTextColor="gray" onChangeText={setPrecioDcto} value={precioDcto} /></View>}
-
-          <View style={styles.containerSwitch}><Text style={[styles.textLabel, styles.texColorWite, styles.textSwitch]}>Se requiere documentación</Text><Switch trackColor={{ false: "#767577", true: "#E2770f" }} thumbColor="#f4f3f4" onValueChange={() => setDocumentacion(!documentacion)} value={documentacion} /></View>
-          <View><Text style={[styles.textLabel, styles.texColorWite]}>Descripción</Text><TextInput style={[styles.texColorWite, styles.textArea]} multiline numberOfLines={4} placeholder="Describe tu paquete turístico" placeholderTextColor="gray" onChangeText={setDescripcion} value={descripcion} /></View>
-
-          <View><Text style={[styles.textLabel, styles.texColorWite]}>Puntos de recogida</Text><Text style={[styles.texColorWite, styles.textInput]} onPress={() => setModalRecogida(true)}>Añadir puntos de recogida</Text>{places.map((p, i) => <Text key={i} style={[styles.textLabel, styles.texColorOrange]}>{p.name}</Text>)}</View>
-          <View><Text style={[styles.textLabel, styles.texColorWite]}>Punto de llegada</Text><Text style={[styles.texColorWite, styles.textInput]} onPress={() => setModalPuntoFnal(true)}>Añadir punto de llegada</Text>{place.name && <Text style={[styles.textLabel, styles.texColorOrange]}>{place.name}</Text>}</View>
-
-          <Text style={[styles.textLabel, styles.texColorWite]}>Escoge las fechas</Text>
-          <View style={{ flexDirection: "row", justifyContent: "space-around", marginBottom: 15 }}>
-            <TouchableOpacity style={{ ...styles.input, width: "37%" }} onPress={() => setStatusCalendar(true)}>
-              <View style={styles.textWithIcon}><Icon name="calendar" size={21} color="orange" type="material-community" /><Text style={styles.inputTextFiltros}>{startDate}</Text></View>
-            </TouchableOpacity>
-            <View style={{ paddingTop: 10 }}><Icon name="arrows-v" size={10} color="gray" type="font-awesome" /></View>
-            <TouchableOpacity style={{ ...styles.input, width: "37%" }} onPress={() => setStatusCalendar(true)}>
-              <View style={styles.textWithIcon}><Icon name="calendar" size={21} color="orange" type="material-community" /><Text style={styles.inputTextFiltros}>{endDate}</Text></View>
-            </TouchableOpacity>
-          </View>
-
-          {statusCalendar && (
-            <Overlay isVisible windowBackgroundColor="rgba(41, 41, 41, .7)" width={width * 0.9} height={440}>
-              <Calendar minDate={new Date().toISOString()} monthFormat="MMMM yyyy" markedDates={markedDates} markingType="period" hideExtraDays hideDayNames onDayPress={onDayPress} style={{ marginBottom: 30, height: 330 }} />
-              <View style={{ ...styles.inputContainer, justifyContent: "space-between" }}>
-                <TouchableOpacity style={{ ...styles.Botton, backgroundColor: "#000", width: "47%" }} onPress={() => { setStatusCalendar(false); setStartDate(moment(new Date()).format("YYYY-MM-DD")); setEndDate(moment(new Date()).format("YYYY-MM-DD")); }}><Text style={styles.buttonText}>Cancelar</Text></TouchableOpacity>
-                <TouchableOpacity style={{ ...styles.button, width: "47%" }} onPress={() => setStatusCalendar(false)}><Text style={styles.buttonText}>Aceptar</Text></TouchableOpacity>
+          {/* SECCIÓN CAPACIDAD Y PRECIOS */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Capacidad y Precios</Text>
+            
+            <View style={styles.gridRow}>
+              <View style={styles.gridInput}>
+                <Text style={styles.inputLabel}>Asientos disponibles</Text>
+                <TextInput
+                  style={styles.textInput}
+                  keyboardType="numeric"
+                  placeholder={`Máx: ${busSelected.capacity || 0}`}
+                  placeholderTextColor="#999"
+                  onChangeText={setDisponibles}
+                  value={disponibles}
+                />
               </View>
-            </Overlay>
-          )}
+              
+              <View style={styles.gridInput}>
+                <Text style={styles.inputLabel}>Precio comercial</Text>
+                <View style={styles.priceInput}>
+                  <Text style={styles.currencySymbol}>$</Text>
+                  <TextInput
+                    style={[styles.textInput, styles.priceTextInput]}
+                    keyboardType="numeric"
+                    placeholder="150000"
+                    placeholderTextColor="#999"
+                    onChangeText={setPrecio}
+                    value={precio}
+                  />
+                </View>
+              </View>
+            </View>
 
-          <TouchableOpacity style={{ ...styles.Botton, backgroundColor: "#4f4f4f", width: "100%", marginBottom: 15 }} onPress={() => setDatePickerVisibility(true)}>
-            <Text style={{ ...styles.texColorWite, ...styles.textInput, backgroundColor: "rgba(41, 41, 41, .7)", width: width * 0.8 }}>Hora de salida: {horaSalida || "Seleccionar"}</Text>
+            <View style={styles.switchRow}>
+              <Text style={styles.switchLabel}>Aplicar descuento</Text>
+              <Switch
+                trackColor={{false: '#767577', true: '#E2991C'}}
+                thumbColor={dcto ? '#f4f3f4' : '#f4f3f4'}
+                onValueChange={() => setDcto(!dcto)}
+                value={dcto}
+              />
+            </View>
+
+            {dcto && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Precio con descuento</Text>
+                <View style={styles.priceInput}>
+                  <Text style={styles.currencySymbol}>$</Text>
+                  <TextInput
+                    style={[styles.textInput, styles.priceTextInput]}
+                    keyboardType="numeric"
+                    placeholder="10000"
+                    placeholderTextColor="#999"
+                    onChangeText={setPrecioDcto}
+                    value={precioDcto}
+                  />
+                </View>
+              </View>
+            )}
+
+            <View style={styles.switchRow}>
+              <Text style={styles.switchLabel}>Requiere documentación</Text>
+              <Switch
+                trackColor={{false: '#767577', true: '#E2991C'}}
+                thumbColor={documentacion ? '#f4f3f4' : '#f4f3f4'}
+                onValueChange={() => setDocumentacion(!documentacion)}
+                value={documentacion}
+              />
+            </View>
+          </View>
+
+          {/* SECCIÓN DESCRIPCIÓN */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Descripción</Text>
+            
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Descripción del viaje</Text>
+              <TextInput
+                style={styles.textArea}
+                multiline
+                numberOfLines={4}
+                placeholder="Describe los detalles del viaje..."
+                placeholderTextColor="#999"
+                onChangeText={setDescripcion}
+                value={descripcion}
+              />
+            </View>
+          </View>
+
+          {/* SECCIÓN PUNTOS DE RECOGIDA Y LLEGADA */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Ubicaciones</Text>
+            
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Puntos de recogida</Text>
+              <TouchableOpacity 
+                style={styles.buttonOutlined}
+                onPress={() => setModalRecogida(true)}
+              >
+                <Text style={styles.buttonOutlinedText}>+ Añadir puntos de recogida</Text>
+              </TouchableOpacity>
+              
+              {places.length > 0 && (
+                <View style={styles.placesList}>
+                  {places.map((punto, i) => (
+                    <View key={i} style={styles.placeItem}>
+                      <Text style={styles.placeText}>📍 {punto.name}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Punto de llegada</Text>
+              <TouchableOpacity 
+                style={styles.buttonOutlined}
+                onPress={() => setModalPuntoFnal(true)}
+              >
+                <Text style={styles.buttonOutlinedText}>+ Añadir punto de llegada</Text>
+              </TouchableOpacity>
+              
+              {place.name && (
+                <View style={styles.placeItem}>
+                  <Text style={styles.placeText}>📍 {place.name}</Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* SECCIÓN FECHAS Y HORAS */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Fechas y Horarios</Text>
+            
+            <View style={styles.dateRow}>
+              <View style={styles.dateInput}>
+                <Text style={styles.inputLabel}>Fecha inicio</Text>
+                <TouchableOpacity 
+                  style={styles.dateButton}
+                  onPress={() => setStatusCalendar(true)}
+                >
+                  <Text style={styles.dateButtonText}>{startDate}</Text>
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.dateInput}>
+                <Text style={styles.inputLabel}>Fecha fin</Text>
+                <TouchableOpacity 
+                  style={styles.dateButton}
+                  onPress={() => setStatusCalendar(true)}
+                >
+                  <Text style={styles.dateButtonText}>{endDate}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.timeRow}>
+              <View style={styles.timeInput}>
+                <Text style={styles.inputLabel}>Hora salida</Text>
+                <TouchableOpacity 
+                  style={styles.timeButton}
+                  onPress={() => setDatePickerVisibility(true)}
+                >
+                  <Text style={styles.timeButtonText}>
+                    {horaSalida || 'Seleccionar'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.timeInput}>
+                <Text style={styles.inputLabel}>Hora llegada</Text>
+                <TouchableOpacity 
+                  style={styles.timeButton}
+                  onPress={() => setDatePickerVisibleLlegada(true)}
+                >
+                  <Text style={styles.timeButtonText}>
+                    {horaLlegada || 'Seleccionar'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          {/* SECCIÓN IMÁGENES */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Imágenes</Text>
+            
+            <View style={styles.imageSection}>
+              <Text style={styles.inputLabel}>Imagen principal</Text>
+              <TouchableOpacity 
+                style={styles.imageUpload}
+                onPress={() => chooseImage("principal", 1)}
+              >
+                {imgPrincipal ? (
+                  <Image
+                    source={{ uri: imgPrincipal.file }}
+                    style={styles.imagePreview}
+                  />
+                ) : (
+                  <View style={styles.imagePlaceholder}>
+                    <Icon name="camera" type="material-community" color="#999" size={30} />
+                    <Text style={styles.imagePlaceholderText}>Seleccionar imagen</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.imageSection}>
+              <Text style={styles.inputLabel}>Imagen banner</Text>
+              <TouchableOpacity 
+                style={styles.imageUpload}
+                onPress={() => chooseImage("banner", 1)}
+              >
+                {imgBanner ? (
+                  <Image
+                    source={{ uri: imgBanner.file }}
+                    style={styles.imagePreview}
+                  />
+                ) : (
+                  <View style={styles.imagePlaceholder}>
+                    <Icon name="image" type="material-community" color="#999" size={30} />
+                    <Text style={styles.imagePlaceholderText}>Seleccionar banner</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
+
+          </View>
+
+          {/* BOTÓN CREAR */}
+          <TouchableOpacity 
+            style={styles.createButton}
+            onPress={onHandleSubmit}
+          >
+            <Text style={styles.createButtonText}>Crear Programación</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={{ ...styles.Botton, backgroundColor: "#4f4f4f", width: "100%", marginBottom: 15 }} onPress={() => setDatePickerVisibleLlegada(true)}>
-            <Text style={{ ...styles.texColorWite, ...styles.textInput, backgroundColor: "rgba(41, 41, 41, .7)", width: width * 0.8 }}>Hora de llegada: {horaLlegada || "Seleccionar"}</Text>
-          </TouchableOpacity>
-
-          <View style={{ marginBottom: 20 }}><Text style={[styles.textLabel, styles.texColorWite]}>Imagen principal</Text>{imgPrincipal && <Image source={{ uri: imgPrincipal.file }} style={{ height: 130, width: 130, alignSelf: "center", borderRadius: 10, marginBottom: 10 }} />}<TouchableOpacity style={{ ...styles.button, width: width * 0.7, alignSelf: "center" }} onPress={() => chooseImage("principal", 1)}><Text style={styles.text}>{imgPrincipal ? "Cambiar" : "Seleccionar"}</Text></TouchableOpacity></View>
-
-          <View style={{ marginBottom: 20 }}><Text style={[styles.textLabel, styles.texColorWite]}>Imagen del banner</Text>{imgBanner && <Image source={{ uri: imgBanner.file }} style={{ height: 130, width: 130, alignSelf: "center", borderRadius: 10, marginBottom: 10 }} />}<TouchableOpacity style={{ ...styles.button, width: width * 0.7, alignSelf: "center" }} onPress={() => chooseImage("banner", 1)}><Text style={styles.text}>{imgBanner ? "Cambiar" : "Seleccionar"}</Text></TouchableOpacity></View>
-
-          <TouchableOpacity style={{ ...styles.button, alignSelf: "center", marginBottom: 50 }} onPress={onHandleSubmit}><Text style={styles.text}>Crear</Text></TouchableOpacity>
         </View>
       </KeyboardAwareScrollView>
 
+      {/* MODALES */}
+      <DateTimePickerModal
+        isVisible={DatePickerVisibility}
+        mode="time"
+        onConfirm={handleConfirm}
+        onCancel={() => setDatePickerVisibility(false)}
+        locale='es_CO'
+      />
+      
+      <DateTimePickerModal
+        isVisible={DatePickerVisibleLlegada}
+        mode="time"
+        onConfirm={handleConfirmLlegada}
+        onCancel={() => setDatePickerVisibleLlegada(false)}
+        locale='es_CO'
+      />
+
+      {statusCalendar && (
+        <Overlay
+          isVisible={statusCalendar}
+          windowBackgroundColor="rgba(0, 0, 0, 0.7)"
+          overlayStyle={styles.calendarOverlay}
+        >
+          <Calendar
+            minDate={new Date().toISOString()}
+            monthFormat="MMMM yyyy"
+            markedDates={markedDates}
+            markingType="period"
+            hideExtraDays
+            onDayPress={onDayPress}
+            style={styles.calendar}
+            theme={{
+              calendarBackground: '#2d2d2d',
+              textSectionTitleColor: '#fff',
+              dayTextColor: '#fff',
+              todayTextColor: '#E2991C',
+              selectedDayTextColor: '#fff',
+              monthTextColor: '#fff',
+              arrowColor: '#E2991C',
+            }}
+          />
+          <View style={styles.calendarButtons}>
+            <TouchableOpacity 
+              style={[styles.calendarButton, styles.cancelButton]}
+              onPress={() => setStatusCalendar(false)}
+            >
+              <Text style={styles.calendarButtonText}>Cancelar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.calendarButton, styles.confirmButton]}
+              onPress={() => setStatusCalendar(false)}
+            >
+              <Text style={styles.calendarButtonText}>Aceptar</Text>
+            </TouchableOpacity>
+          </View>
+        </Overlay>
+      )}
+
       <Modal
-        animationType="fade"
+        animationType="slide"
         transparent={true}
         visible={modalRecogida || modalPuntoFnal}
         onRequestClose={() => {
-          console.log("🔴 Modal cerrado por onRequestClose");
           setModalRecogida(false);
           setModalPuntoFnal(false);
         }}
       >
-        <View style={styles.centeredView}>
-          <TouchableOpacity
-            onPress={() => {
-              console.log("🔴 Cerrando modal por touchable");
-              setModalRecogida(false);
-              setModalPuntoFnal(false);
-            }}
-            style={styles.BottonClose}
-          >
-            <Text style={[styles.text, styles.textClose]}>X</Text>
-          </TouchableOpacity>
-
-          <View style={styles.modal}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <TouchableOpacity 
+              style={styles.modalCloseButton}
+              onPress={() => {
+                setModalRecogida(false);
+                setModalPuntoFnal(false);
+              }}
+            >
+              <Text style={styles.modalCloseText}>✕</Text>
+            </TouchableOpacity>
+            
             {modalRecogida && (
               <GooglePlacesComponent
                 savePlaces={(places) => {
-                  console.log("📥 Recibiendo puntos de recogida desde modal:", places);
-                  // ✅ PROTECCIÓN EXTRA - asegurar que es array
                   const validPlaces = Array.isArray(places) ? places : [];
-                  console.log("📍 Lugares válidos después de protección:", validPlaces);
                   savePlaces(validPlaces);
                 }}
                 cantElements={3}
@@ -576,10 +852,7 @@ const CreateProgramming: React.FC = () => {
             {modalPuntoFnal && (
               <GooglePlacesComponent
                 savePlaces={(place) => {
-                  console.log("📥 Recibiendo punto final desde modal:", place);
-                  // ✅ PROTECCIÓN EXTRA - asegurar que es array
                   const validPlace = Array.isArray(place) ? place : [];
-                  console.log("📍 Lugar final válido después de protección:", validPlace);
                   savePlacesFinal(validPlace);
                 }}
                 cantElements={1}
@@ -590,39 +863,322 @@ const CreateProgramming: React.FC = () => {
         </View>
       </Modal>
 
-      <DateTimePickerModal isVisible={DatePickerVisibility} mode="time" onConfirm={handleConfirm} onCancel={() => setDatePickerVisibility(false)} />
-      <DateTimePickerModal isVisible={DatePickerVisibleLlegada} mode="time" onConfirm={handleConfirmLlegada} onCancel={() => setDatePickerVisibleLlegada(false)} />
     </View>
   );
 };
 
+// ESTILOS MEJORADOS
 const styles = StyleSheet.create({
-  container: { padding: 25, marginBottom: 100, backgroundColor: "#4f4f4f" },
-  textLabel: { fontSize: Platform.OS === "ios" ? width * 0.010 : width * 0.030, marginTop: height * 0.02, marginBottom: height * 0.01, textAlign: "center" },
-  textSelect: { fontSize: height * 0.013, marginVertical: 7, paddingVertical: 7, textAlign: "center", borderColor: "white", borderWidth: width * 0.002, borderRadius: height * 0.02 },
-  containerHeader: { flexDirection: "row", backgroundColor: "black", justifyContent: "center", alignItems: "center", height: height * 0.08 },
-  header: { height: height * 0.08, width: width, alignItems: "center" },
-  icon: { position: "absolute", left: -width * 0.17, zIndex: 1 },
-  inputContainer: { flexDirection: "row", marginVertical: 0 },
-  textInput: { fontSize: height * 0.02, marginVertical: 7, paddingVertical: 7, textAlign: "center", borderColor: "white", borderWidth: width * 0.005, borderRadius: height * 0.02 },
-  textArea: { fontSize: height * 0.02, marginVertical: 7, paddingVertical: 7, textAlign: "center", borderColor: "white", borderWidth: width * 0.005, borderRadius: height * 0.02, color: "white", minHeight: 100 },
-  containerSwitch: { flexDirection: "row", marginVertical: 10 },
-  textSwitch: { width: width * 0.4 },
-  switch: { width: width * 0.42 },
-  buttonText: { color: "#FFF", fontSize: 15 },
-  modal: { backgroundColor: "#4f4f4f", borderRadius: width * 0.05, padding: width * 0.05, width: width * 0.87, height: height * 0.43, elevation: 5 },
-  colorW: { color: "#fff" },
-  centeredView: { flex: 1, backgroundColor: "rgba(0,0,0, 0.7)", justifyContent: "center", alignItems: "center" },
-  BottonClose: { position: "absolute", backgroundColor: "#868686", borderRadius: 100, top: height * 0.23, right: height * 0.22, width: width * 0.09, height: width * 0.09, justifyContent: "center", alignItems: "center", zIndex: 10 },
-  textClose: { fontWeight: "bold", fontSize: height * 0.028, color: "white" },
-  texColorWite: { color: "white" },
-  texColorOrange: { color: "orange" },
-  button: { backgroundColor: "orange", borderRadius: 20, padding: 15, justifyContent: "center", alignItems: "center" },
-  input: { backgroundColor: "white", borderRadius: 30, padding: 15, height: width * 0.123 },
-  textWithIcon: { width: "100%", flexDirection: "row", alignItems: "center", height: width * 0.05 },
-  Botton: { borderRadius: 20, padding: 15, justifyContent: "center", alignItems: "center" },
-  text: { fontSize: Platform.OS === "ios" ? width * 0.042 : width * 0.05, color: "#FFF", textAlign: "center" },
-  inputTextFiltros: { color: "black", marginLeft: 10 },
+  container: {
+    flex: 1,
+    backgroundColor: '#1a1a1a',
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'ios' ? 50 : 20,
+    paddingBottom: 16,
+    backgroundColor: '#2d2d2d',
+    borderBottomWidth: 1,
+    borderBottomColor: '#404040',
+  },
+  backButton: {
+    padding: 8,
+  },
+  headerTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  headerSpacer: {
+    width: 40,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 100,
+  },
+  formContainer: {
+    padding: 16,
+  },
+  section: {
+    backgroundColor: '#2d2d2d',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#404040',
+  },
+  sectionTitle: {
+    color: '#E2991C',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  textInput: {
+    backgroundColor: '#3a3a3a',
+    color: '#fff',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#555',
+  },
+  textArea: {
+    backgroundColor: '#3a3a3a',
+    color: '#fff',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#555',
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  selectInput: {
+    backgroundColor: '#3a3a3a',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#555',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  selectText: {
+    color: '#fff',
+    fontSize: 16,
+  },
+  placeholderText: {
+    color: '#999',
+  },
+  loadingText: {
+    color: '#999',
+    fontSize: 14,
+    textAlign: 'center',
+    paddingVertical: 12,
+  },
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  switchLabel: {
+    color: '#fff',
+    fontSize: 16,
+    flex: 1,
+  },
+  gridRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  gridInput: {
+    flex: 0.48,
+  },
+  priceInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  currencySymbol: {
+    color: '#fff',
+    fontSize: 16,
+    marginRight: 8,
+  },
+  priceTextInput: {
+    flex: 1,
+  },
+  buttonOutlined: {
+    borderWidth: 2,
+    borderColor: '#E2991C',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  buttonOutlinedText: {
+    color: '#E2991C',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  placesList: {
+    marginTop: 8,
+  },
+  placeItem: {
+    backgroundColor: '#3a3a3a',
+    borderRadius: 6,
+    padding: 8,
+    marginBottom: 4,
+  },
+  placeText: {
+    color: '#fff',
+    fontSize: 14,
+  },
+  dateRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  dateInput: {
+    flex: 0.48,
+  },
+  dateButton: {
+    backgroundColor: '#3a3a3a',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#555',
+  },
+  dateButtonText: {
+    color: '#fff',
+    fontSize: 14,
+  },
+  timeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  timeInput: {
+    flex: 0.48,
+  },
+  timeButton: {
+    backgroundColor: '#3a3a3a',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#555',
+  },
+  timeButtonText: {
+    color: '#fff',
+    fontSize: 14,
+  },
+  imageSection: {
+    marginBottom: 20,
+  },
+  imageUpload: {
+    backgroundColor: '#3a3a3a',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#555',
+    overflow: 'hidden',
+  },
+  imagePreview: {
+    width: '100%',
+    height: 150,
+    borderRadius: 8,
+  },
+  imagePlaceholder: {
+    height: 150,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  galleryPlaceholder: {
+    height: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imagePlaceholderText: {
+    color: '#999',
+    marginTop: 8,
+    fontSize: 14,
+  },
+  galleryScroll: {
+    marginTop: 8,
+  },
+  galleryImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    marginRight: 8,
+  },
+  createButton: {
+    backgroundColor: '#E2991C',
+    borderRadius: 12,
+    padding: 18,
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 30,
+  },
+  createButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  calendarOverlay: {
+    backgroundColor: '#2d2d2d',
+    borderRadius: 12,
+    padding: 16,
+    width: '90%',
+  },
+  calendar: {
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  calendarButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  calendarButton: {
+    flex: 0.48,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#666',
+  },
+  confirmButton: {
+    backgroundColor: '#E2991C',
+  },
+  calendarButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
+  },
+  modalContent: {
+    width: '90%',
+    height: '80%',
+    backgroundColor: '#2d2d2d',
+    borderRadius: 12,
+    overflow: 'hidden',
+    alignSelf: 'center',
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 1,
+    backgroundColor: '#E2991C',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCloseText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
 });
 
 export default CreateProgramming;

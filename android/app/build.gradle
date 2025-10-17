@@ -92,8 +92,8 @@ android {
         applicationId 'com.tuviajeoperador'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 26
-        versionName "4.0.0"
+        versionCode 27
+        versionName "5.0.0"
     }
     signingConfigs {
         debug {

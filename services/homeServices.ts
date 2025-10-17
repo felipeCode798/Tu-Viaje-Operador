@@ -113,6 +113,7 @@ interface Programming {
 interface StatusChangeResponse {
   status: string;
   message: string;
+  newStatus?: string;
 }
 
 const createApolloClient = () => {
@@ -430,75 +431,114 @@ export default class HomeServices {
     }
   }
 
-  static async changesStatusByProgramming(id: string, newStatus: string, type: string): Promise<StatusChangeResponse | null> {
-    console.log('-------------Entro al servicio de cambio de ESTADO con estas props : ', 'ID', id, 'NUEVO ESTADO', newStatus, 'TIPO', type);
+  static async changesStatusByProgramming(id: string, newStatus: string, type: string, isConfirmation: boolean = false): Promise<StatusChangeResponse | null> {
+    console.log('🔄 Cambiando estado programación:', { id, newStatus, type, isConfirmation });
     
     const client = createApolloClient();
     
     try {
-      const result = await client.mutate({
-        mutation: gql`
-          mutation{
-            changesStatusByProgramming(
-              input : {
-                id :"${id}",
-                type : "${type}",
-                newStatus: "${newStatus}"
-              } 
-            ){
-              status
-              message
-            }
-          }
-        `,
-      });
-
-      console.log('------HOLA ESTA ES LA REPUESTA DEL SERVICIO DE CAMBIO DE ESTADO EN PROGRAMACION!!!!!!!!!', result);
-      
-      if (result != null) {
-        return result.data.changesStatusByProgramming;
+      if (isConfirmation) {
+        // Para confirmaciones, usar ChangeStatusService con type="prog"
+        return await this.changeStatusService(id, "prog", newStatus);
       } else {
-        return null;
+        // Para estados normales, usar la mutation específica
+        const result = await client.mutate({
+          mutation: gql`
+            mutation {
+              changesStatusByProgramming(
+                input: {
+                  id: "${id}",
+                  type: "${type}", 
+                  newStatus: "${newStatus}"
+                }
+              ) {
+                status
+                message
+              }
+            }
+          `,
+        });
+
+        if (result.data?.changesStatusByProgramming) {
+          return result.data.changesStatusByProgramming;
+        } else {
+          throw new Error('Respuesta inválida del servidor');
+        }
       }
-    } catch (error) {
-      console.error('ERROR EN EL SERVICIO PURO', error);
-      return null;
+    } catch (error: any) {
+      console.error('❌ Error cambiando estado:', error);
+      throw new Error(error.message || 'Error al cambiar el estado');
     }
   }
 
-  static async changeStatusTourism(id: string, newStatus: string, type: string): Promise<StatusChangeResponse | null> {
-    console.log('entro al servicio de cambio de status con estas props : ', id, newStatus, type);
+  static async changeStatusTourism(id: string, newStatus: string, type: string, isConfirmation: boolean = false): Promise<StatusChangeResponse | null> {
+    console.log('🔄 Cambiando estado turismo:', { id, newStatus, type, isConfirmation });
     
     const client = createApolloClient();
     
     try {
-      const result = await client.mutate({
-        mutation: gql`
-          mutation{
-            changeStatusTourism(
-              input : {
-                id :"${id}",
-                type : "${type}",
-                newStatus: "${newStatus}"
-              } 
-            ){
-              status
-              message
-            }
-          }
-        `,
-      });
-
-      console.log('ESTA ES LA REPUESTA DEL SERVICIO DE CAMBIO DE ESTADO EN TURISMO!!!!!!!!!', result);
-      
-      if (result != null) {
-        return result.data.changeStatusTourism;
+      if (isConfirmation) {
+        // Para confirmaciones, usar ChangeStatusService con type="tour"
+        return await this.changeStatusService(id, "tour", newStatus);
       } else {
-        return null;
+        // Para estados normales, usar la mutation específica
+        const result = await client.mutate({
+          mutation: gql`
+            mutation {
+              changeStatusTourism(
+                input: {
+                  id: "${id}",
+                  type: "${type}",
+                  newStatus: "${newStatus}"
+                }
+              ) {
+                status
+                message
+              }
+            }
+          `,
+        });
+
+        if (result.data?.changeStatusTourism) {
+          return result.data.changeStatusTourism;
+        } else {
+          throw new Error('Respuesta inválida del servidor');
+        }
       }
-    } catch (error) {
-      console.error('ERROR EN EL SERVICIO PURO', error);
-      return null;
+    } catch (error: any) {
+      console.error('❌ Error cambiando estado turismo:', error);
+      throw new Error(error.message || 'Error al cambiar el estado');
+    }
+  }
+
+  // Método helper común para ChangeStatusService
+  private static async changeStatusService(id: string, serviceType: string, newStatus: string): Promise<StatusChangeResponse> {
+    const client = createApolloClient();
+    
+    const result = await client.mutate({
+      mutation: gql`
+        mutation ChangeStatusService($id: ID!, $type: String!, $newStatus: String!) {
+          ChangeStatusService(input: {
+            id: $id,
+            type: $type,
+            newStatus: $newStatus
+          }) {
+            status
+            message
+          }
+        }
+      `,
+      variables: {
+        id: id,
+        type: serviceType, // "prog" o "tour"
+        newStatus: newStatus
+      },
+    });
+
+    if (result.data?.ChangeStatusService) {
+      return result.data.ChangeStatusService;
+    } else {
+      throw new Error('No se pudo actualizar el estado del servicio');
     }
   }
 }

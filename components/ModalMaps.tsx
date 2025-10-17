@@ -473,7 +473,12 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
           {/* Información del viaje */}
           <View style={styles.tripInfoContainer}>
             <View style={styles.locationBadge}>
-              <Text style={styles.locationText}>POPAYÁN - CALI</Text>
+              // quiero que el texto ponga el nombre del lugar de origen y destino del viaje
+              <Text style={styles.locationText}>
+                {itemData && 'tour' in itemData 
+                  ? `${itemData.tour?.origin?.name || 'Origen'} → ${itemData.tour?.destination?.name || 'Destino'}` 
+                  : 'Origen → Destino'}
+              </Text>
             </View>
             
             <View style={styles.tripDetails}>

@@ -1,23 +1,22 @@
+import { MaterialIcons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  FlatList,
+  Image,
+  ImageBackground,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  StatusBar,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  ImageBackground,
-  Image,
-  StatusBar,
-  Dimensions,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Modal,
-  FlatList,
-  ActivityIndicator,
+  View,
 } from 'react-native';
-import { router } from 'expo-router';
-import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 
 const { width, height } = Dimensions.get('window');
@@ -80,8 +79,6 @@ const LoginScreen: React.FC = () => {
         password: formData.password,
         userType: formData.userType as UserType
       });
-      
-      console.log('Login exitoso - navegación automática activada');
       
     } catch (error: any) {
       console.error('Error en handleLogin:', error);

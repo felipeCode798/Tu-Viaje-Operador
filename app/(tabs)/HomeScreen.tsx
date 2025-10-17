@@ -1,24 +1,24 @@
 import { MaterialIcons } from '@expo/vector-icons';
+import 'moment/locale/es';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
+  Dimensions,
+  Modal,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
-  Modal,
-  Dimensions
+  View
 } from 'react-native';
 import CalendarComponent from '../../components/CalendarComponent';
 import FilterButtons from '../../components/FilterButtons';
+import FloatButtonModal from '../../components/FloatButtonModal';
 import ServiceList from '../../components/ServiceList';
 import StatusFilters from '../../components/StatusFilters';
-import FloatButtonModal from '../../components/FloatButtonModal';
 import { useAuth } from '../../contexts/AuthContext';
 import HomeServices from '../../services/homeServices';
 import { Programming, Tourism } from '../../types';
-import 'moment/locale/es';
 
 const { width, height } = Dimensions.get('window');
 
@@ -44,6 +44,36 @@ const HomeScreen: React.FC = () => {
   console.log('User en HomeScreen:', user);
   console.log('UserType en HomeScreen:', userType);
   console.log('🔘 Should show float button:', userType === 'Empresa');
+
+  const updateServiceStatus = useCallback((id: string, newStatus: string, newStatusService?: string, type: 'programming' | 'tourism' = 'programming') => {
+    console.log('🔄 Actualizando estado local:', { id, newStatus, newStatusService, type });
+    
+    if (type === 'programming') {
+      setAllProgrammings(prev => 
+        prev.map(item => 
+          item._id === id 
+            ? { 
+                ...item, 
+                status: newStatus,
+                ...(newStatusService && { statusService: newStatusService })
+              }
+            : item
+        )
+      );
+    } else {
+      setAllTourisms(prev => 
+        prev.map(item => 
+          item._id === id 
+            ? { 
+                ...item, 
+                status: newStatus,
+                ...(newStatusService && { statusService: newStatusService })
+              }
+            : item
+        )
+      );
+    }
+  }, []);
 
   // Función para formatear fechas
   const formatDate = useCallback((timestamp: string | number): string => {
@@ -341,29 +371,99 @@ const HomeScreen: React.FC = () => {
   // Función para cambiar el estado de un servicio
   const handleStatusChange = useCallback(async (id: string, newStatus: string, type: 'programming' | 'tourism') => {
     try {
-      console.log('🔄 Changing status:', { id, newStatus, type });
+      console.log('🔄 Iniciando cambio:', { id, newStatus, type });
+      
+      // Determinar si es una confirmación
+      const isConfirmation = newStatus === 'Confirmado' || newStatus === 'NoConfirmado';
       
       let result;
       
-      if (type === 'programming') {
-        result = await HomeServices.changesStatusByProgramming(id, newStatus, 'programming');
+      if (isConfirmation) {
+        console.log('🎯 Esto es una CONFIRMACIÓN - Enviar al backend');
+        
+        // Validar que solo empresas puedan confirmar
+        if (userType !== 'Empresa') {
+          Alert.alert('Permiso Denegado', 'Solo las empresas pueden confirmar servicios.');
+          return;
+        }
+        
+        // Enviar confirmación al backend
+        const userTypeForServer = userType === 'Conductor' ? 'Conductor' : 'Empresa';
+        if (type === 'programming') {
+          result = await HomeServices.changesStatusByProgramming(id, newStatus, userTypeForServer, true);
+        } else {
+          result = await HomeServices.changeStatusTourism(id, newStatus, userTypeForServer, true);
+        }
+        
       } else {
-        result = await HomeServices.changeStatusTourism(id, newStatus, 'tourism');
+        console.log('🎯 Esto es un CAMBIO DE ESTADO normal - Enviar al backend');
+        
+        // Lógica existente para cambios de estado normales
+        const userTypeForServer = userType === 'Conductor' ? 'Conductor' : 'Empresa';
+        if (type === 'programming') {
+          result = await HomeServices.changesStatusByProgramming(id, newStatus, userTypeForServer, false);
+        } else {
+          result = await HomeServices.changeStatusTourism(id, newStatus, userTypeForServer, false);
+        }
       }
       
-      console.log('📩 Status change result:', result);
+      console.log('📩 Resultado:', result);
       
-      if (result && result.status === 'success') {
-        await loadData(false);
-        Alert.alert('Éxito', result.message || 'Estado actualizado correctamente');
+      if (result?.status === 'OK') {
+        // ACTUALIZACIÓN DEL ESTADO LOCAL INMEDIATA
+        if (type === 'programming') {
+          setAllProgrammings(prev => 
+            prev.map(item => 
+              item._id === id 
+                ? { 
+                    ...item, 
+                    // Para confirmaciones, cambiar statusService; para estados normales, cambiar status
+                    ...(isConfirmation 
+                      ? { statusService: newStatus }
+                      : { status: newStatus }
+                    )
+                  }
+                : item
+            )
+          );
+        } else {
+          setAllTourisms(prev => 
+            prev.map(item => 
+              item._id === id 
+                ? { 
+                    ...item, 
+                    ...(isConfirmation 
+                      ? { statusService: newStatus }
+                      : { status: newStatus }
+                    )
+                  }
+                : item
+            )
+          );
+        }
+        
+        // MOSTRAR MENSAJE DE ÉXITO
+        Alert.alert('✅ Éxito', result?.message || 'Operación completada correctamente');
+        
+        // Recargar datos después de un breve delay para asegurar consistencia
+        setTimeout(() => {
+          loadData(false);
+        }, 500);
+        
       } else {
-        Alert.alert('Error', result?.message || 'Error al cambiar el estado');
+        throw new Error(result?.message || 'Error en la operación');
       }
-    } catch (error) {
-      console.error('❌ Error changing status:', error);
-      Alert.alert('Error', 'Error al cambiar el estado del servicio');
+      
+    } catch (error: any) {
+      console.error('💥 Error:', error);
+      Alert.alert('❌ Error', error.message || 'Error de conexión');
+      
+      // Recargar datos para restaurar estado consistente
+      setTimeout(() => {
+        loadData(false);
+      }, 500);
     }
-  }, [loadData]);
+  }, [loadData, userType]);
 
   // Función para abrir modal de planilla
   const handleOpenPlanilla = useCallback((service: any) => {
