@@ -2,6 +2,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
+  Linking,
   RefreshControl,
   ScrollView,
   StatusBar,
@@ -9,7 +10,6 @@ import {
   Text,
   TouchableOpacity,
   View,
-  Linking,
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import ChatServices from '../../services/ChatServices';
@@ -262,9 +262,9 @@ const MessagesScreen: React.FC = () => {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Mensajes</Text>
-        <TouchableOpacity style={styles.filterIcon}>
+        {/* <TouchableOpacity style={styles.filterIcon}>
           <MaterialIcons name="search" size={24} color="#FF9500" />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
 
       {/* Banner Informativo */}

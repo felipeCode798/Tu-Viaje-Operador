@@ -306,11 +306,11 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
       if (currentStatus === 'Progreso') {
         statusOptions.push({ label: 'Finalizar Viaje', value: 'Finalizado' });
       }
-      statusOptions.push({ 
-        label: 'Cancelar Viaje', 
-        value: 'Cancelado', 
-        style: 'destructive' as const 
-      });
+      // statusOptions.push({ 
+      //   label: 'Cancelar Viaje', 
+      //   value: 'Cancelado', 
+      //   style: 'destructive' as const 
+      // });
 
       if (statusOptions.length === 0) {
         Alert.alert('Info', 'No hay acciones disponibles para el estado actual');
@@ -318,7 +318,7 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
       }
 
       Alert.alert(
-        'Cambiar Estado del Viaje',
+        'Cambiar estado del viaje',
         'Selecciona el nuevo estado:',
         statusOptions.map(option => ({
           text: option.label,

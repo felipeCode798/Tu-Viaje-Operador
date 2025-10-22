@@ -15,7 +15,6 @@ import {
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import WayRouteServices from '../services/wayRouteServices';
 import { Programming, Tourism } from '../types';
-import { GooglePlacesComponent } from './GooglePlacesComponent';
 
 const { height, width } = Dimensions.get('window');
 
@@ -167,8 +166,30 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
       return;
     }
 
-    const serviceType = 'tour' in itemData ? 'tourism' : 'programming';
+    const serviceType = 'tour' in itemData ? 'programming' : 'tourism';
     
+    // VERIFICACIÓN DE CONFIRMACIÓN (igual que en ServiceList)
+    const currentStatusService = (itemData as any).statusService;
+    const isConfirmed = currentStatusService === 'Confirmado';
+
+    console.log('🔍 Estado de confirmación en ModalMaps:', {
+      id: itemData._id,
+      statusService: currentStatusService,
+      isConfirmed: isConfirmed,
+      userType: userType,
+      newStatus: newStatus
+    });
+
+    // Para conductores: verificar confirmación antes de iniciar viaje
+    if (userType === 'Conductor' && !isConfirmed && newStatus === 'Progreso') {
+      Alert.alert(
+        'Servicio No Confirmado',
+        'Este servicio debe ser confirmado por la empresa antes de poder iniciarlo.',
+        [{ text: 'Entendido', style: 'default' }]
+      );
+      return;
+    }
+
     let confirmationMessage = '';
     let confirmText = '';
 
@@ -184,6 +205,14 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
       case 'Cancelado':
         confirmationMessage = '¿Estás seguro de que quieres cancelar el viaje?';
         confirmText = 'Cancelar viaje';
+        break;
+      case 'Confirmado':
+        confirmationMessage = '¿Confirmar este servicio para que el conductor pueda iniciarlo?';
+        confirmText = '✅ Confirmar';
+        break;
+      case 'NoConfirmado':
+        confirmationMessage = '¿Marcar este servicio como no confirmado?';
+        confirmText = '❌ Desconfirmar';
         break;
       default:
         confirmationMessage = `¿Estás seguro de que quieres cambiar el estado a ${newStatus}?`;
@@ -203,18 +232,17 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
           onPress: async () => {
             try {
               if (onStatusChange) {
+                console.log(`🔄 Cambiando estado desde ModalMaps: ${newStatus}`);
                 await onStatusChange(itemData._id, newStatus, serviceType);
+                
+                // Cerrar modal después de cambiar estado
+                setTimeout(() => {
+                  closeModal();
+                }, 1500);
               } else {
-                console.log(`Cambiando estado a: ${newStatus} para servicio: ${itemData._id}`);
-                // Aquí podrías llamar directamente al servicio si no tienes acceso a onStatusChange
+                console.error('❌ onStatusChange no está definido en ModalMaps');
+                Alert.alert('Error', 'No se pudo cambiar el estado del servicio');
               }
-              
-              Alert.alert('Éxito', `Estado cambiado a ${newStatus} correctamente`);
-              
-              setTimeout(() => {
-                closeModal();
-              }, 1500);
-              
             } catch (error) {
               console.error('Error al cambiar estado:', error);
               Alert.alert('Error', 'No se pudo cambiar el estado del servicio');
@@ -227,88 +255,108 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
 
   // Función para renderizar el botón de estado según el rol y estado del servicio
   const renderStatusButton = () => {
-    if (!itemData) return null;
+      if (!itemData) return null;
 
-    const currentStatus = itemData.status;
-    const currentStatusService = (itemData as any).statusService;
-    const isConfirmed = currentStatusService === 'Confirmado';
+      const currentStatus = itemData.status;
+      const currentStatusService = (itemData as any).statusService;
+      const isConfirmed = currentStatusService === 'Confirmado';
 
-    // Para rol Conductor
-    if (userType === 'Conductor') {
-      if (!isConfirmed) {
-        return (
-          <TouchableOpacity style={[styles.statusButton, styles.disabledButton]} disabled>
-            <Text style={styles.disabledButtonText}>Esperando confirmación</Text>
-          </TouchableOpacity>
-        );
-      }
+      console.log('🔍 Renderizando botón en ModalMaps:', {
+        currentStatus,
+        currentStatusService,
+        isConfirmed,
+        userType
+      });
 
-      switch (currentStatus?.toLowerCase()) {
-        case 'pendiente':
+      // PARA EMPRESAS - CONFIRMACIONES (igual que en ServiceList)
+      if (userType === 'Empresa') {
+        if (!isConfirmed) {
           return (
             <TouchableOpacity 
-              style={[styles.statusButton, styles.startButton]}
-              onPress={() => handleStatusChange('Progreso')}
-            >
-              <MaterialIcons name="play-arrow" size={20} color="white" />
-              <Text style={styles.statusButtonText}>Iniciar Viaje</Text>
-            </TouchableOpacity>
-          );
-        case 'progreso':
-        case 'iniciado':
-          return (
-            <TouchableOpacity 
-              style={[styles.statusButton, styles.finishButton]}
-              onPress={() => handleStatusChange('Finalizado')}
+              style={[styles.statusButton, styles.confirmButton]}
+              onPress={() => handleStatusChange('Confirmado')}
             >
               <MaterialIcons name="check-circle" size={20} color="white" />
-              <Text style={styles.statusButtonText}>Finalizar Viaje</Text>
+              <Text style={styles.statusButtonText}>Confirmar Servicio</Text>
             </TouchableOpacity>
           );
-        case 'finalizado':
-        case 'cancelado':
+        } else {
+          return (
+            <View style={styles.empresaButtonsContainer}>
+              <TouchableOpacity 
+                style={[styles.statusButton, styles.unconfirmButton]}
+                onPress={() => handleStatusChange('NoConfirmado')}
+              >
+                <MaterialIcons name="cancel" size={20} color="white" />
+                <Text style={styles.statusButtonText}>Revocar confirmacion</Text>
+              </TouchableOpacity>
+              
+              {/* Botón de cancelar viaje para empresas */}
+              {(currentStatus === 'Pendiente' || currentStatus === 'Progreso' || currentStatus === 'Iniciado') && (
+                <TouchableOpacity 
+                  style={[styles.statusButton, styles.cancelButton]}
+                  onPress={() => handleStatusChange('Cancelado')}
+                >
+                  <MaterialIcons name="cancel" size={20} color="white" />
+                  <Text style={styles.statusButtonText}>Cancelar Viaje</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          );
+        }
+      }
+
+      // PARA CONDUCTORES - mantener lógica existente pero con verificación de confirmación
+      if (userType === 'Conductor') {
+        if (!isConfirmed) {
           return (
             <TouchableOpacity style={[styles.statusButton, styles.disabledButton]} disabled>
-              <Text style={styles.disabledButtonText}>
-                {currentStatus === 'finalizado' ? 'Viaje Finalizado' : 'Viaje Cancelado'}
-              </Text>
+              <Text style={styles.disabledButtonText}>Esperando confirmación</Text>
             </TouchableOpacity>
           );
-        default:
-          return (
-            <TouchableOpacity style={[styles.statusButton, styles.disabledButton]} disabled>
-              <Text style={styles.disabledButtonText}>Estado no disponible</Text>
-            </TouchableOpacity>
-          );
-      }
-    }
+        }
 
-    // Para rol Empresa - SIEMPRE mostrar Cancelar Viaje si no está finalizado o cancelado
-    if (userType === 'Empresa') {
-      const canCancel = currentStatus === 'Pendiente' || currentStatus === 'Progreso' || currentStatus === 'Iniciado';
-      
-      if (canCancel) {
-        return (
-          <TouchableOpacity 
-            style={[styles.statusButton, styles.cancelButton]}
-            onPress={() => handleStatusChange('Cancelado')}
-          >
-            <MaterialIcons name="cancel" size={20} color="white" />
-            <Text style={styles.statusButtonText}>Cancelar viaje</Text>
-          </TouchableOpacity>
-        );
-      } else {
-        return (
-          <TouchableOpacity style={[styles.statusButton, styles.disabledButton]} disabled>
-            <Text style={styles.disabledButtonText}>
-              {currentStatus === 'finalizado' ? 'Viaje finalizado' : 'Viaje cancelado'}
-            </Text>
-          </TouchableOpacity>
-        );
+        switch (currentStatus?.toLowerCase()) {
+          case 'pendiente':
+            return (
+              <TouchableOpacity 
+                style={[styles.statusButton, styles.startButton]}
+                onPress={() => handleStatusChange('Progreso')}
+              >
+                <MaterialIcons name="play-arrow" size={20} color="white" />
+                <Text style={styles.statusButtonText}>Iniciar Viaje</Text>
+              </TouchableOpacity>
+            );
+          case 'progreso':
+          case 'iniciado':
+            return (
+              <TouchableOpacity 
+                style={[styles.statusButton, styles.finishButton]}
+                onPress={() => handleStatusChange('Finalizado')}
+              >
+                <MaterialIcons name="check-circle" size={20} color="white" />
+                <Text style={styles.statusButtonText}>Finalizar Viaje</Text>
+              </TouchableOpacity>
+            );
+          case 'finalizado':
+          case 'cancelado':
+            return (
+              <TouchableOpacity style={[styles.statusButton, styles.disabledButton]} disabled>
+                <Text style={styles.disabledButtonText}>
+                  {currentStatus === 'finalizado' ? 'Viaje Finalizado' : 'Viaje Cancelado'}
+                </Text>
+              </TouchableOpacity>
+            );
+          default:
+            return (
+              <TouchableOpacity style={[styles.statusButton, styles.disabledButton]} disabled>
+                <Text style={styles.disabledButtonText}>Estado no disponible</Text>
+              </TouchableOpacity>
+            );
+        }
       }
-    }
 
-    return null;
+      return null;
   };
   
   const handleMarkerPress = async (point: Point) => {
@@ -645,6 +693,15 @@ const styles = StyleSheet.create({
   },
   tripInfoContainer: {
     marginBottom: 20,
+  },
+  confirmButton: {
+    backgroundColor: '#4CAF50',
+  },
+  unconfirmButton: {
+    backgroundColor: '#FF9800',
+  },
+  empresaButtonsContainer: {
+    gap: 10,
   },
   locationBadge: {
     backgroundColor: '#FF9500',
