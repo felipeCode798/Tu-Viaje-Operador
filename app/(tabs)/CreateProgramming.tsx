@@ -70,6 +70,11 @@ interface ImageOption {
   base64: string;
 }
 
+interface ProgrammingResponse {
+  id: string;
+  [key: string]: any;
+}
+
 const { height, width } = Dimensions.get("window");
 
 const CreateProgramming: React.FC = () => {
@@ -134,6 +139,27 @@ const CreateProgramming: React.FC = () => {
   const [imgBanner, setImgBanner] = useState<ImageOption | null>(null);
   const [imgGallery, setImgGallery] = useState<ImageOption[]>([]);
 
+  // Agregar logging para debug
+  useEffect(() => {
+    console.log("🔧 Iniciando creación de programación");
+    console.log("👤 Usuario:", user);
+    console.log("🆔 User ID:", userId);
+    getData();
+  }, []);
+
+  // Monitorear cambios de estado
+  useEffect(() => {
+    console.log("🔄 Estado actual:", {
+      rutaSelected,
+      busSelected,
+      conductorSelected,
+      startDate,
+      endDate,
+      horaSalida,
+      horaLlegada
+    });
+  }, [rutaSelected, busSelected, conductorSelected, startDate, endDate, horaSalida, horaLlegada]);
+
   const getData = () => {
     if (!userId) {
       Alert.alert("Error", "No se pudo identificar al usuario", [{ text: "OK", onPress: () => router.back() }]);
@@ -143,36 +169,83 @@ const CreateProgramming: React.FC = () => {
   };
 
   const getRoutes = (userIdParam: string) => {
+    console.log("🛣 Obteniendo rutas...");
     CreateProgrammingServices.getRoutesEnabled()
       .then((result: Route[]) => {
+        if (!result || !Array.isArray(result)) {
+          throw new Error("No se recibieron rutas válidas");
+        }
+        
+        if (result.length === 0) {
+          Alert.alert("Info", "No hay rutas disponibles para programar");
+        }
+        
         const formattedRoutes = result.map(route => ({
           ...route,
           key: route.id,
           label: `${route.origin.name} - ${route.destination.name}`,
         }));
+        
         setListRutas(formattedRoutes);
         getBuses(userIdParam);
       })
-      .catch(() => getBuses(userIdParam));
+      .catch((error) => {
+        console.error("❌ Error obteniendo rutas:", error);
+        Alert.alert("Error", "No se pudieron cargar las rutas");
+        getBuses(userIdParam);
+      });
   };
 
   const getBuses = (userIdParam: string) => {
+    console.log("🚌 Obteniendo buses...");
     CreateProgrammingServices.getBusesEnable(userIdParam)
       .then((res: Bus[]) => {
-        const formattedBuses = res.map(bus => ({ ...bus, key: bus.id, label: bus.name }));
+        if (!res || !Array.isArray(res)) {
+          throw new Error("No se recibieron buses válidos");
+        }
+        
+        if (res.length === 0) {
+          Alert.alert("Info", "No hay buses disponibles");
+        }
+        
+        const formattedBuses = res.map(bus => ({ 
+          ...bus, 
+          key: bus.id, 
+          label: `${bus.name} (${bus.placa}) - Cap: ${bus.capacity}` 
+        }));
         setListBuses(formattedBuses);
         getDrivers(userIdParam);
       })
-      .catch(() => getDrivers(userIdParam));
+      .catch((error) => {
+        console.error("❌ Error obteniendo buses:", error);
+        Alert.alert("Error", "No se pudieron cargar los buses");
+        getDrivers(userIdParam);
+      });
   };
 
   const getDrivers = (userIdParam: string) => {
+    console.log("👨‍💼 Obteniendo conductores...");
     CreateProgrammingServices.getDriversEnable(userIdParam)
       .then((res: Driver[]) => {
-        const formattedDrivers = res.map(driver => ({ ...driver, key: driver.id, label: driver.names }));
+        if (!res || !Array.isArray(res)) {
+          throw new Error("No se recibieron conductores válidos");
+        }
+        
+        if (res.length === 0) {
+          Alert.alert("Info", "No hay conductores disponibles");
+        }
+        
+        const formattedDrivers = res.map(driver => ({ 
+          ...driver, 
+          key: driver.id, 
+          label: driver.names 
+        }));
         setListConductores(formattedDrivers);
       })
-      .catch((error) => console.error("Error obteniendo conductores:", error));
+      .catch((error) => {
+        console.error("❌ Error obteniendo conductores:", error);
+        Alert.alert("Error", "No se pudieron cargar los conductores");
+      });
   };
 
   const onDayPress = (day: { dateString: string }) => {
@@ -270,15 +343,20 @@ const CreateProgramming: React.FC = () => {
     }
   };
 
-  const sendUpload = async (id: string): Promise<boolean> => {
+  // ✅ FUNCIÓN sendUpload CORREGIDA (solo una declaración)
+  const sendUpload = async (programmingId: string): Promise<boolean> => {
     try {
+      console.log("🔼 Iniciando subida de imágenes para programación:", programmingId);
+      
       const uploadPromises = [];
+      
       if (imgPrincipal) {
+        console.log("📷 Subiendo imagen principal...");
         uploadPromises.push(
           helpers.uploadImages({
             file: imgPrincipal, 
-            id, 
-            type: "destino", 
+            id: programmingId,
+            type: "programacion",
             nombrepaq: place.name || "programacion", 
             typeGalery: "principal"
           })
@@ -286,11 +364,12 @@ const CreateProgramming: React.FC = () => {
       }
 
       if (imgBanner) {
+        console.log("🖼 Subiendo imagen banner...");
         uploadPromises.push(
           helpers.uploadImages({
             file: imgBanner, 
-            id, 
-            type: "destino", 
+            id: programmingId,
+            type: "programacion",
             nombrepaq: place.name || "programacion", 
             typeGalery: "banner"
           })
@@ -299,6 +378,7 @@ const CreateProgramming: React.FC = () => {
 
       if (uploadPromises.length > 0) {
         await Promise.all(uploadPromises);
+        console.log("✅ Todas las imágenes subidas correctamente");
       } else {
         console.log("ℹ️ No hay imágenes para subir");
       }
@@ -306,7 +386,7 @@ const CreateProgramming: React.FC = () => {
       return true;
     } catch (error) {
       console.error("❌ Error en sendUpload:", error);
-      throw error;
+      return false;
     }
   };
 
@@ -316,23 +396,43 @@ const CreateProgramming: React.FC = () => {
       return;
     }
     
+    // Validaciones mejoradas
     const errors: string[] = [];
-    if (!ruta) errors.push("* Debe seleccionar una ruta.");
-    if (!vehiculo) errors.push("* Debe seleccionar un vehículo.");
-    if (!conductor) errors.push("* Debe seleccionar un conductor.");
-    if (!disponibles || Number(disponibles) <= 0 || Number(disponibles) > (busSelected.capacity || 0)) 
-      errors.push("* Debe poner el número de asientos válido.");
-    if (dcto && (!precioDcto || Number(precioDcto) <= 0)) 
-      errors.push("* Debe poner el precio del descuento.");
-    if (!precio || Number(precio) <= 0) errors.push("* Debe poner el precio comercial.");
-    if (!descripcion.trim()) errors.push("* Debe poner la descripción del paquete.");
-    if (places.length === 0) errors.push("* Debe seleccionar los puntos de recogida.");
-    if (!place.name) errors.push("* Debe poner el punto de llegada.");
-    if (!startDate || !horaSalida) errors.push("* Debe seleccionar una fecha y hora de salida.");
-    if (!endDate || !horaLlegada) errors.push("* Debe seleccionar una fecha y hora de llegada.");
+    
+    if (!ruta || rutaSelected.key === "-1") 
+      errors.push("* Debe seleccionar una ruta válida.");
+    if (!vehiculo || busSelected.key === "-1") 
+      errors.push("* Debe seleccionar un vehículo válido.");
+    if (!conductor || conductorSelected.key === "-1") 
+      errors.push("* Debe seleccionar un conductor válido.");
+    if (!disponibles || isNaN(Number(disponibles)) || Number(disponibles) <= 0) 
+      errors.push("* El número de asientos debe ser válido.");
+    if (busSelected.capacity && Number(disponibles) > busSelected.capacity)
+      errors.push(`* Los asientos no pueden superar la capacidad del bus (${busSelected.capacity}).`);
+    if (!precio || isNaN(Number(precio)) || Number(precio) <= 0) 
+      errors.push("* El precio comercial debe ser válido.");
+    if (dcto && (!precioDcto || isNaN(Number(precioDcto)) || Number(precioDcto) <= 0)) 
+      errors.push("* El precio con descuento debe ser válido.");
+    if (!descripcion?.trim()) 
+      errors.push("* La descripción es obligatoria.");
+    if (!places?.length) 
+      errors.push("* Debe agregar al menos un punto de recogida.");
+    if (!place?.name) 
+      errors.push("* Debe especificar el punto de llegada.");
+    if (!startDate || !horaSalida) 
+      errors.push("* Fecha y hora de salida son obligatorias.");
+    if (!endDate || !horaLlegada) 
+      errors.push("* Fecha y hora de llegada son obligatorias.");
+
+    // Validar que la fecha de fin no sea anterior a la de inicio
+    const startDateTime = moment(`${startDate}T${horaSalida}`);
+    const endDateTime = moment(`${endDate}T${horaLlegada}`);
+    if (endDateTime.isBefore(startDateTime)) {
+      errors.push("* La fecha/hora de llegada no puede ser anterior a la de salida.");
+    }
 
     if (errors.length > 0) {
-      Alert.alert("Alerta", errors.join("\n"));
+      Alert.alert("Error de validación", errors.join("\n"));
       return;
     }
 
@@ -342,12 +442,8 @@ const CreateProgramming: React.FC = () => {
         text: "Crear",
         onPress: async () => {
           try {
-            if (!userId) return;
-            
-            // ✅ CORREGIDO: Subir imágenes primero
-            await sendUpload(userId);
-            
-            const obj = {
+            // ✅ CORREGIDO: Primero crear la programación
+            const programmingData = {
               id: userId,
               ruta,
               vehiculo,
@@ -360,19 +456,53 @@ const CreateProgramming: React.FC = () => {
               places,
               place,
               descripcion,
-              images: imgPrincipal?.file || "",
-              banner: imgBanner?.file || "",
               start: `${startDate}T${horaSalida}:00.000+00:00`,
               end: `${endDate}T${horaLlegada}:00.000+00:00`,
             };
-                      
-            await CreateProgrammingServices.createProgramming(obj);
-            Alert.alert("Éxito", "Programación creada correctamente");
+
+            console.log("📤 Enviando datos:", programmingData);
+            
+            // 1. Crear la programación primero
+            const programmingResult = await CreateProgrammingServices.createProgramming(programmingData) as ProgrammingResponse;
+            
+            if (!programmingResult || !programmingResult.id) {
+              throw new Error("No se recibió un ID válido de la programación creada");
+            }
+
+            const programmingId = programmingResult.id;
+            console.log("✅ Programación creada con ID:", programmingId);
+
+            // 2. Subir imágenes solo si la programación se creó exitosamente
+            if (imgPrincipal || imgBanner) {
+              console.log("📸 Subiendo imágenes...");
+              const uploadSuccess = await sendUpload(programmingId);
+              if (!uploadSuccess) {
+                console.warn("⚠️ Algunas imágenes no se subieron correctamente, pero la programación fue creada");
+              }
+            }
+
+            Alert.alert("✅ Éxito", "Programación creada correctamente");
             router.back();
             
-          } catch (error) {
-            console.error("❌ Error al crear programación:", error);
-            Alert.alert("Error", "No se pudo crear la programación");
+          } catch (error: any) {
+            console.error("❌ Error completo al crear programación:", error);
+            
+            let errorMessage = "No se pudo crear la programación";
+            
+            // Mensajes más específicos
+            if (error.message?.includes("network") || error.message?.includes("Network")) {
+              errorMessage = "Error de conexión. Verifique su internet.";
+            } else if (error.message?.includes("timeout")) {
+              errorMessage = "Tiempo de espera agotado. Intente nuevamente.";
+            } else if (error.response?.status === 400) {
+              errorMessage = "Datos inválidos. Verifique la información ingresada.";
+            } else if (error.response?.status === 401) {
+              errorMessage = "No autorizado. Su sesión pudo haber expirado.";
+            } else if (error.response?.status === 500) {
+              errorMessage = "Error del servidor. Intente más tarde.";
+            }
+            
+            Alert.alert("❌ Error", errorMessage);
           }
         }
       }
@@ -393,15 +523,12 @@ const CreateProgramming: React.FC = () => {
     setHoraLlegada(`${hour}:${minutes}`);
   };
 
-  useEffect(() => {
-    getData();
-  }, []);
-
+  // ... (el resto del código JSX permanece igual)
   return (
     <View style={styles.container}>
       <StatusBar barStyle={"light-content"} />
       
-      {/* HEADER MEJORADO */}
+      {/* HEADER */}
       <View style={styles.headerContainer}>
         <TouchableOpacity 
           style={styles.backButton}
@@ -867,7 +994,7 @@ const CreateProgramming: React.FC = () => {
   );
 };
 
-// ESTILOS MEJORADOS
+// ESTILOS (permanecen igual)
 const styles = StyleSheet.create({
   container: {
     flex: 1,

@@ -90,30 +90,20 @@ const CreateTourisms: React.FC = () => {
   const { user } = useAuth();
   const params = useLocalSearchParams();
 
-  const userIdFromParams = params.userId as string;
-  const userNameFromParams = params.userName as string;
+  // ✅ CORRECCIÓN: Obtener userId directamente
+  const getUserId = () => {
+    const userIdFromParams = params.userId as string;
+    const idState = useSelector((state: RootState) => state.id);
+    const sessionState = useSelector((state: RootState) => state.session);
 
-  const idState = useSelector((state: RootState) => state.id);
-  const sessionState = useSelector((state: RootState) => state.session);
-
-  const getUser = () => {
-    if (userIdFromParams) {
-      return { _id: userIdFromParams, names: userNameFromParams };
-    }
-    if (idState && typeof idState === 'string' && idState.length > 0) {
-      return { _id: idState, id: idState };
-    }
-    if (sessionState?.user?.idUser) {
-      return { _id: sessionState.user.idUser, names: sessionState.user.nombres };
-    }
-    if (user?.idUser) {
-      return { _id: user.idUser, names: user.nombres };
-    }
+    if (userIdFromParams) return userIdFromParams;
+    if (idState && typeof idState === 'string' && idState.length > 0) return idState;
+    if (sessionState?.user?.idUser) return sessionState.user.idUser;
+    if (user?.idUser) return user.idUser;
     return null;
   };
 
-  const userData = getUser();
-  const userId = userData?._id || userData?.id;
+  const userId = getUserId();
 
   const [state, setState] = useState({
     user: userId || '',
@@ -195,6 +185,7 @@ const CreateTourisms: React.FC = () => {
     loading: false,
     validDate: 0,
     place: undefined as PlaceResult | undefined,
+    showDestinationModal: false,
   });
 
   // Helper para actualizar el estado
@@ -215,7 +206,10 @@ const CreateTourisms: React.FC = () => {
 
   const savePlaces = (places: PlaceResult[]) => setStateValue('places', places);
   const savePlacesFinal = (place: PlaceResult[]) => setStateValue('place', place[0]);
-  const closeModal = () => setStateValue('modalRecogida', false);
+  const closeModal = () => {
+    setStateValue('modalRecogida', false);
+    setStateValue('modalPuntoFnal', false);
+  };
 
   const onDayPress = (day: { dateString: string }) => {
     if (
@@ -274,24 +268,30 @@ const CreateTourisms: React.FC = () => {
     }
   };
 
+  // ✅ CORRECCIÓN: useEffect mejorado
   useEffect(() => {
-    if (userId) {;
+    console.log("🔧 Iniciando creación de paquete turístico");
+    console.log("🆔 User ID disponible:", userId);
+    
+    if (userId) {
       setStateValue('user', userId);
-      getDestinations();
+      getDestinations(userId);
     } else {
-      console.error("❌ No hay user ID disponible después de todas las fuentes");
+      console.error("❌ No hay user ID disponible");
       Alert.alert("Error", "No se pudo identificar al usuario. Por favor, vuelve a iniciar sesión.");
     }
   }, [userId]);
 
-  const getDestinations = () => {
-    if (!state.user) {
-      console.error("❌ No hay user ID en el estado");
-      return;
-    }
+  // ✅ CORRECCIÓN: getDestinations recibe userId como parámetro
+  const getDestinations = (currentUserId: string) => {
+    console.log("🛣 Obteniendo destinos para usuario:", currentUserId);
     
-    TourismServices.getDestinationsWithoutPaginate(state.user)
+    TourismServices.getDestinationsWithoutPaginate(currentUserId)
       .then((data: Destination[]) => {
+        if (!data || !Array.isArray(data)) {
+          throw new Error("No se recibieron destinos válidos");
+        }
+        
         const destinations = data.map(destination => ({
           ...destination,
           key: destination.id,
@@ -299,6 +299,7 @@ const CreateTourisms: React.FC = () => {
         }));
         
         setStateValue('destinos', destinations);
+        console.log("✅ Destinos cargados:", destinations.length);
       })
       .catch(error => {
         console.error("❌ Error obteniendo destinos:", error);
@@ -426,7 +427,6 @@ const CreateTourisms: React.FC = () => {
     return [];
   };
 
-
   const changeFormat = (number: string): number => {
     if (!number || number === '' || number === 'NaN') return 0;
     
@@ -447,73 +447,110 @@ const CreateTourisms: React.FC = () => {
     }
   };
 
-  // ✅ CORRECCIÓN: Función sendUpload corregida para subir imágenes
+  // ✅ CORRECCIÓN: Función sendUpload mejorada con mejor manejo de errores
   const sendUpload = async (id: string): Promise<{imgPrincipal: string, imgBanner: string, imgGallery: string[]}> => {
-    return new Promise(async (resolve, reject) => {
-      try {
-        let imgPrincipal = '';
-        let imgBanner = '';
-        let imgGallery: string[] = [];
+    console.log("🔼 Iniciando subida de imágenes para ID:", id);
+    
+    try {
+      let imgPrincipal = '';
+      let imgBanner = '';
+      let imgGallery: string[] = [];
 
-        // ✅ Subir imagen principal
-        if (state.imgPrincipal && state.imgPrincipal.file) {
+      // ✅ Subir imagen principal con validación
+      if (state.imgPrincipal && state.imgPrincipal.file) {
+        console.log("📷 Subiendo imagen principal...");
+        try {
           imgPrincipal = await helpers.uploadImages(
             state.imgPrincipal,
             id,
             'turismo',
-            state.nombrePaquete,
+            state.nombrePaquete || 'paquete-turismo',
             'principal'
           );
+          console.log("✅ Imagen principal subida:", imgPrincipal);
+        } catch (error) {
+          console.error("❌ Error subiendo imagen principal:", error);
+          throw new Error("No se pudo subir la imagen principal");
         }
+      } else {
+        console.warn("⚠️ No hay imagen principal para subir");
+      }
 
-        // ✅ Subir imagen banner
-        if (state.imgBanner && state.imgBanner.file) {
+      // ✅ Subir imagen banner con validación
+      if (state.imgBanner && state.imgBanner.file) {
+        console.log("🖼 Subiendo imagen banner...");
+        try {
           imgBanner = await helpers.uploadImages(
             state.imgBanner,
             id,
             'turismo',
-            state.nombrePaquete,
+            state.nombrePaquete || 'paquete-turismo',
             'banner'
           );
+          console.log("✅ Imagen banner subida:", imgBanner);
+        } catch (error) {
+          console.error("❌ Error subiendo imagen banner:", error);
+          throw new Error("No se pudo subir la imagen banner");
         }
+      } else {
+        console.warn("⚠️ No hay imagen banner para subir");
+      }
 
-        // ✅ Subir galería de imágenes
-        if (state.imgGallery && Array.isArray(state.imgGallery) && state.imgGallery.length > 0) {
-          for (let i = 0; i < state.imgGallery.length; i++) {
-            const galleryItem = state.imgGallery[i];
-            
-            if (galleryItem && galleryItem.file) {
+      // ✅ Subir galería de imágenes
+      if (state.imgGallery && Array.isArray(state.imgGallery) && state.imgGallery.length > 0) {
+        console.log("🖼️ Subiendo galería de imágenes...");
+        for (let i = 0; i < state.imgGallery.length; i++) {
+          const galleryItem = state.imgGallery[i];
+          
+          if (galleryItem && galleryItem.file) {
+            try {
               const galleryImage = await helpers.uploadImages(
                 galleryItem,
                 id,
                 'turismo',
-                state.nombrePaquete,
+                state.nombrePaquete || 'paquete-turismo',
                 'gallery'
               );
               
               imgGallery.push(galleryImage);
+              console.log(`✅ Imagen ${i + 1} de galería subida`);
+            } catch (error) {
+              console.error(`❌ Error subiendo imagen ${i + 1} de galería:`, error);
+              // Continuar con las demás imágenes
             }
           }
         }
-
-        const result = {
-          imgPrincipal,
-          imgBanner,
-          imgGallery
-        };
-
-        resolve(result);
-        
-      } catch (error) {
-        reject(error);
+      } else {
+        console.log("ℹ️ No hay imágenes en la galería para subir");
       }
-    });
+
+      const result = {
+        imgPrincipal,
+        imgBanner,
+        imgGallery
+      };
+
+      console.log("✅ Subida de imágenes completada:", result);
+      return result;
+      
+    } catch (error) {
+      console.error("❌ Error crítico en sendUpload:", error);
+      throw error;
+    }
   };
 
+  // ✅ CORRECCIÓN: onHandleSubmit mejorado con mejor manejo de errores
   const onHandleSubmit = async () => {
+    console.log("🚀 Iniciando creación de paquete turístico...");
+    
+    // Validación de usuario
+    if (!userId) {
+      Alert.alert("Error", "No se pudo identificar al usuario");
+      return;
+    }
+
     let validStartDate = moment(state.startDate);
     let validEndtDate = moment(state.endDate);
-
     let diff = validEndtDate.diff(validStartDate, 'months');
 
     setStateValue('validDate', diff);
@@ -524,7 +561,7 @@ const CreateTourisms: React.FC = () => {
     let mensaje: string[] = [];
     
     let obj: any = {
-      empresa: state.user,
+      empresa: userId, // ✅ Usar userId directamente
       nombrePaquete: '',
       transpote: '',
       nombreAuto: '',
@@ -564,12 +601,16 @@ const CreateTourisms: React.FC = () => {
       mensaje.push('*El paquete no puede durar más de 7 meses.');
     }
 
-    if (
-      state.imgPrincipal == null ||
-      state.imgBanner == null ||
-      state.imgGallery.length == 0
-    ) {
-      mensaje.push('*Debe subir al menos una imagen de cada tipo.');
+    if (state.imgPrincipal == null) {
+      mensaje.push('*Debe subir una imagen principal.');
+    }
+
+    if (state.imgBanner == null) {
+      mensaje.push('*Debe subir una imagen de banner.');
+    }
+
+    if (state.imgGallery.length == 0) {
+      mensaje.push('*Debe subir al menos una imagen para la galería.');
     }
 
     if (state.nombrePaquete !== '') {
@@ -736,24 +777,31 @@ const CreateTourisms: React.FC = () => {
       }
     }
 
-    if (
-      state.startDate.trim().length !== 0 &&
-      state.horaSalida.trim().length !== 0
-    ) {
-      // ✅ CORRECCIÓN: Crear fecha correctamente para Date.parse()
-      const fechaHoraSalida = new Date(`${state.startDate}T${state.horaSalida}:00.000+00:00`);
-      obj.ida = fechaHoraSalida;
+    // ✅ CORRECCIÓN CRÍTICA: Formato correcto de fechas
+    if (state.startDate.trim().length !== 0 && state.horaSalida.trim().length !== 0) {
+      try {
+        // Formato ISO 8601 correcto
+        const fechaHoraSalida = `${state.startDate}T${state.horaSalida}:00.000Z`;
+        console.log("📅 Fecha salida formateada:", fechaHoraSalida);
+        obj.ida = fechaHoraSalida;
+      } catch (error) {
+        console.error("❌ Error formateando fecha de salida:", error);
+        mensaje.push('*Formato de fecha/hora de salida inválido.');
+      }
     } else {
       mensaje.push('*Debe seleccionar una fecha y hora de salida.');
     }
 
-    if (
-      state.endDate.trim().length !== 0 &&
-      state.horaLlegada.trim().length !== 0
-    ) {
-      // ✅ CORRECCIÓN: Crear fecha correctamente para Date.parse()
-      const fechaHoraLlegada = new Date(`${state.endDate}T${state.horaLlegada}:00.000+00:00`);
-      obj.vuelta = fechaHoraLlegada;
+    if (state.endDate.trim().length !== 0 && state.horaLlegada.trim().length !== 0) {
+      try {
+        // Formato ISO 8601 correcto
+        const fechaHoraLlegada = `${state.endDate}T${state.horaLlegada}:00.000Z`;
+        console.log("📅 Fecha llegada formateada:", fechaHoraLlegada);
+        obj.vuelta = fechaHoraLlegada;
+      } catch (error) {
+        console.error("❌ Error formateando fecha de llegada:", error);
+        mensaje.push('*Formato de fecha/hora de llegada inválido.');
+      }
     } else {
       mensaje.push('*Debe seleccionar una fecha y hora de llegada.');
     }
@@ -800,18 +848,27 @@ const CreateTourisms: React.FC = () => {
     obj.precioDcto = changeFormat(state.precioDcto);
 
     if (mensaje.length !== 0) {
+      console.warn("⚠️ Errores de validación:", mensaje);
       Alert.alert('Alerta', mensaje.join('\n'));
     } else {
+      console.log("✅ Todas las validaciones pasadas, creando paquete...");
       setStateValue('loading', true);
       
       try {
-        const uploadedImages = await sendUpload(state.user);
+        console.log("📤 Datos a enviar:", JSON.stringify(obj, null, 2));
+        
+        // ✅ CORRECCIÓN: Subir imágenes primero
+        console.log("🔼 Iniciando subida de imágenes...");
+        const uploadedImages = await sendUpload(userId);
         
         // Preparar objeto con las URLs de imágenes subidas
         obj.imagen = uploadedImages.imgPrincipal;
         obj.banner = uploadedImages.imgBanner;
         obj.gallery = uploadedImages.imgGallery;
-        
+
+        console.log("✅ Imágenes subidas, creando paquete turístico...");
+
+        // ✅ CORRECCIÓN: Formatear cuposPorDiaConfig correctamente
         const diasSinTildes: any = {};
         for (let dia in state.cuposPorDiaConfig) {
           const diaSinTildes = dia.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -821,14 +878,36 @@ const CreateTourisms: React.FC = () => {
         }
         obj.cuposPorDiaConfig = diasSinTildes;
 
+        console.log("📦 Enviando datos finales al servicio...");
+        
         // Llamar al servicio con los datos completos
         const resp = await TourismServices.createTourism(obj);
+        
+        console.log("✅ Respuesta del servicio:", resp);
         Alert.alert("Éxito", "Paquete turístico creado correctamente");
         router.back();
         
-      } catch (error) {
-        console.error('❌ Error creando turismo:', error);
-        Alert.alert("Error", "No se pudo crear el paquete turístico. Verifica los datos.");
+      } catch (error: any) {
+        console.error('❌ Error completo creando turismo:', error);
+        
+        let errorMessage = "No se pudo crear el paquete turístico.";
+        
+        // Mensajes de error más específicos
+        if (error.message?.includes('network') || error.message?.includes('Network')) {
+          errorMessage = "Error de conexión. Verifica tu internet.";
+        } else if (error.message?.includes('timeout')) {
+          errorMessage = "Tiempo de espera agotado. Intenta nuevamente.";
+        } else if (error.response?.status === 400) {
+          errorMessage = "Datos inválidos. Verifica la información ingresada.";
+        } else if (error.response?.status === 401) {
+          errorMessage = "No autorizado. Tu sesión pudo haber expirado.";
+        } else if (error.response?.status === 500) {
+          errorMessage = "Error del servidor. Intenta más tarde.";
+        } else if (error.message?.includes('imagen')) {
+          errorMessage = "Error al subir las imágenes. Verifica que sean válidas.";
+        }
+        
+        Alert.alert("❌ Error", errorMessage);
       } finally {
         setStateValue('loading', false);
       }
@@ -862,7 +941,7 @@ const CreateTourisms: React.FC = () => {
     return <Loader />;
   }
   
- return (
+  return (
     <View style={styles.container}>
       <StatusBar barStyle={'light-content'} />
       
