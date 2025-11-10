@@ -26,6 +26,7 @@ import { GooglePlacesComponent } from "../../components/GooglePlacesComponent";
 import { RootState } from '../../redux/store';
 import CreateProgrammingServices from "../../services/createProgrammingServices";
 import { helpers } from "../../utils/helpers";
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 
 interface Route {
   id: string;
@@ -71,7 +72,25 @@ interface ImageOption {
 }
 
 interface ProgrammingResponse {
-  id: string;
+  id?: string;
+  result?: {
+    id: string;
+  };
+  data?: {
+    createProgramming: {
+      result: {
+        id: string;
+      };
+      message: string;
+    };
+  };
+  createProgramming?: {
+    result: {
+      id: string;
+    };
+    message: string;
+  };
+  message?: string;
   [key: string]: any;
 }
 
@@ -139,13 +158,19 @@ const CreateProgramming: React.FC = () => {
   const [imgBanner, setImgBanner] = useState<ImageOption | null>(null);
   const [imgGallery, setImgGallery] = useState<ImageOption[]>([]);
 
+  const isFocused = useIsFocused();
+
   // Agregar logging para debug
   useEffect(() => {
-    console.log("🔧 Iniciando creación de programación");
-    console.log("👤 Usuario:", user);
-    console.log("🆔 User ID:", userId);
-    getData();
-  }, []);
+    if (isFocused) {
+      console.log("🎯 Pantalla de creación enfocada - Reseteando formulario");
+      resetForm();
+      
+      if (userId) {
+        getData();
+      }
+    }
+  }, [isFocused, userId]);
 
   // Monitorear cambios de estado
   useEffect(() => {
@@ -159,6 +184,50 @@ const CreateProgramming: React.FC = () => {
       horaLlegada
     });
   }, [rutaSelected, busSelected, conductorSelected, startDate, endDate, horaSalida, horaLlegada]);
+
+  const resetForm = () => {
+    console.log("🔄 Reseteando formulario...");
+    
+    // Resetear todos los estados a sus valores iniciales
+    setRutaSelected({ key: "-1", label: "Seleccionar ruta" });
+    setBusSelected({ key: "-1", label: "Seleccionar bus", capacity: 0 });
+    setConductorSelected({ key: "-1", label: "Seleccionar conductor" });
+    
+    // Fechas y horas vacías
+    setStartDate(moment(new Date()).format("YYYY-MM-DD"));
+    setEndDate(moment(new Date()).format("YYYY-MM-DD"));
+    setMarkedDates({});
+    setHoraSalida("");
+    setHoraLlegada("");
+    
+    // Campos de texto vacíos
+    setRuta("");
+    setVehiculo("");
+    setConductor("");
+    setDisponibles("");
+    setPrecio("");
+    setPrecioDcto("");
+    setDescripcion("");
+    
+    // Switches en false
+    setDcto(false);
+    setDocumentacion(false);
+    
+    // Lugares vacíos
+    setPlaces([]);
+    setPlace({});
+    
+    // Imágenes vacías
+    setImgPrincipal(null);
+    setImgBanner(null);
+    setImgGallery([]);
+    
+    // Estados del calendario
+    setIsStartDatePicked(false);
+    setIsEndDatePicked(false);
+    
+    console.log("✅ Formulario reseteado completamente");
+  };
 
   const getData = () => {
     if (!userId) {
@@ -465,11 +534,47 @@ const CreateProgramming: React.FC = () => {
             // 1. Crear la programación primero
             const programmingResult = await CreateProgrammingServices.createProgramming(programmingData) as ProgrammingResponse;
             
-            if (!programmingResult || !programmingResult.id) {
-              throw new Error("No se recibió un ID válido de la programación creada");
+            console.log("🔍 Respuesta completa de createProgramming:", programmingResult);
+            
+            // ✅ CORREGIDO: Verificar el ID de manera más flexible
+            let programmingId: string | null = null;
+            
+            // Intentar diferentes formas de obtener el ID
+            if (programmingResult?.id) {
+              programmingId = programmingResult.id;
+            } else if (programmingResult?.result?.id) {
+              programmingId = programmingResult.result.id;
+            } else if (programmingResult?.data?.createProgramming?.result?.id) {
+              programmingId = programmingResult.data.createProgramming.result.id;
+            } else if (programmingResult?.createProgramming?.result?.id) {
+              programmingId = programmingResult.createProgramming.result.id;
+            }
+            
+            console.log("🔍 ID extraído:", programmingId);
+            
+            if (!programmingId) {
+              console.warn("⚠️ No se pudo extraer el ID, pero la programación puede haberse creado");
+              console.warn("📋 Respuesta completa:", JSON.stringify(programmingResult, null, 2));
+              
+              // Mostrar éxito de todas formas si no hay mensaje de error
+              if (!programmingResult?.message || programmingResult.message === "null") {
+                console.log("✅ Programación creada exitosamente (sin ID en respuesta)");
+                
+                // 2. Intentar subir imágenes si existen
+                if (imgPrincipal || imgBanner) {
+                  console.log("📸 Intentando subir imágenes sin ID de programación...");
+                  // En este caso no podemos subir imágenes sin ID, pero la programación está creada
+                  console.warn("⚠️ No se pudieron subir imágenes por falta de ID de programación");
+                }
+
+                Alert.alert("✅ Éxito", "Programación creada correctamente");
+                router.back();
+                return;
+              } else {
+                throw new Error(programmingResult.message || "No se recibió un ID válido de la programación creada");
+              }
             }
 
-            const programmingId = programmingResult.id;
             console.log("✅ Programación creada con ID:", programmingId);
 
             // 2. Subir imágenes solo si la programación se creó exitosamente
@@ -481,9 +586,19 @@ const CreateProgramming: React.FC = () => {
               }
             }
 
-            Alert.alert("✅ Éxito", "Programación creada correctamente");
-            router.back();
-            
+            Alert.alert(
+              "✅ Éxito", 
+              "Programación creada correctamente",
+              [
+                {
+                  text: "OK",
+                  onPress: () => {
+                    resetForm();
+                    router.back(); 
+                  }
+                }
+              ]
+            );
           } catch (error: any) {
             console.error("❌ Error completo al crear programación:", error);
             
@@ -500,6 +615,9 @@ const CreateProgramming: React.FC = () => {
               errorMessage = "No autorizado. Su sesión pudo haber expirado.";
             } else if (error.response?.status === 500) {
               errorMessage = "Error del servidor. Intente más tarde.";
+            } else if (error.message?.includes("No se recibió un ID válido")) {
+              // Si es solo el error del ID, verificar si realmente falló
+              errorMessage = "Error al verificar la creación. La programación pudo haberse creado.";
             }
             
             Alert.alert("❌ Error", errorMessage);

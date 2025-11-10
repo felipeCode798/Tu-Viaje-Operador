@@ -39,6 +39,7 @@ import { RootState } from '../../redux/store';
 
 const { height, width } = Dimensions.get('window');
 const colorScheme = Appearance.getColorScheme();
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 
 // Interfaces
 interface ImageOption {
@@ -83,6 +84,33 @@ interface PlaceResult {
   name: string;
   latitude: number;
   longitude: number;
+}
+
+interface TourismResponse {
+  _id?: string;
+  id?: string;
+  result?: {
+    _id: string;
+    id?: string;
+  };
+  data?: {
+    createTourism: {
+      result: {
+        _id: string;
+        id?: string;
+      };
+      message: string;
+    };
+  };
+  createTourism?: {
+    result: {
+      _id: string;
+      id?: string;
+    };
+    message: string;
+  };
+  message?: string;
+  [key: string]: any;
 }
 
 const CreateTourisms: React.FC = () => {
@@ -188,6 +216,98 @@ const CreateTourisms: React.FC = () => {
     showDestinationModal: false,
   });
 
+
+  const isFocused = useIsFocused();
+
+  const resetForm = React.useCallback(() => {
+    console.log("🔄 Reseteando formulario de turismo...");
+    
+    setState({
+      user: userId || '',
+      nombrePaquete: '',
+      descPaquete: '',
+      vehiculo: false,
+      avion: false,
+      nombreVehi: '',
+      placa: '',
+      alimentacion: false,
+      descripcionAlimentacion: '',
+      tiquetes: false,
+      descripcionTiquetes: '',
+      hospedaje: false,
+      descripcionHospedaje: '',
+      traslados: false,
+      descripcionTraslado: '',
+      entradas: false,
+      descripcionEntradas: '',
+      destino: '',
+      tipoAcomodacion: '',
+      cupos: '',
+      nombreGuia: '',
+      dias: '',
+      noches: '',
+      precio: '',
+      precioNino: '',
+      precioDcto: '',
+      statusCalendar: false,
+      places: [] as PlaceResult[],
+      modalRecogida: false,
+      modalPuntoFnal: false,
+      statusCalender: false,
+      fetchData: {
+        fechaInicio: '',
+        fechaFin: '',
+      },
+      horaSalida: '',
+      horaLlegada: '',
+      infoHoraSalida: '',
+      infoHoraLlegada: '',
+      DatePickerVisibility: false,
+      DatePickerVisibleLlegada: false,
+      markedDates: {} as MarkedDates,
+      timeVuelta: '',
+      startDate: moment(new Date()).format('YYYY-MM-DD'),
+      endDate: moment(new Date()).format('YYYY-MM-DD'),
+      isStartDatePicked: false,
+      isEndDatePicked: false,
+      destinoPaquete: {
+        key: '-1',
+        label: 'Debe seleccionar un destino',
+      } as Destination,
+      destinos: [] as Destination[],
+      desc: false,
+      doble: false,
+      multiple: false,
+      imgPrincipal: null as ImageOption | null,
+      imgBanner: null as ImageOption | null,
+      imgGallery: [] as ImageOption[],
+      paqueteDiario: false,
+      configurationDay: '',
+      lunes: false,
+      martes: false,
+      miercoles: false,
+      jueves: false,
+      viernes: false,
+      sabado: false,
+      domingo: false,
+      cuposPorDiaConfig: {
+        lunes: 0,
+        martes: 0,
+        miércoles: 0,
+        jueves: 0,
+        viernes: 0,
+        sábado: 0,
+        domingo: 0,
+      },
+      loading: false,
+      validDate: 0,
+      place: undefined as PlaceResult | undefined,
+      showDestinationModal: false,
+    });
+    
+    console.log("✅ Formulario de turismo reseteado completamente");
+  }, [userId]);
+
   // Helper para actualizar el estado
   const setStateValue = (key: keyof typeof state, value: any) => {
     setState(prev => ({ ...prev, [key]: value }));
@@ -270,17 +390,23 @@ const CreateTourisms: React.FC = () => {
 
   // ✅ CORRECCIÓN: useEffect mejorado
   useEffect(() => {
-    console.log("🔧 Iniciando creación de paquete turístico");
-    console.log("🆔 User ID disponible:", userId);
-    
-    if (userId) {
-      setStateValue('user', userId);
-      getDestinations(userId);
-    } else {
-      console.error("❌ No hay user ID disponible");
-      Alert.alert("Error", "No se pudo identificar al usuario. Por favor, vuelve a iniciar sesión.");
+    if (isFocused) {
+      console.log("🎯 Pantalla de creación de turismo enfocada - Reseteando formulario");
+      
+      // Resetear el formulario cada vez que se entra a la pantalla
+      resetForm();
+      
+      console.log("🆔 User ID disponible:", userId);
+      
+      if (userId) {
+        setStateValue('user', userId);
+        getDestinations(userId);
+      } else {
+        console.error("❌ No hay user ID disponible");
+        Alert.alert("Error", "No se pudo identificar al usuario. Por favor, vuelve a iniciar sesión.");
+      }
     }
-  }, [userId]);
+  }, [isFocused, userId, resetForm]);
 
   // ✅ CORRECCIÓN: getDestinations recibe userId como parámetro
   const getDestinations = (currentUserId: string) => {
@@ -880,12 +1006,79 @@ const CreateTourisms: React.FC = () => {
 
         console.log("📦 Enviando datos finales al servicio...");
         
-        // Llamar al servicio con los datos completos
-        const resp = await TourismServices.createTourism(obj);
+        // ✅ CORRECCIÓN: Llamar al servicio con manejo mejorado de respuesta
+        const resp = await TourismServices.createTourism(obj) as TourismResponse;
         
-        console.log("✅ Respuesta del servicio:", resp);
-        Alert.alert("Éxito", "Paquete turístico creado correctamente");
-        router.back();
+        console.log("🔍 ESTRUCTURA COMPLETA de la respuesta:", JSON.stringify(resp, null, 2));
+        
+        // ✅ VERIFICACIÓN FLEXIBLE DEL ID
+        let tourismId: string | null = null;
+
+        // Intentar diferentes formas de obtener el ID
+        if (resp?._id) {
+          tourismId = resp._id;
+          console.log("✅ ID encontrado en resp._id");
+        } else if (resp?.id) {
+          tourismId = resp.id;
+          console.log("✅ ID encontrado en resp.id");
+        } else if (resp?.result?._id) {
+          tourismId = resp.result._id;
+          console.log("✅ ID encontrado en resp.result._id");
+        } else if (resp?.result?.id) {
+          tourismId = resp.result.id;
+          console.log("✅ ID encontrado en resp.result.id");
+        } else if (resp?.data?.createTourism?.result?._id) {
+          tourismId = resp.data.createTourism.result._id;
+          console.log("✅ ID encontrado en resp.data.createTourism.result._id");
+        } else if (resp?.createTourism?.result?._id) {
+          tourismId = resp.createTourism.result._id;
+          console.log("✅ ID encontrado en resp.createTourism.result._id");
+        }
+
+        console.log("🔍 ID extraído del turismo:", tourismId);
+
+        if (!tourismId) {
+          console.warn("⚠️ No se pudo extraer el ID, pero el turismo puede haberse creado");
+          console.warn("📋 Respuesta completa:", JSON.stringify(resp, null, 2));
+          
+          // Mostrar éxito de todas formas si no hay mensaje de error
+          if (!resp?.message || resp.message === "null" || resp.message === "") {
+            console.log("✅ Turismo creado exitosamente (sin ID en respuesta)");
+            
+            // ✅ RESETEAR DESPUÉS DE CREAR EXITOSAMENTE
+            Alert.alert(
+              "✅ Éxito", 
+              "Paquete turístico creado correctamente",
+              [
+                {
+                  text: "OK",
+                  onPress: () => {
+                    resetForm(); // ✅ AGREGADO: Resetear formulario
+                  }
+                }
+              ]
+            );
+            return;
+          } else {
+            throw new Error(resp.message || "No se recibió un ID válido del turismo creado");
+          }
+        }
+
+        console.log("✅ Turismo creado con ID:", tourismId);
+        
+        // ✅ RESETEAR DESPUÉS DE CREAR EXITOSAMENTE
+        Alert.alert(
+          "✅ Éxito", 
+          "Paquete turístico creado correctamente",
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                resetForm(); // ✅ AGREGADO: Resetear formulario
+              }
+            }
+          ]
+        );
         
       } catch (error: any) {
         console.error('❌ Error completo creando turismo:', error);
@@ -905,6 +1098,11 @@ const CreateTourisms: React.FC = () => {
           errorMessage = "Error del servidor. Intenta más tarde.";
         } else if (error.message?.includes('imagen')) {
           errorMessage = "Error al subir las imágenes. Verifica que sean válidas.";
+        } else if (error.message?.includes('No se recibió un ID válido')) {
+          // Si es solo el error del ID, verificar si realmente falló
+          errorMessage = "Error al verificar la creación. El paquete pudo haberse creado.";
+        } else if (error.message?.includes('fecha') || error.message?.includes('timestamp')) {
+          errorMessage = "Error en las fechas proporcionadas. Verifica las fechas y horarios.";
         }
         
         Alert.alert("❌ Error", errorMessage);

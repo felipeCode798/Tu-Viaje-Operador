@@ -67,10 +67,26 @@ interface ProgrammingInput {
 }
 
 interface ProgrammingResponse {
-  result: {
+  id?: string;
+  result?: {
     id: string;
-  } | null;
-  message: string;
+  };
+  data?: {
+    createProgramming: {
+      result: {
+        id: string;
+      };
+      message: string;
+    };
+  };
+  createProgramming?: {
+    result: {
+      id: string;
+    };
+    message: string;
+  };
+  message?: string;
+  [key: string]: any;
 }
 
 interface ToursEnabledResponse {

@@ -174,19 +174,27 @@ const pickImages = async (limit: number | string, aspect?: [number, number]): Pr
     
     const actualLimit = typeof limit === 'string' ? parseInt(limit) : limit || 1;
 
-    // Primero intentar con Expo Image Picker (más confiable)
-    try {
-      console.log("🔄 Intentando con Expo Image Picker...");
-      return await pickImagesExpo(actualLimit);
-    } catch (expoError) {
-      console.log("🔄 Expo falló, intentando con React Native Image Picker...", expoError);
-      // Si Expo falla, intentar con React Native Image Picker
-      return await pickImagesRN(actualLimit);
-    }
+    // Usar EXCLUSIVAMENTE Expo Image Picker (más confiable en Expo)
+    console.log("🔄 Usando Expo Image Picker...");
+    return await pickImagesExpo(actualLimit);
     
   } catch (error) {
     console.error("❌ Error en pickImages:", error);
-    throw error;
+    
+    // Mensaje de error más específico
+    let errorMessage = "No se pudo seleccionar la imagen";
+    
+    if (error instanceof Error) {
+      if (error.message.includes('cancel')) {
+        errorMessage = "Selección de imagen cancelada";
+      } else if (error.message.includes('permisos')) {
+        errorMessage = "Se necesitan permisos para acceder a la galería";
+      } else if (error.message.includes('No se seleccionó')) {
+        errorMessage = "No se seleccionó ninguna imagen";
+      }
+    }
+    
+    throw new Error(errorMessage);
   }
 };
 
