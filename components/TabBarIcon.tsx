@@ -10,7 +10,6 @@ interface TabBarIconProps {
   title?: string;
 }
 
-// Importación condicional para evitar conflictos de tipos
 let MaterialCommunityIcons: any;
 try {
   MaterialCommunityIcons = require('react-native-vector-icons/MaterialCommunityIcons').default;

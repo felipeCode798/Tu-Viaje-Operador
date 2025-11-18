@@ -1,12 +1,12 @@
 import { SET_INFO_PROGRAMMING_STATUS_PROGRESS, CLEAR_INFO_PROGRAMMING_STATUS_PROGRESS } from '../ActionTypes';
 
 interface InfoStatusProgressState {
-  infoStatusProgress?: any; // Puedes reemplazar 'any' con una interfaz más específica
+  infoStatusProgress?: any;
 }
 
 interface SetInfoStatusProgressAction {
   type: typeof SET_INFO_PROGRAMMING_STATUS_PROGRESS;
-  infoStatusProgress: any; // Puedes reemplazar 'any' con una interfaz más específica
+  infoStatusProgress: any;
 }
 
 interface ClearInfoStatusProgressAction {

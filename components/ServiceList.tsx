@@ -37,7 +37,6 @@ interface ServiceItemProps {
   userType: 'Conductor' | 'Empresa' | null;
 }
 
-// Función para formatear fechas - CORREGIDA
 const formatDate = (timestamp: string | number): string => {
   try {
     const timestampNum = typeof timestamp === 'string' ? parseInt(timestamp, 10) : timestamp;
@@ -100,7 +99,6 @@ const formatTime = (dateString: string | number): string => {
   }
 };
 
-// Función para formatear solo la fecha - CORREGIDA
 const formatDateOnly = (dateString: string | number): string => {
   try {
     let date: Date;
@@ -148,19 +146,15 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
   const [showPlanillaModal, setShowPlanillaModal] = useState(false);
   const [showMapModal, setShowMapModal] = useState(false);
 
-  // ✅ Función para ir al chat grupal
   const handleGoToChat = () => {
-    console.log('🚀 Navegando a MessagesScreen desde ServiceList...');
     try {
       navigation.navigate('MessagesScreen' as never);
-      console.log('✅ Navegación ejecutada correctamente');
     } catch (error) {
-      console.error('❌ Error en navegación:', error);
-      // Fallback con diferentes opciones de navegación
+      console.error('Error en navegación:', error);
       try {
         navigation.jumpTo('MessagesScreen' as never);
       } catch (error2) {
-        console.error('❌ Error en navegación alternativa:', error2);
+        console.error('Error en navegación alternativa:', error2);
         Alert.alert('Navegación', 'Redirigiendo al chat...');
       }
     }
@@ -168,7 +162,6 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
 
   // ✅ Función para mostrar detalles
   const handleViewDetails = () => {
-    console.log('📋 Mostrando detalles del viaje desde ServiceList...');
     if (type === 'programming') {
       setShowPlanillaModal(true);
     } else {
@@ -226,15 +219,6 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
     const currentStatusService = (item as any).statusService;
     const isConfirmed = currentStatusService === 'Confirmado';
 
-    console.log('🔍 Estado de confirmación actual:', {
-      id: item._id,
-      status: currentStatus,
-      statusService: currentStatusService,
-      isConfirmed: isConfirmed,
-      userType: userType
-    });
-
-    // SOLO PARA EMPRESAS - CONFIRMACIONES
     if (userType === 'Empresa') {
       if (!isConfirmed) {
         Alert.alert(
@@ -246,14 +230,12 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
               style: 'cancel' 
             },
             {
-              text: '✅ Confirmar',
+              text: 'Confirmar',
               onPress: async () => {
-                console.log(`🔄 Confirmando servicio: ${item._id}`);
                 try {
-                  // Enviar 'Confirmado' como nuevo estado
                   await onStatusChange(item._id, 'Confirmado', type);
                 } catch (error) {
-                  console.error('❌ Error al confirmar:', error);
+                  console.error('Error al confirmar:', error);
                   Alert.alert('Error', 'No se pudo confirmar el servicio');
                 }
               }
@@ -270,15 +252,13 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
               style: 'cancel' 
             },
             {
-              text: '❌ Desconfirmar',
+              text: 'Desconfirmar',
               style: 'destructive',
               onPress: async () => {
-                console.log(`🔄 Desconfirmando servicio: ${item._id}`);
                 try {
-                  // Enviar 'NoConfirmado' como nuevo estado
                   await onStatusChange(item._id, 'NoConfirmado', type);
                 } catch (error) {
-                  console.error('❌ Error al desconfirmar:', error);
+                  console.error('Error al desconfirmar:', error);
                   Alert.alert('Error', 'No se pudo desconfirmar el servicio');
                 }
               }
@@ -287,10 +267,8 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
         );
       }
     } else {
-      // PARA CONDUCTORES - mantener lógica existente
       let statusOptions = [];
       
-      // Solo permitir cambiar estado si el servicio está confirmado
       if (!isConfirmed) {
         Alert.alert(
           'Servicio No Confirmado',
@@ -306,12 +284,6 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
       if (currentStatus === 'Progreso') {
         statusOptions.push({ label: 'Finalizar Viaje', value: 'Finalizado' });
       }
-      // statusOptions.push({ 
-      //   label: 'Cancelar Viaje', 
-      //   value: 'Cancelado', 
-      //   style: 'destructive' as const 
-      // });
-
       if (statusOptions.length === 0) {
         Alert.alert('Info', 'No hay acciones disponibles para el estado actual');
         return;
@@ -324,11 +296,10 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
           text: option.label,
           style: option.style,
           onPress: async () => {
-            console.log(`🔄 Cambiando estado a: ${option.value}`);
             try {
               await onStatusChange(item._id, option.value, type);
             } catch (error) {
-              console.error('❌ Error al cambiar estado:', error);
+              console.error('Error al cambiar estado:', error);
               Alert.alert('Error', 'No se pudo cambiar el estado');
             }
           }
@@ -337,22 +308,17 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
     }
   };
 
-
-  // Función para abrir planilla
   const handleOpenPlanilla = () => {
-    console.log('📋 Abriendo planilla para:', item._id);
     onOpenPlanilla(item);
     setShowPlanillaModal(true);
   };
 
-  // Función para abrir mapa
+
   const handleOpenMap = () => {
-    console.log('🗺️ Abriendo mapa para:', item._id);
     onOpenMap(item);
     setShowMapModal(true);
   };
 
-  // Función mejorada para obtener las coordenadas del item para el mapa
   const getCoordinatesForMap = () => {
     if (type === 'programming') {
       return MapUtils.extractCoordinatesFromProgramming(item as Programming);
@@ -361,13 +327,11 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
     }
   };
 
-  // Función para obtener información de la ruta
   const getRouteInfo = () => {
     const coords = getCoordinatesForMap();
     return MapUtils.getRouteInfo(coords);
   };
 
-  // Obtener nombres de origen y destino
   const getRouteNames = () => {
     if (type === 'programming') {
       const programming = item as Programming;
@@ -385,21 +349,21 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
 
   const getNextStatus = (currentStatus: string, isConfirmed: boolean): string => {
     if (!isConfirmed) {
-      return 'Confirmado'; // Solo confirmar si no está confirmado
+      return 'Confirmado';
     }
 
     switch (currentStatus?.toLowerCase()) {
       case 'pendiente':
-        return 'Progreso'; // Pendiente → En Progreso
+        return 'Progreso'; 
       case 'progreso':
       case 'iniciado':
-        return 'Finalizado'; // En Progreso → Finalizado
+        return 'Finalizado';
       case 'finalizado':
-        return 'Pendiente'; // Finalizado → Pendiente (reiniciar)
+        return 'Pendiente';
       case 'cancelado':
-        return 'Pendiente'; // Cancelado → Pendiente (reiniciar)
+        return 'Pendiente';
       default:
-        return 'Progreso'; // Por defecto, iniciar
+        return 'Progreso';
     }
   };
 
@@ -452,7 +416,6 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
         {expanded && (
           <View style={styles.expandedContent}>
             <View style={styles.detailsContainer}>
-              {/* Información básica */}
               <View style={styles.detailRow}>
                 <MaterialIcons name="business" size={16} color="#999" />
                 <Text style={styles.detailText}>
@@ -530,7 +493,6 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
                 </>
               )}
 
-              {/* Estado del servicio */}
               <View style={styles.detailRow}>
                 <MaterialIcons name="info" size={16} color="#999" />
                 <Text style={styles.detailText}>
@@ -538,7 +500,6 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
                 </Text>
               </View>
 
-              {/* Estado de confirmación */}
               {(item as any).statusService && (
                 <View style={styles.detailRow}>
                   <MaterialIcons name="check-circle" size={16} color="#999" />
@@ -549,7 +510,6 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
               )}
             </View>
             
-            {/* Botones de acción - Solo para conductores */}
             {userType === 'Conductor' && (
               <View style={styles.actionButtons}>
                 <TouchableOpacity
@@ -567,20 +527,9 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
                   <MaterialIcons name="map" size={20} color="white" />
                   <Text style={styles.actionButtonText}>Mapa</Text>
                 </TouchableOpacity>
-
-                {/* <TouchableOpacity
-                  style={[styles.actionButton, styles.statusButton]}
-                  onPress={handleStatusPress}
-                >
-                  <MaterialIcons name="swap-vert" size={20} color="white" />
-                  <Text style={styles.actionButtonText}>
-                    {(item as any).statusService === 'Confirmado' ? 'Cambiar Estado' : 'Confirmar'}
-                  </Text>
-                </TouchableOpacity> */}
               </View>
             )}
 
-            // Para empresas, muestra solo información:
             {userType === 'Empresa' && (
               <TouchableOpacity
                 style={[styles.actionButton, styles.mapButton]}
@@ -594,7 +543,6 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
         )}
       </TouchableOpacity>
 
-      {/* Modal para Planilla - Solo para programmings */}
       {type === 'programming' && (
         <ModalTableProgrammings
           visible={showPlanillaModal}
@@ -603,7 +551,6 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
         />
       )}
 
-      {/* Modal para Mapa */}
       <ModalMaps
         showModal={showMapModal}
         closeModal={() => {
@@ -614,8 +561,8 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
         itemData={item}
         onGoToChat={handleGoToChat}
         onViewDetails={handleViewDetails}
-        onStatusChange={onStatusChange} // ← Añadir esta prop
-        userType={userType} // ← Añadir esta prop
+        onStatusChange={onStatusChange}
+        userType={userType}
       />
     </View>
   );
@@ -632,25 +579,21 @@ const ServiceList: React.FC<ServiceListProps> = ({
   onRefresh,
   userType,
 }) => {
-  // Combinar programmings y tourisms en una sola lista con mapeo mejorado
   const combinedData = [
     ...programmings.map(item => ({ 
       ...item, 
       type: 'programming' as const,
-      // Asegurar que tenga campos start y end para ordenamiento
       start: item.start,
       end: item.end
     })),
     ...tourisms.map(item => ({ 
       ...item, 
       type: 'tourism' as const,
-      // Mapear ida/vuelta a start/end para compatibilidad
       start: item.ida,
       end: item.vuelta
     })),
   ];
 
-  // Ordenar por fecha de inicio - MEJORADO
   combinedData.sort((a, b) => {
     try {
       const getTimestamp = (dateValue: string | number) => {

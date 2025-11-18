@@ -2,7 +2,7 @@ import gql from 'graphql-tag';
 import ApolloClient from 'apollo-boost';
 import { clientUrl } from '../constants/Urls';
 
-// Interfaces actualizadas según tu GraphQL schema
+
 export interface DriverResponse {
   _id: string;
   names: string;
@@ -13,7 +13,7 @@ export interface DriverResponse {
   identificacion?: string;
   categorialicencia?: string;
   vigencialicencia?: string;
-  profile?: string; // Añadido este campo
+  profile?: string;
 }
 
 export interface EnterpriseLoginResponse {
@@ -36,7 +36,6 @@ export interface EnterpriseResponse {
   phone: string;
 }
 
-// Interfaces actualizadas para coincidir con GraphQL
 export interface DriverLoginResponse {
   result: DriverResponse | null;
   message: string;
@@ -74,16 +73,8 @@ class AuthService {
 
   async login(credentials: LoginCredentials): Promise<LoginResponse> {
     try {
-      console.log('=== INICIANDO LOGIN ===');
-      console.log('Credenciales enviadas:', {
-        email: credentials.email,
-        userType: credentials.userType,
-        password: credentials.password ? '[OCULTA]' : 'NO PROPORCIONADA'
-      });
-
       if (credentials.userType === 'Conductor') {
-        console.log('Intentando login como Conductor...');
-        
+
         const result = await this.client.mutate({
           mutation: gql`
             mutation LoginDriver($input: LoginDriverInput!) {
@@ -115,21 +106,14 @@ class AuthService {
           }
         });
 
-        console.log('=== RESPUESTA COMPLETA DEL SERVIDOR (CONDUCTOR) ===');
-        console.log(JSON.stringify(result.data, null, 2));
 
         const loginData: DriverLoginResponse = result.data.loginDriver;
-        
-        console.log('loginData extraído:', loginData);
-        console.log('loginData.result:', loginData.result);
-        console.log('loginData.message:', loginData.message);
+      
         
         if (!loginData.result) {
-          console.log('❌ Login falló - result es null');
           throw new Error(loginData.message || 'Credenciales incorrectas');
         }
 
-        console.log('✅ Login exitoso para conductor');
         return {
           result: loginData.result,
           message: loginData.message
@@ -157,27 +141,18 @@ class AuthService {
           `,
           variables: {
             input: {
-              username: credentials.email, // IMPORTANTE: Para empresa usa username, no email
+              username: credentials.email,
               password: credentials.password
             }
           }
         });
 
-        console.log('=== RESPUESTA COMPLETA DEL SERVIDOR (EMPRESA) ===');
-        console.log(JSON.stringify(result.data, null, 2));
-
         const loginData: EnterpriseLoginResponseQL = result.data.loginEnterprise;
         
-        console.log('loginData extraído:', loginData);
-        console.log('loginData.result:', loginData.result);
-        console.log('loginData.message:', loginData.message);
-        
         if (!loginData.result) {
-          console.log('❌ Login falló - result es null');
           throw new Error(loginData.message || 'Credenciales incorrectas');
         }
 
-        console.log('✅ Login exitoso para empresa');
         return {
           result: loginData.result,
           message: loginData.message
@@ -187,29 +162,23 @@ class AuthService {
     } catch (error: any) {
       console.error('Error en login:', error);
       
-      // Manejar errores de GraphQL
       if (error.graphQLErrors && error.graphQLErrors.length > 0) {
         const graphQLError = error.graphQLErrors[0];
         console.error('GraphQL Error:', graphQLError);
         throw new Error(graphQLError.message || 'Error al iniciar sesión');
       }
       
-      // Manejar errores de red
       if (error.networkError) {
         console.error('Network Error:', error.networkError);
         throw new Error('Error de conexión. Verifica tu internet e intenta nuevamente.');
       }
       
-      // Error personalizado o desconocido
       throw new Error(error.message || 'Error al iniciar sesión');
     }
   }
 
   async forgotPassword(email: string): Promise<boolean> {
-    try {
-      console.log('Solicitando recuperación para:', email);
-      
-      // Intentar con recuperarPasswordDriver
+    try { 
       try {
         const result = await this.client.mutate({
           mutation: gql`
@@ -245,7 +214,6 @@ class AuthService {
         console.log('recuperarPasswordDriver falló:', firstError);
       }
       
-      // Intentar con recuperarPassword
       try {
         const result = await this.client.mutate({
           mutation: gql`

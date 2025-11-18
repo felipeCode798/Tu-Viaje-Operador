@@ -11,7 +11,6 @@ import { useSelector } from "react-redux";
 
 const { height, width } = Dimensions.get("window");
 
-// Definir interfaces para las props
 interface Props {
   statustitle: string;
   statusmessage: string;
@@ -58,7 +57,6 @@ const ConfirmedModal: React.FC<Props> = ({
   showModal, 
   decline 
 }) => {
-  // Si necesitas los datos del store, usa useSelector
   const user = useSelector((state: RootState) => state.session.user);
   const infoItems = useSelector((state: RootState) => state.infoItems);
 

@@ -10,12 +10,11 @@ interface NotificationData {
 
 interface Notification {
   data: NotificationData;
-  // Puedes añadir más propiedades según la estructura de tus notificaciones
 }
 
 interface AppContainerState {
   notification: Notification | null;
-  timeOut: number | null; // Cambiado de NodeJS.Timeout a number
+  timeOut: number | null;
 }
 
 interface AppContainerProps {
@@ -53,14 +52,14 @@ export default class AppContainer extends React.Component<AppContainerProps, App
     
     const timeOut = setTimeout(() => {
       this.setState({ notification: notification });
-    }, 500) as unknown as number; // Type assertion para number
+    }, 500) as unknown as number;
     
     this.setState({ notification: null, timeOut });
   };
 
   componentWillUnmount() {
     if (this.state.timeOut) {
-      clearTimeout(this.state.timeOut); // Corregido: timeOut en lugar de timeout
+      clearTimeout(this.state.timeOut);
     }
   }
 

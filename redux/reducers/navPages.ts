@@ -1,12 +1,12 @@
 import { SET_NAVPAGES, CLEAR_NAVPAGES } from '../ActionTypes';
 
 interface NavPagesState {
-  navPages?: any; // Puedes reemplazar 'any' con una interfaz más específica
+  navPages?: any;
 }
 
 interface SetNavPagesAction {
   type: typeof SET_NAVPAGES;
-  navPages: any; // Puedes reemplazar 'any' con una interfaz más específica
+  navPages: any;
 }
 
 interface ClearNavPagesAction {

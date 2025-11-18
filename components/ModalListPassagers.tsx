@@ -13,7 +13,6 @@ import { Icon } from "react-native-elements";
 
 const { height, width } = Dimensions.get("window");
 
-// Interfaces para las props y el estado
 interface Passenger {
   _id: string;
   cel: string;
@@ -197,7 +196,7 @@ const styles = StyleSheet.create({
     paddingTop: height * 0.009,
   },
   viewPasa: {
-    marginBottom: height * 0.035, // Eliminada la duplicación
+    marginBottom: height * 0.035,
     marginTop: -height * 0.05,
     alignContent: "center",
     alignSelf: "center",

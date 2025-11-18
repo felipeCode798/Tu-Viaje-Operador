@@ -60,18 +60,17 @@ export default function TabLayout() {
         }}
       />
       
-      {/* Excluir estas pantallas del tab bar */}
       <Tabs.Screen
         name="CreateTourisms"
         options={{
-          href: null, // Esto oculta la pantalla del tab bar
+          href: null,
         }}
       />
       
       <Tabs.Screen
         name="CreateProgramming"
         options={{
-          href: null, // Esto oculta la pantalla del tab bar
+          href: null,
         }}
       />
     </Tabs>

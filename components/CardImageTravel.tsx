@@ -1,10 +1,8 @@
 import React, { Component } from 'react';
 import { StyleSheet, TouchableOpacity, View, ImageBackground, Text, ImageSourcePropType, ImageURISource } from 'react-native';
 
-// Solución temporal para react-native-stars
 const Stars = require('react-native-stars') as any;
 
-// Solución temporal para react-native-vector-icons
 const IconComponent = { 
   name: 'star',
   size: 15,
@@ -25,7 +23,6 @@ interface AppButtonProps {
 }
 
 interface AppButtonState {
-  // Puedes agregar estado si es necesario
 }
 
 export default class AppButton extends Component<AppButtonProps, AppButtonState> {
@@ -54,7 +51,6 @@ export default class AppButton extends Component<AppButtonProps, AppButtonState>
 
     const opacityValue = status === 'Proximo' ? 0.8 : status === 'En progreso' ? 0.8 : 0.4;
 
-    // Componentes de estrellas como elementos JSX simples (solución temporal)
     const fullStar = (
       <Text style={[styles.myStarStyle, { fontSize: width ? width * 0.05 : 15 }]}>
         ⭐

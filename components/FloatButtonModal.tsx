@@ -9,17 +9,16 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useAuth } from '../contexts/AuthContext'; // ✅ AGREGADO
+import { useAuth } from '../contexts/AuthContext';
 
 const FloatButtonModal: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const router = useRouter();
-  const { user } = useAuth(); // ✅ Obtener el usuario del contexto
+  const { user } = useAuth();
 
   const handleCreateProgramming = () => {
     setModalVisible(false);
     
-    // ✅ Pasar el usuario como parámetro
     router.push({
       pathname: '/CreateProgramming',
       params: {

@@ -1,12 +1,12 @@
 import { SET_INFOCHAT, CLEAR_INFOCHAT } from '../ActionTypes';
 
 interface InfoChatState {
-  infoChat?: any; // Puedes reemplazar 'any' con una interfaz más específica
+  infoChat?: any;
 }
 
 interface SetInfoChatAction {
   type: typeof SET_INFOCHAT;
-  infoChat: any; // Puedes reemplazar 'any' con una interfaz más específica
+  infoChat: any; 
 }
 
 interface ClearInfoChatAction {

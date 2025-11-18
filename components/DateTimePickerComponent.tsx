@@ -3,7 +3,6 @@ import { Dimensions, TouchableOpacity, View } from 'react-native';
 import { Input } from "react-native-elements";
 import Moment from 'moment';
 
-// Usar importaciones dinámicas con any para evitar errores de tipos
 const DateTimePicker: any = require('react-native-modal-datetime-picker').default;
 const Icon: any = require('react-native-vector-icons/FontAwesome').default;
 

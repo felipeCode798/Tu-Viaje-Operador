@@ -1,12 +1,12 @@
 import { SET_INFOROUTES, CLEAR_INFOROUTES } from '../ActionTypes';
 
 interface InfoRoutesState {
-  infoRoutes?: any; // Puedes reemplazar 'any' con una interfaz más específica
+  infoRoutes?: any; 
 }
 
 interface SetInfoRoutesAction {
   type: typeof SET_INFOROUTES;
-  infoRoutes: any; // Puedes reemplazar 'any' con una interfaz más específica
+  infoRoutes: any; 
 }
 
 interface ClearInfoRoutesAction {

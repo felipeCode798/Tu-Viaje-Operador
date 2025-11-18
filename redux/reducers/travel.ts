@@ -1,12 +1,12 @@
 import { SET_TRAVEL, CLEAR_TRAVEL } from '../ActionTypes';
 
 interface TravelState {
-  travel?: any; // Puedes reemplazar 'any' con una interfaz más específica
+  travel?: any;
 }
 
 interface SetTravelAction {
   type: typeof SET_TRAVEL;
-  travel: any; // Puedes reemplazar 'any' con una interfaz más específica
+  travel: any;
 }
 
 interface ClearTravelAction {

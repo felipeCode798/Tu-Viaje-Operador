@@ -163,7 +163,6 @@ const CreateProgramming: React.FC = () => {
   // Agregar logging para debug
   useEffect(() => {
     if (isFocused) {
-      console.log("🎯 Pantalla de creación enfocada - Reseteando formulario");
       resetForm();
       
       if (userId) {
@@ -172,22 +171,7 @@ const CreateProgramming: React.FC = () => {
     }
   }, [isFocused, userId]);
 
-  // Monitorear cambios de estado
-  useEffect(() => {
-    console.log("🔄 Estado actual:", {
-      rutaSelected,
-      busSelected,
-      conductorSelected,
-      startDate,
-      endDate,
-      horaSalida,
-      horaLlegada
-    });
-  }, [rutaSelected, busSelected, conductorSelected, startDate, endDate, horaSalida, horaLlegada]);
-
-  const resetForm = () => {
-    console.log("🔄 Reseteando formulario...");
-    
+  const resetForm = () => {    
     // Resetear todos los estados a sus valores iniciales
     setRutaSelected({ key: "-1", label: "Seleccionar ruta" });
     setBusSelected({ key: "-1", label: "Seleccionar bus", capacity: 0 });
@@ -225,8 +209,6 @@ const CreateProgramming: React.FC = () => {
     // Estados del calendario
     setIsStartDatePicked(false);
     setIsEndDatePicked(false);
-    
-    console.log("✅ Formulario reseteado completamente");
   };
 
   const getData = () => {
@@ -238,7 +220,6 @@ const CreateProgramming: React.FC = () => {
   };
 
   const getRoutes = (userIdParam: string) => {
-    console.log("🛣 Obteniendo rutas...");
     CreateProgrammingServices.getRoutesEnabled()
       .then((result: Route[]) => {
         if (!result || !Array.isArray(result)) {
@@ -259,14 +240,13 @@ const CreateProgramming: React.FC = () => {
         getBuses(userIdParam);
       })
       .catch((error) => {
-        console.error("❌ Error obteniendo rutas:", error);
+        console.error("Error obteniendo rutas:", error);
         Alert.alert("Error", "No se pudieron cargar las rutas");
         getBuses(userIdParam);
       });
   };
 
   const getBuses = (userIdParam: string) => {
-    console.log("🚌 Obteniendo buses...");
     CreateProgrammingServices.getBusesEnable(userIdParam)
       .then((res: Bus[]) => {
         if (!res || !Array.isArray(res)) {
@@ -286,14 +266,13 @@ const CreateProgramming: React.FC = () => {
         getDrivers(userIdParam);
       })
       .catch((error) => {
-        console.error("❌ Error obteniendo buses:", error);
+        console.error("Error obteniendo buses:", error);
         Alert.alert("Error", "No se pudieron cargar los buses");
         getDrivers(userIdParam);
       });
   };
 
   const getDrivers = (userIdParam: string) => {
-    console.log("👨‍💼 Obteniendo conductores...");
     CreateProgrammingServices.getDriversEnable(userIdParam)
       .then((res: Driver[]) => {
         if (!res || !Array.isArray(res)) {
@@ -312,7 +291,7 @@ const CreateProgramming: React.FC = () => {
         setListConductores(formattedDrivers);
       })
       .catch((error) => {
-        console.error("❌ Error obteniendo conductores:", error);
+        console.error("Error obteniendo conductores:", error);
         Alert.alert("Error", "No se pudieron cargar los conductores");
       });
   };
@@ -394,7 +373,7 @@ const CreateProgramming: React.FC = () => {
       }
       
     } catch (error: any) {
-      console.error("❌ Error en chooseImage:", error);
+      console.error("Error en chooseImage:", error);
       
       let errorMessage = "No se pudo seleccionar la imagen";
       
@@ -412,7 +391,6 @@ const CreateProgramming: React.FC = () => {
     }
   };
 
-  // ✅ FUNCIÓN sendUpload CORREGIDA (solo una declaración)
   const sendUpload = async (programmingId: string): Promise<boolean> => {
     try {
       console.log("🔼 Iniciando subida de imágenes para programación:", programmingId);
@@ -447,14 +425,11 @@ const CreateProgramming: React.FC = () => {
 
       if (uploadPromises.length > 0) {
         await Promise.all(uploadPromises);
-        console.log("✅ Todas las imágenes subidas correctamente");
-      } else {
-        console.log("ℹ️ No hay imágenes para subir");
-      }
+      } 
 
       return true;
     } catch (error) {
-      console.error("❌ Error en sendUpload:", error);
+      console.error("Error en sendUpload:", error);
       return false;
     }
   };
@@ -493,7 +468,6 @@ const CreateProgramming: React.FC = () => {
     if (!endDate || !horaLlegada) 
       errors.push("* Fecha y hora de llegada son obligatorias.");
 
-    // Validar que la fecha de fin no sea anterior a la de inicio
     const startDateTime = moment(`${startDate}T${horaSalida}`);
     const endDateTime = moment(`${endDate}T${horaLlegada}`);
     if (endDateTime.isBefore(startDateTime)) {
@@ -511,7 +485,6 @@ const CreateProgramming: React.FC = () => {
         text: "Crear",
         onPress: async () => {
           try {
-            // ✅ CORREGIDO: Primero crear la programación
             const programmingData = {
               id: userId,
               ruta,
@@ -528,18 +501,11 @@ const CreateProgramming: React.FC = () => {
               start: `${startDate}T${horaSalida}:00.000+00:00`,
               end: `${endDate}T${horaLlegada}:00.000+00:00`,
             };
-
-            console.log("📤 Enviando datos:", programmingData);
             
-            // 1. Crear la programación primero
             const programmingResult = await CreateProgrammingServices.createProgramming(programmingData) as ProgrammingResponse;
-            
-            console.log("🔍 Respuesta completa de createProgramming:", programmingResult);
-            
-            // ✅ CORREGIDO: Verificar el ID de manera más flexible
+
             let programmingId: string | null = null;
-            
-            // Intentar diferentes formas de obtener el ID
+
             if (programmingResult?.id) {
               programmingId = programmingResult.id;
             } else if (programmingResult?.result?.id) {
@@ -550,23 +516,15 @@ const CreateProgramming: React.FC = () => {
               programmingId = programmingResult.createProgramming.result.id;
             }
             
-            console.log("🔍 ID extraído:", programmingId);
-            
             if (!programmingId) {
               console.warn("⚠️ No se pudo extraer el ID, pero la programación puede haberse creado");
               console.warn("📋 Respuesta completa:", JSON.stringify(programmingResult, null, 2));
               
               // Mostrar éxito de todas formas si no hay mensaje de error
-              if (!programmingResult?.message || programmingResult.message === "null") {
-                console.log("✅ Programación creada exitosamente (sin ID en respuesta)");
-                
-                // 2. Intentar subir imágenes si existen
+              if (!programmingResult?.message || programmingResult.message === "null") {          
                 if (imgPrincipal || imgBanner) {
-                  console.log("📸 Intentando subir imágenes sin ID de programación...");
-                  // En este caso no podemos subir imágenes sin ID, pero la programación está creada
                   console.warn("⚠️ No se pudieron subir imágenes por falta de ID de programación");
                 }
-
                 Alert.alert("✅ Éxito", "Programación creada correctamente");
                 router.back();
                 return;
@@ -575,11 +533,7 @@ const CreateProgramming: React.FC = () => {
               }
             }
 
-            console.log("✅ Programación creada con ID:", programmingId);
-
-            // 2. Subir imágenes solo si la programación se creó exitosamente
             if (imgPrincipal || imgBanner) {
-              console.log("📸 Subiendo imágenes...");
               const uploadSuccess = await sendUpload(programmingId);
               if (!uploadSuccess) {
                 console.warn("⚠️ Algunas imágenes no se subieron correctamente, pero la programación fue creada");
@@ -602,9 +556,8 @@ const CreateProgramming: React.FC = () => {
           } catch (error: any) {
             console.error("❌ Error completo al crear programación:", error);
             
-            let errorMessage = "No se pudo crear la programación";
+            let errorMessage = "No se pudo crear la programación por que el conductor o el vehiculo no se encuentran disponibles";
             
-            // Mensajes más específicos
             if (error.message?.includes("network") || error.message?.includes("Network")) {
               errorMessage = "Error de conexión. Verifique su internet.";
             } else if (error.message?.includes("timeout")) {
@@ -616,7 +569,6 @@ const CreateProgramming: React.FC = () => {
             } else if (error.response?.status === 500) {
               errorMessage = "Error del servidor. Intente más tarde.";
             } else if (error.message?.includes("No se recibió un ID válido")) {
-              // Si es solo el error del ID, verificar si realmente falló
               errorMessage = "Error al verificar la creación. La programación pudo haberse creado.";
             }
             
@@ -641,12 +593,10 @@ const CreateProgramming: React.FC = () => {
     setHoraLlegada(`${hour}:${minutes}`);
   };
 
-  // ... (el resto del código JSX permanece igual)
   return (
     <View style={styles.container}>
       <StatusBar barStyle={"light-content"} />
       
-      {/* HEADER */}
       <View style={styles.headerContainer}>
         <TouchableOpacity 
           style={styles.backButton}
@@ -673,7 +623,6 @@ const CreateProgramming: React.FC = () => {
         
         <View style={styles.formContainer}>
           
-          {/* SECCIÓN INFORMACIÓN BÁSICA */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Información básica</Text>
             
@@ -765,7 +714,6 @@ const CreateProgramming: React.FC = () => {
             </View>
           </View>
 
-          {/* SECCIÓN CAPACIDAD Y PRECIOS */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Capacidad y precios</Text>
             
@@ -836,7 +784,6 @@ const CreateProgramming: React.FC = () => {
             </View>
           </View>
 
-          {/* SECCIÓN DESCRIPCIÓN */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Descripción</Text>
             
@@ -854,7 +801,6 @@ const CreateProgramming: React.FC = () => {
             </View>
           </View>
 
-          {/* SECCIÓN PUNTOS DE RECOGIDA Y LLEGADA */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Ubicaciones</Text>
             
@@ -895,7 +841,6 @@ const CreateProgramming: React.FC = () => {
             </View>
           </View>
 
-          {/* SECCIÓN FECHAS Y HORAS */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Fechas y horarios</Text>
             
@@ -948,7 +893,6 @@ const CreateProgramming: React.FC = () => {
             </View>
           </View>
 
-          {/* SECCIÓN IMÁGENES */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Imágenes</Text>
             
@@ -994,7 +938,6 @@ const CreateProgramming: React.FC = () => {
 
           </View>
 
-          {/* BOTÓN CREAR */}
           <TouchableOpacity 
             style={styles.createButton}
             onPress={onHandleSubmit}
@@ -1005,7 +948,6 @@ const CreateProgramming: React.FC = () => {
         </View>
       </KeyboardAwareScrollView>
 
-      {/* MODALES */}
       <DateTimePickerModal
         isVisible={DatePickerVisibility}
         mode="time"
@@ -1112,7 +1054,6 @@ const CreateProgramming: React.FC = () => {
   );
 };
 
-// ESTILOS (permanecen igual)
 const styles = StyleSheet.create({
   container: {
     flex: 1,

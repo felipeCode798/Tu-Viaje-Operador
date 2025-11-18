@@ -14,7 +14,6 @@ interface AppButtonProps {
 }
 
 interface AppButtonState {
-  // Puedes agregar estado si es necesario
 }
 
 export default class AppButton extends Component<AppButtonProps, AppButtonState> {

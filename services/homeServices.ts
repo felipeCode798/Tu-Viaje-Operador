@@ -1,7 +1,6 @@
 import { ApolloClient, InMemoryCache, createHttpLink, gql } from '@apollo/client';
 import { clientUrl } from '../constants/Urls';
 
-// Interfaces para tipado
 interface Enterprise {
   name: string;
   nit?: string;
@@ -127,7 +126,6 @@ const createApolloClient = () => {
       typePolicies: {
         Query: {
           fields: {
-            // Configuración para evitar problemas de cache
           }
         }
       }
@@ -432,16 +430,13 @@ export default class HomeServices {
   }
 
   static async changesStatusByProgramming(id: string, newStatus: string, type: string, isConfirmation: boolean = false): Promise<StatusChangeResponse | null> {
-    console.log('🔄 Cambiando estado programación:', { id, newStatus, type, isConfirmation });
     
     const client = createApolloClient();
     
     try {
       if (isConfirmation) {
-        // Para confirmaciones, usar ChangeStatusService con type="prog"
         return await this.changeStatusService(id, "prog", newStatus);
       } else {
-        // Para estados normales, usar la mutation específica
         const result = await client.mutate({
           mutation: gql`
             mutation {
@@ -466,22 +461,18 @@ export default class HomeServices {
         }
       }
     } catch (error: any) {
-      console.error('❌ Error cambiando estado:', error);
+      console.error('Error cambiando estado:', error);
       throw new Error(error.message || 'Error al cambiar el estado');
     }
   }
 
   static async changeStatusTourism(id: string, newStatus: string, type: string, isConfirmation: boolean = false): Promise<StatusChangeResponse | null> {
-    console.log('🔄 Cambiando estado turismo:', { id, newStatus, type, isConfirmation });
-    
     const client = createApolloClient();
     
     try {
       if (isConfirmation) {
-        // Para confirmaciones, usar ChangeStatusService con type="tour"
         return await this.changeStatusService(id, "tour", newStatus);
       } else {
-        // Para estados normales, usar la mutation específica
         const result = await client.mutate({
           mutation: gql`
             mutation {
@@ -506,12 +497,11 @@ export default class HomeServices {
         }
       }
     } catch (error: any) {
-      console.error('❌ Error cambiando estado turismo:', error);
+      console.error('Error cambiando estado turismo:', error);
       throw new Error(error.message || 'Error al cambiar el estado');
     }
   }
 
-  // Método helper común para ChangeStatusService
   private static async changeStatusService(id: string, serviceType: string, newStatus: string): Promise<StatusChangeResponse> {
     const client = createApolloClient();
     
@@ -530,7 +520,7 @@ export default class HomeServices {
       `,
       variables: {
         id: id,
-        type: serviceType, // "prog" o "tour"
+        type: serviceType,
         newStatus: newStatus
       },
     });

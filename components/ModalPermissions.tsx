@@ -27,7 +27,6 @@ interface Permission {
   granted: boolean;
 }
 
-// DATOS QUEMADOS DE PERMISOS
 const MOCK_PERMISSIONS: Permission[] = [
   {
     id: '1',
@@ -107,7 +106,6 @@ const ModalPermissions: React.FC<ModalPermissionsProps> = ({
       onRequestClose={onClose}>
       <View style={styles.container}>
         <View style={styles.modal}>
-          {/* Header */}
           <View style={styles.header}>
             <MaterialIcons name="security" size={32} color="#FF9500" />
             <Text style={styles.headerTitle}>Permisos de la Aplicación</Text>
@@ -119,14 +117,12 @@ const ModalPermissions: React.FC<ModalPermissionsProps> = ({
             </TouchableOpacity>
           </View>
 
-          {/* Descripción */}
           <View style={styles.descriptionContainer}>
             <Text style={styles.description}>
               Para brindarte la mejor experiencia, necesitamos acceso a ciertas funciones de tu dispositivo.
             </Text>
           </View>
 
-          {/* Lista de permisos */}
           <ScrollView style={styles.permissionsList}>
             {permissions.map((permission) => (
               <View key={permission.id} style={styles.permissionItem}>
@@ -168,13 +164,11 @@ const ModalPermissions: React.FC<ModalPermissionsProps> = ({
             ))}
           </ScrollView>
 
-          {/* Footer con información */}
           <View style={styles.footer}>
             <Text style={styles.footerNote}>
               * Permisos requeridos para el funcionamiento básico
             </Text>
             
-            {/* Botones de acción */}
             <View style={styles.buttonContainer}>
               <TouchableOpacity
                 style={styles.skipButton}

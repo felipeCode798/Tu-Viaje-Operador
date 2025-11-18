@@ -69,7 +69,6 @@ const HomeScreen: React.FC = () => {
     }
   }, []);
 
-  // Función para formatear fechas
   const formatDate = useCallback((timestamp: string | number): string => {
     try {
       const timestampNum = typeof timestamp === 'string' ? parseInt(timestamp, 10) : timestamp;
@@ -97,7 +96,6 @@ const HomeScreen: React.FC = () => {
     }
   }, []);
 
-  // Función para procesar los datos y formatear las fechas
   const processData = useCallback((data: any[]) => {
     if (!data || !Array.isArray(data)) return [];
     
@@ -121,7 +119,6 @@ const HomeScreen: React.FC = () => {
     });
   }, [formatDate]);
 
-  // Función para cargar datos desde los servicios
   const loadData = useCallback(async (showLoader = true) => {
     if (!user || !userType) {
       console.warn('Usuario o tipo de usuario no disponible');
@@ -180,7 +177,7 @@ const HomeScreen: React.FC = () => {
       }
       
     } catch (error) {
-      console.error('❌ Error loading data:', error);
+      console.error('Error loading data:', error);
       Alert.alert('Error', 'Error al cargar los datos: ' + ('Error desconocido'));
     } finally {
       if (showLoader) {
@@ -189,30 +186,25 @@ const HomeScreen: React.FC = () => {
     }
   }, [selectedDate, user, userType, processData]);
 
-  // Cargar datos cuando cambie la fecha
   useEffect(() => {
     loadData();
   }, [selectedDate, loadData]);
 
-  // Pull to refresh
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await loadData(false);
     setRefreshing(false);
   }, [loadData]);
 
-  // Filtrar datos según los filtros aplicados
   const getFilteredData = useCallback(() => { 
     let filteredProgrammings = [...allProgrammings];
     let filteredTourisms = [...allTourisms];
 
-    // Filtrar por fecha seleccionada
     const selectedDateStart = new Date(selectedDate);
     selectedDateStart.setHours(0, 0, 0, 0);
     const selectedDateEnd = new Date(selectedDate);
     selectedDateEnd.setHours(23, 59, 59, 999);
 
-    // Filtrar programaciones por fecha exacta
     filteredProgrammings = filteredProgrammings.filter(programming => {
       if (!programming.start) return false;
       
@@ -231,7 +223,6 @@ const HomeScreen: React.FC = () => {
       return isSameDate;
     });
 
-    // Filtrar turismos por fecha exacta
     filteredTourisms = filteredTourisms.filter(tourism => {
       if (!tourism.ida) return false;
       
@@ -248,14 +239,12 @@ const HomeScreen: React.FC = () => {
       return tourismDateOnly.getTime() === selectedDateOnly.getTime();
     });
 
-    // Filtrar por tipo
     if (activeFilter === 'Viajes') {
       filteredTourisms = [];
     } else if (activeFilter === 'Paquetes') {
       filteredProgrammings = [];
     }
 
-    // Filtrar por estado
     if (activeStatus !== 'Todos') {
       const statusMap = {
         'Pendientes': 'Pendiente',
@@ -270,7 +259,6 @@ const HomeScreen: React.FC = () => {
       filteredTourisms = filteredTourisms.filter(t => t.status === targetStatus);
     }
 
-    // Filtrar por confirmación
     if (confirmationFilter === 'Confirmados') {
       filteredProgrammings = filteredProgrammings.filter(p => 
         p.statusService === 'Confirmado'
@@ -290,22 +278,18 @@ const HomeScreen: React.FC = () => {
     return { programmings: filteredProgrammings, tourisms: filteredTourisms };
   }, [allProgrammings, allTourisms, activeFilter, activeStatus, confirmationFilter, selectedDate]);
 
-  // Función para cambiar el estado de un servicio
   const handleStatusChange = useCallback(async (id: string, newStatus: string, type: 'programming' | 'tourism') => {
     try {
-      // Determinar si es una confirmación
       const isConfirmation = newStatus === 'Confirmado' || newStatus === 'NoConfirmado';
       
       let result;
       
       if (isConfirmation) {
-        // Validar que solo emresas puedan confirmar
         if (userType !== 'Empresa') {
           Alert.alert('Permiso Denegado', 'Solo las empresas pueden confirmar servicios.');
           return;
         }
         
-        // Enviar confirmación al backend
         const userTypeForServer = userType === 'Conductor' ? 'Conductor' : 'Empresa';
         if (type === 'programming') {
           result = await HomeServices.changesStatusByProgramming(id, newStatus, userTypeForServer, true);
@@ -314,7 +298,6 @@ const HomeScreen: React.FC = () => {
         }
         
       } else {  
-        // Lógica existente para cambios de estado normales
         const userTypeForServer = userType === 'Conductor' ? 'Conductor' : 'Empresa';
         if (type === 'programming') {
           result = await HomeServices.changesStatusByProgramming(id, newStatus, userTypeForServer, false);
@@ -324,14 +307,12 @@ const HomeScreen: React.FC = () => {
       }
       
       if (result?.status === 'OK') {
-        // ACTUALIZACIÓN DEL ESTADO LOCAL INMEDIATA
         if (type === 'programming') {
           setAllProgrammings(prev => 
             prev.map(item => 
               item._id === id 
                 ? { 
                     ...item, 
-                    // Para confirmaciones, cambiar statusService; para estados normales, cambiar status
                     ...(isConfirmation 
                       ? { statusService: newStatus }
                       : { status: newStatus }
@@ -355,11 +336,9 @@ const HomeScreen: React.FC = () => {
             )
           );
         }
-        
-        // MOSTRAR MENSAJE DE ÉXITO
+
         Alert.alert('✅ Éxito', result?.message || 'Operación completada correctamente');
-        
-        // Recargar datos después de un breve delay para asegurar consistencia
+
         setTimeout(() => {
           loadData(false);
         }, 500);
@@ -369,32 +348,26 @@ const HomeScreen: React.FC = () => {
       }
       
     } catch (error: any) {
-      console.error('💥 Error:', error);
-      Alert.alert('❌ Error', error.message || 'Error de conexión');
-      
-      // Recargar datos para restaurar estado consistente
+      console.error('Error:', error);
+      Alert.alert('Error', error.message || 'Error de conexión');
       setTimeout(() => {
         loadData(false);
       }, 500);
     }
   }, [loadData, userType]);
 
-  // Función para abrir modal de planilla
   const handleOpenPlanilla = useCallback((service: any) => {
     setSelectedService(service);
     setShowPlanillaModal(true);
   }, []);
 
-  // Función para abrir modal de mapa
   const handleOpenMap = useCallback((service: any) => {
     setSelectedService(service);
     setShowMapsModal(true);
   }, []);
 
-  // Obtener datos filtrados
   const { programmings: filteredProgrammings, tourisms: filteredTourisms } = getFilteredData();
 
-  // Render condicional DESPUÉS de todos los hooks
   if (!user) {
     return (
       <View style={styles.container}>
@@ -414,7 +387,6 @@ const HomeScreen: React.FC = () => {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
       
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Programación</Text>
         <TouchableOpacity 
@@ -425,7 +397,6 @@ const HomeScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Content */}
       <View style={styles.content}>
         <View>
           <CalendarComponent
@@ -495,7 +466,6 @@ const HomeScreen: React.FC = () => {
         />
       </View>
 
-      {/* ✅ Botón flotante para empresas - POSICIÓN CORREGIDA */}
       {userType === 'Empresa' && <FloatButtonModal />}
 
     </View>

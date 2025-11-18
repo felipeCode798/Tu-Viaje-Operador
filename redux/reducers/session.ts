@@ -1,11 +1,9 @@
 import { SET_SESSION, CLEAR_SESION, SET_USER } from '../ActionTypes';
 
 interface User {
-  // Define la estructura del usuario según tus necesidades
   id?: string;
   name?: string;
   email?: string;
-  // ... otras propiedades del usuario
 }
 
 interface SessionState {

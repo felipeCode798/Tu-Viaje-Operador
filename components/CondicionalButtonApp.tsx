@@ -6,7 +6,6 @@ import HomeServices from '../services/homeServices';
 import ConfirmedModal from './ConfirmedModal';
 import ModalConfirmedStatusResponse, { ModalRef } from './ModalConfirmedStatusResponse'; // Importa tanto el componente como la interfaz
 
-// Interfaces para las props y el estado
 interface User {
   idUser: string;
   photo: string;
@@ -62,7 +61,7 @@ const CondicionalButtonApp: React.FC<Props> = ({ _onRefresh }) => {
   const [message, setMessage] = useState('default');
   const [modal, setModal] = useState(false);
 
-  const childRef = useRef<ModalRef>(null); // Usa la interfaz ModalRef directamente
+  const childRef = useRef<ModalRef>(null);
 
   useEffect(() => {
     setButtonState(infoItems.estado);
@@ -127,7 +126,7 @@ const CondicionalButtonApp: React.FC<Props> = ({ _onRefresh }) => {
 
   const FuncionDelHijo = (): void => {
     if (childRef.current) {
-      childRef.current.handleModal(); // Ahora TypeScript sabe que existe handleModal
+      childRef.current.handleModal();
     }
   };
 

@@ -23,7 +23,6 @@ const { height, width } = Dimensions.get("window");
 
 import CreateProgrammingServices from "../../services/ChatServices";
 
-// Interfaces para el estado de Redux
 interface User {
   idUser: number;
   photo: string;
@@ -58,23 +57,18 @@ interface ProgrammingFormProps {
 }
 
 interface ProgrammingFormState {
-  // Define el estado del componente aquí si es necesario
 }
 
 class ProgrammingForm extends Component<ProgrammingFormProps, ProgrammingFormState> {
   constructor(props: ProgrammingFormProps) {
     super(props);
-    // Inicializa el estado si es necesario
     this.state = {
-      // estado inicial
     };
   }
 
   render() {
-    // Render del componente
     return (
       <View>
-        {/* Contenido del componente */}
         <Text>Programming Form Component</Text>
       </View>
     );

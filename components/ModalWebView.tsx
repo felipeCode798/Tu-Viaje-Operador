@@ -13,9 +13,8 @@ import CreateTourisms from "../app/(tabs)/CreateTourisms";
 
 const { height, width } = Dimensions.get("window");
 
-// Interfaces para las props y el estado
 interface ModalWebViewProps {
-  // Puedes agregar props aquí si es necesario
+
 }
 
 interface ModalWebViewState {
@@ -97,8 +96,6 @@ export class ModalWebView extends React.Component<ModalWebViewProps, ModalWebVie
   }
 }
 
-// Los styles permanecen igual
-
 const styles = StyleSheet.create({
   modalWeb: {
     flex: 1,
@@ -150,8 +147,8 @@ const styles = StyleSheet.create({
   },
   icon: {
     borderRadius: 100,
-    backgroundColor: "transparent", // Corregido: "transparent" en lugar del valor incorrecto
-    color: "transparent", // Corregido: "transparent" en lugar del valor incorrecto
+    backgroundColor: "transparent", 
+    color: "transparent",
     position: "absolute",
     top: height * 0.03,
     left: width * 0.03,

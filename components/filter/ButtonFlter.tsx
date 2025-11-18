@@ -21,7 +21,7 @@ interface ButtonFilterProps {
 }
 
 interface ButtonFilterState {
-  // Puedes agregar estado si es necesario
+
 }
 
 export default class ButtonFilter extends Component<ButtonFilterProps, ButtonFilterState> {

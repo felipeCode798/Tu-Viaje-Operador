@@ -3,7 +3,6 @@ import { Button, ButtonProps } from "react-native-elements";
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import { Dimensions } from "react-native";
 
-// Solución: crear un tipo any para el componente de icono
 const FontAwesome5Icon = FontAwesome5 as any;
 
 interface AppButtonProps {
@@ -20,7 +19,7 @@ interface AppButtonProps {
 }
 
 interface AppButtonState {
-  // Puedes agregar estado si es necesario
+
 }
 
 export default class AppButton extends Component<AppButtonProps, AppButtonState> {

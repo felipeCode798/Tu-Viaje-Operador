@@ -1,13 +1,13 @@
 import { SET_PERMISSION, CLEAR_PERMISSION } from '../ActionTypes';
 
 interface PermissionState {
-  status?: string; // Puedes usar un tipo más específico como boolean o un union type
+  status?: string;
 }
 
 interface SetPermissionAction {
   type: typeof SET_PERMISSION;
   permission: {
-    status: string; // Puedes usar un tipo más específico aquí también
+    status: string;
   };
 }
 

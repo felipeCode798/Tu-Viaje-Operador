@@ -1,7 +1,6 @@
 import React from 'react';
 import { Text, TouchableOpacity, View, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 
-// Interfaces específicas para los estilos
 interface CustomStyles {
   modalBtnBot: ViewStyle;
   text: TextStyle;

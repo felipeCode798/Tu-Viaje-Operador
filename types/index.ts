@@ -31,9 +31,9 @@ export interface Tour {
   destination: {
     name: string;
     place: Place;
-    tour?: string; // Añadido desde código JS
-    enterprise?: string; // Añadido desde código JS
-    status?: string; // Añadido desde código JS
+    tour?: string;
+    enterprise?: string;
+    status?: string;
   };
 }
 
@@ -57,7 +57,7 @@ export interface Programming {
   driver: Driver;
   driverInfo?: Driver;
   tipoProducto?: 'program';
-  __typename?: string; // Añadido desde código JS
+  __typename?: string;
 }
 
 export interface TourismDestination {
@@ -85,7 +85,7 @@ export interface Tourism {
   descripcionTraslado?: string;
   entradas?: boolean;
   descripcionEntradas?: string;
-  origen: Place | Place[]; // Modificado para soportar array o objeto único
+  origen: Place | Place[];
   destino: TourismDestination;
   ida: string;
   vuelta: string;
@@ -105,7 +105,7 @@ export interface Tourism {
   status: string;
   statusService: string;
   tipoProducto?: 'tour';
-  __typename?: string; // Añadido desde código JS
+  __typename?: string;
 }
 
 export interface StatusChangeResponse {
@@ -113,7 +113,6 @@ export interface StatusChangeResponse {
   message: string;
 }
 
-// Nuevas interfaces para los servicios de chat
 export interface Passenger {
   _id: string;
   cel: string;
@@ -148,7 +147,6 @@ export interface ChatResponse {
   message?: string;
 }
 
-// Interfaces para el estado de Redux (basado en tu mapStateToProps)
 export interface User {
   idUser: string;
   photo?: string;
@@ -158,8 +156,8 @@ export interface User {
   email: string;
   password?: string;
   tipoUser: string;
-  id?: string; // Alias para idUser
-  _id?: string; // Alias para idUser
+  id?: string;
+  _id?: string;
 }
 
 export interface NavPages {
@@ -210,8 +208,6 @@ export interface InfoRoutes {
     horaOut: string;
   };
 }
-
-// Estado completo de Redux
 export interface AppState {
   session: {
     user: User;
@@ -226,9 +222,8 @@ export interface AppState {
   infoRoutes: InfoRoutes;
 }
 
-// Props para componentes
 export interface CardComponentProps {
-  turism: any; // Esto podría ser más específico basado en tu uso
+  turism: any;
   programming: Array<Programming | Tourism>;
   infoItems: (item: any) => void;
   currentCoords: (item: any) => void;
@@ -237,7 +232,6 @@ export interface CardComponentProps {
   refrescar: () => void;
 }
 
-// Para las funciones de formato de fecha
 export interface DateFormatFunctions {
   formValidationDateHour12: (hour: string | number) => string;
   formatDate: (timestamp: string | number) => string;

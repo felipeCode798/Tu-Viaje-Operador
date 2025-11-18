@@ -47,13 +47,10 @@ const MessagesScreen: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedService, setSelectedService] = useState<ServiceItem | null>(null);
 
-  // Función para obtener cualquier número disponible
   const getAnyPhoneNumber = (passenger: Passenger): string | null => {
-    // Usar phone primero (porque sabemos que tiene datos), luego cel
     return passenger.phone || passenger.cel || null;
   };
 
-  // Función para abrir WhatsApp
   const openWhatsApp = (passenger: Passenger) => {
     const phoneNumber = getAnyPhoneNumber(passenger);
     
@@ -62,10 +59,8 @@ const MessagesScreen: React.FC = () => {
       return;
     }
 
-    // Limpiar el número (remover espacios, guiones, etc.)
     const cleanNumber = phoneNumber.replace(/\D/g, '');
-    
-    // Verificar si el número tiene código de país, si no, agregar +57 para Colombia
+
     let whatsappNumber = cleanNumber;
     if (!whatsappNumber.startsWith('+')) {
       if (whatsappNumber.startsWith('57')) {
@@ -83,7 +78,6 @@ const MessagesScreen: React.FC = () => {
         if (supported) {
           return Linking.openURL(url);
         } else {
-          // Si WhatsApp no está instalado, abrir en el navegador
           const webUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
           return Linking.openURL(webUrl);
         }
@@ -94,7 +88,6 @@ const MessagesScreen: React.FC = () => {
       });
   };
 
-  // Cargar datos al iniciar
   useEffect(() => {
     onLoading();
   }, []);
@@ -127,7 +120,6 @@ const MessagesScreen: React.FC = () => {
         );
       }
 
-      // Procesar programaciones
       const processedProgrammings = programmingData.map(item => ({
         ...item,
         tipoProducto: 'program' as const
@@ -158,7 +150,6 @@ const MessagesScreen: React.FC = () => {
         );
       }
 
-      // Procesar turismos
       const processedTourisms = tourismData.map(item => ({
         ...item,
         tipoProducto: 'tour' as const
@@ -258,16 +249,11 @@ const MessagesScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
-      
-      {/* Header */}
+
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Mensajes</Text>
-        {/* <TouchableOpacity style={styles.filterIcon}>
-          <MaterialIcons name="search" size={24} color="#FF9500" />
-        </TouchableOpacity> */}
       </View>
 
-      {/* Banner Informativo */}
       <View style={styles.infoBanner}>
         <MaterialIcons name="message" size={40} color="white" />
         <Text style={styles.infoText}>Conversa con tus clientes confirmados</Text>
@@ -340,7 +326,6 @@ const MessagesScreen: React.FC = () => {
         )}
       </ScrollView>
 
-      {/* Modal de Pasajeros */}
       {showModal && (
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>

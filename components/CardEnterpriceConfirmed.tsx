@@ -93,7 +93,6 @@ const CardEnterpriceConfirmed = ({
     return `${hours}:${minutes}${!is24Hour ? period : ''}`;
   };
 
-  // Función para mapear 'travel' a 'tour' si es necesario
   const mapTipoProducto = (tipo: 'program' | 'travel' | 'tour'): 'program' | 'tour' | undefined => {
     if (tipo === 'travel') return 'tour';
     return tipo;
@@ -121,11 +120,11 @@ const CardEnterpriceConfirmed = ({
                     route={
                       item.tour?.origin.name
                         .toLowerCase()
-                        .substring(0, Math.floor(width * 0.015)) + // Convertido a número entero
+                        .substring(0, Math.floor(width * 0.015)) +
                       ' - ' +
                       item.tour?.destination.name
                         .toLowerCase()
-                        .substring(0, Math.floor(width * 0.015)) // Convertido a número entero
+                        .substring(0, Math.floor(width * 0.015))
                     }
                   />
                 </TouchableOpacity>

@@ -1,12 +1,12 @@
 import { SET_INFOPROGRAMMINGBYDRIVER, CLEAR_INFOPROGRAMMINGBYDRIVER } from '../ActionTypes';
 
 interface InfoProgrammingByDriverState {
-  infoProgrammingByDriver?: any; // Puedes reemplazar 'any' con una interfaz más específica
+  infoProgrammingByDriver?: any;
 }
 
 interface SetInfoProgrammingByDriverAction {
   type: typeof SET_INFOPROGRAMMINGBYDRIVER;
-  infoProgrammingByDriver: any; // Puedes reemplazar 'any' con una interfaz más específica
+  infoProgrammingByDriver: any; 
 }
 
 interface ClearInfoProgrammingByDriverAction {

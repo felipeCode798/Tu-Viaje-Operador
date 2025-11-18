@@ -10,7 +10,6 @@ interface ShareLocationProps {
 }
 
 interface ShareLocationState {
-  // Puedes agregar propiedades de estado si son necesarias
 }
 
 export default class ShareLocation extends Component<ShareLocationProps, ShareLocationState> {
@@ -19,25 +18,6 @@ export default class ShareLocation extends Component<ShareLocationProps, ShareLo
     const shareContent: ShareContent = {
       message: "Av. Joaquín Borrero Sinisterra #50-107 a 50-53, Cali, Valle del Cauca",
     };
-
-    try {
-      const result = await Share.share(shareContent);
-
-      if (result.action === Share.sharedAction) {
-        if (result.activityType) {
-          // shared with activity type of result.activityType
-          console.log('Compartido con actividad:', result.activityType);
-        } else {
-          // shared
-          console.log('Compartido exitosamente');
-        }
-      } else if (result.action === Share.dismissedAction) {
-        // dismissed
-        console.log('Compartir cancelado');
-      }
-    } catch (error) {
-      console.error('Error al compartir:', error);
-    }
   }
 
   render() {

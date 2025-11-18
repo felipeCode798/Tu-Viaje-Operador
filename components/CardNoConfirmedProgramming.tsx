@@ -34,7 +34,6 @@ const CardNoConfirmedProgramming: React.FC<CardNoConfirmedProgrammingProps> = ({
   };
 
   const handleReject = (item: Programming | Tourism) => {
-    console.log('Rechazar', item);
     ModalPermissions();
     infoItems(item);
     currentCoords(item);
@@ -143,7 +142,6 @@ const CardNoConfirmedProgramming: React.FC<CardNoConfirmedProgrammingProps> = ({
                 onPress={() => {
                   const newIndex = activeIndex === index ? null : index;
                   setActiveIndex(newIndex);
-                  console.log('Active Index:', newIndex);
                 }}>
                 <ConfirmadosList
                   typeItem={item.tipoProducto || 'program'}

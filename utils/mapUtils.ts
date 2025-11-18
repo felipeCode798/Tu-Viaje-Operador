@@ -17,11 +17,8 @@ export interface MapRegion {
 }
 
 export class MapUtils {
-  // Extraer coordenadas de un objeto Programming
   static extractCoordinatesFromProgramming(programming: Programming): MapPoint[] {
     const coordinates: MapPoint[] = [];
-
-    // Función auxiliar para validar coordenadas
     const isValidCoordinate = (lat: any, lng: any): boolean => {
       return (
         lat !== null && 
@@ -41,7 +38,6 @@ export class MapUtils {
       );
     };
 
-    // Origen
     if (programming.tour?.origin && 
         isValidCoordinate(programming.tour.origin.latitude, programming.tour.origin.longitude)) {
       coordinates.push({
@@ -52,7 +48,6 @@ export class MapUtils {
       });
     }
 
-    // Puntos intermedios
     if (programming.places && programming.places.length > 0) {
       programming.places.forEach((place, index) => {
         if (isValidCoordinate(place.latitude, place.longitude)) {
@@ -66,7 +61,6 @@ export class MapUtils {
       });
     }
 
-    // Destino
     if (programming.tour?.destination?.place && 
         isValidCoordinate(programming.tour.destination.place.latitude, programming.tour.destination.place.longitude)) {
       coordinates.push({
@@ -77,7 +71,6 @@ export class MapUtils {
       });
     }
 
-    // Punto final (si es diferente al destino)
     if (programming.puntoFin && 
         isValidCoordinate(programming.puntoFin.latitude, programming.puntoFin.longitude)) {
       coordinates.push({
@@ -92,11 +85,9 @@ export class MapUtils {
     return coordinates;
   }
 
-  // Extraer coordenadas de un objeto Tourism
   static extractCoordinatesFromTourism(tourism: Tourism): MapPoint[] {
     const coordinates: MapPoint[] = [];
 
-    // Función auxiliar para validar coordenadas
     const isValidCoordinate = (lat: any, lng: any): boolean => {
       return (
         lat !== null && 
@@ -116,7 +107,6 @@ export class MapUtils {
       );
     };
 
-    // Origen
     if (tourism.origen && 
         isValidCoordinate(tourism.origen.latitude, tourism.origen.longitude)) {
       coordinates.push({
@@ -127,7 +117,6 @@ export class MapUtils {
       });
     }
 
-    // Destino
     if (tourism.destino?.place && 
         isValidCoordinate(tourism.destino.place.latitude, tourism.destino.place.longitude)) {
       coordinates.push({
@@ -142,10 +131,8 @@ export class MapUtils {
     return coordinates;
   }
 
-  // Calcular región que contenga todos los puntos
   static calculateRegionForPoints(points: MapPoint[], padding: number = 0.01): MapRegion {
     if (points.length === 0) {
-      // Región por defecto (Bogotá, Colombia)
       return {
         latitude: 4.7109886,
         longitude: -74.072092,
@@ -188,9 +175,8 @@ export class MapUtils {
     };
   }
 
-  // Calcular distancia entre dos puntos en kilómetros
   static calculateDistance(point1: MapPoint, point2: MapPoint): number {
-    const R = 6371; // Radio de la Tierra en km
+    const R = 6371;
     const dLat = this.deg2rad(point2.latitude - point1.latitude);
     const dLon = this.deg2rad(point2.longitude - point1.longitude);
     
@@ -204,30 +190,28 @@ export class MapUtils {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const distance = R * c;
     
-    return Math.round(distance * 100) / 100; // Redondear a 2 decimales
+    return Math.round(distance * 100) / 100;
   }
 
   private static deg2rad(deg: number): number {
     return deg * (Math.PI / 180);
   }
 
-  // Obtener color del marcador según el tipo
   static getMarkerColor(type?: string): string {
     switch (type) {
       case 'origin':
-        return '#4CAF50'; // Verde para origen
+        return '#4CAF50';
       case 'destination':
-        return '#F44336'; // Rojo para destino
+        return '#F44336';
       case 'waypoint':
-        return '#FF9500'; // Naranja para puntos intermedios
+        return '#FF9500';
       case 'user':
-        return '#2196F3'; // Azul para usuario
+        return '#2196F3';
       default:
-        return '#999999'; // Gris por defecto
+        return '#999999';
     }
   }
 
-  // Generar coordenadas para la polyline de la ruta
   static generateRoutePolyline(points: MapPoint[]): { latitude: number; longitude: number }[] {
     return points.map(point => ({
       latitude: point.latitude,
@@ -235,7 +219,6 @@ export class MapUtils {
     }));
   }
 
-  // Validar si las coordenadas son válidas
   static isValidCoordinate(latitude: number, longitude: number): boolean {
     return (
       !isNaN(latitude) &&
@@ -247,7 +230,6 @@ export class MapUtils {
     );
   }
 
-  // Formatear coordenadas para mostrar
   static formatCoordinates(latitude: number, longitude: number): string {
     const latDir = latitude >= 0 ? 'N' : 'S';
     const lngDir = longitude >= 0 ? 'E' : 'W';
@@ -255,7 +237,6 @@ export class MapUtils {
     return `${Math.abs(latitude).toFixed(6)}°${latDir}, ${Math.abs(longitude).toFixed(6)}°${lngDir}`;
   }
 
-  // Obtener el punto más cercano a una coordenada dada
   static findNearestPoint(targetPoint: MapPoint, points: MapPoint[]): MapPoint | null {
     if (points.length === 0) return null;
 
@@ -273,7 +254,6 @@ export class MapUtils {
     return nearestPoint;
   }
 
-  // Ordenar puntos por distancia desde un punto de origen
   static sortPointsByDistance(origin: MapPoint, points: MapPoint[]): MapPoint[] {
     return points
       .map(point => ({
@@ -284,7 +264,6 @@ export class MapUtils {
       .map(({ distance, ...point }) => point);
   }
 
-  // Calcular tiempo estimado de viaje (aproximado)
   static estimateTravelTime(points: MapPoint[], averageSpeed: number = 40): number {
     if (points.length < 2) return 0;
 
@@ -293,11 +272,9 @@ export class MapUtils {
       totalDistance += this.calculateDistance(points[i - 1], points[i]);
     }
 
-    // Retorna tiempo en minutos
     return Math.round((totalDistance / averageSpeed) * 60);
   }
 
-  // Crear región centrada en un punto específico
   static createRegionFromPoint(
     point: MapPoint, 
     latitudeDelta: number = 0.01, 
@@ -311,7 +288,6 @@ export class MapUtils {
     };
   }
 
-  // Verificar si un punto está dentro de una región
   static isPointInRegion(point: MapPoint, region: MapRegion): boolean {
     const latMin = region.latitude - region.latitudeDelta / 2;
     const latMax = region.latitude + region.latitudeDelta / 2;
@@ -326,7 +302,6 @@ export class MapUtils {
     );
   }
 
-  // Obtener información de la ruta
   static getRouteInfo(points: MapPoint[]): {
     totalDistance: number;
     estimatedTime: number;
@@ -353,17 +328,14 @@ export class MapUtils {
     let east = points[0].longitude;
     let west = points[0].longitude;
 
-    // Calcular distancia total y límites
     for (let i = 0; i < points.length; i++) {
       const point = points[i];
       
-      // Actualizar límites
       north = Math.max(north, point.latitude);
       south = Math.min(south, point.latitude);
       east = Math.max(east, point.longitude);
       west = Math.min(west, point.longitude);
 
-      // Calcular distancia al siguiente punto
       if (i < points.length - 1) {
         totalDistance += this.calculateDistance(point, points[i + 1]);
       }

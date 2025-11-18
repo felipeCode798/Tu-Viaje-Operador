@@ -93,7 +93,6 @@ export default class FilterComponent extends Component<FilterComponentProps, Fil
 
 const styles = StyleSheet.create({
   container: {
-    // Estilos del contenedor principal
   },
   filterButtonGroup: {
     flexDirection: "row",

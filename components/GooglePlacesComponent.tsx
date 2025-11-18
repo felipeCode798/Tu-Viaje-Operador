@@ -38,7 +38,6 @@ export const GooglePlacesComponent: React.FC<GooglePlacesComponentProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [showError, setShowError] = useState(false);
 
-  // ✅ Buscar lugares usando la API de Google Places directamente
   const searchPlaces = async (query: string) => {
     if (!query.trim() || query.length < 3) {
       setSearchResults([]);
@@ -73,7 +72,6 @@ export const GooglePlacesComponent: React.FC<GooglePlacesComponentProps> = ({
     }
   };
 
-  // ✅ Obtener detalles del lugar seleccionado
   const getPlaceDetails = async (placeId: string, placeName: string) => {
     try {
       setIsLoading(true);
@@ -144,7 +142,6 @@ export const GooglePlacesComponent: React.FC<GooglePlacesComponentProps> = ({
     closeModal();
   };
 
-  // ✅ Agregar lugares manualmente (fallback)
   const addManualPlace = () => {
     if (!searchText.trim()) {
       setShowError(true);
@@ -173,7 +170,6 @@ export const GooglePlacesComponent: React.FC<GooglePlacesComponentProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* HEADER MEJORADO */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <Text style={styles.title}>Puntos de Recogida</Text>
@@ -186,7 +182,6 @@ export const GooglePlacesComponent: React.FC<GooglePlacesComponentProps> = ({
         </View>
       </View>
 
-      {/* BUSCADOR MEJORADO */}
       <View style={styles.searchSection}>
         <View style={styles.searchContainer}>
           <TextInput
@@ -211,7 +206,6 @@ export const GooglePlacesComponent: React.FC<GooglePlacesComponentProps> = ({
           </TouchableOpacity>
         </View>
 
-        {/* INDICADOR DE CARGA */}
         {isLoading && (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="small" color="#E2991C" />
@@ -220,7 +214,6 @@ export const GooglePlacesComponent: React.FC<GooglePlacesComponentProps> = ({
         )}
       </View>
 
-      {/* MENSAJE DE ERROR */}
       {showError && (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>
@@ -232,13 +225,11 @@ export const GooglePlacesComponent: React.FC<GooglePlacesComponentProps> = ({
         </View>
       )}
 
-      {/* CONTENIDO PRINCIPAL - MEJOR DISTRIBUCIÓN */}
       <View style={styles.mainContent}>
-        {/* RESULTADOS DE BÚSQUEDA - CAJA MÁS GRANDE */}
         {searchResults.length > 0 && (
           <View style={[
             styles.resultsSection,
-            { flex: searchResults.length > 0 ? 0.7 : 0 } // Aumentado de 0.4 a 0.7
+            { flex: searchResults.length > 0 ? 0.7 : 0 }
           ]}>
             <Text style={styles.sectionTitle}>Sugerencias</Text>
             <ScrollView 
@@ -265,10 +256,9 @@ export const GooglePlacesComponent: React.FC<GooglePlacesComponentProps> = ({
           </View>
         )}
 
-        {/* LUGARES SELECCIONADOS - MÁS PEQUEÑO CUANDO HAY SUGERENCIAS */}
         <View style={[
           styles.selectedSection,
-          searchResults.length > 0 && { flex: 0.3 } // Reducido de 0.6 a 0.3
+          searchResults.length > 0 && { flex: 0.3 }
         ]}>
           <View style={styles.sectionHeader}>
             <Text style={styles.selectedTitle}>Puntos seleccionados</Text>
@@ -318,7 +308,6 @@ export const GooglePlacesComponent: React.FC<GooglePlacesComponentProps> = ({
         </View>
       </View>
 
-      {/* BOTONES MEJORADOS */}
       <View style={styles.buttonsContainer}>
         <TouchableOpacity
           style={[
@@ -355,7 +344,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#2d2d2d',
     borderRadius: 16,
   },
-  // HEADER MEJORADO
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -389,7 +377,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
   },
-  // BUSCADOR MEJORADO
   searchSection: {
     marginBottom: 16,
     paddingHorizontal: 16,
@@ -444,53 +431,50 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     fontSize: 14,
   },
-  // CONTENIDO PRINCIPAL
   mainContent: {
     flex: 1,
     paddingHorizontal: 16,
   },
-  // SECCIÓN DE RESULTADOS - MÁS GRANDE
   resultsSection: {
     marginBottom: 90,
   },
   sectionTitle: {
     color: '#E2991C',
-    fontSize: 18, // Más grande
-    fontWeight: '700', // Más negrita
-    marginBottom: 12, // Más espacio
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 12,
   },
   resultsContainer: {
     backgroundColor: '#3a3a3a',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#555',
-    maxHeight: height * 0.5, // Aumentado de 0.35 a 0.5 (50% de la pantalla)
-    minHeight: 200, // Altura mínima aumentada
+    maxHeight: height * 0.5,
+    minHeight: 200,
   },
   resultItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 18, // Padding aumentado
+    padding: 18,
     borderBottomWidth: 1,
     borderBottomColor: '#555',
-    minHeight: 60, // Altura mínima por item
+    minHeight: 60,
   },
   lastResultItem: {
     borderBottomWidth: 0,
   },
   resultIcon: {
-    marginRight: 15, // Más espacio
+    marginRight: 15,
   },
   resultIconText: {
-    fontSize: 14, // Icono más grande
+    fontSize: 14,
   },
   resultText: {
     color: 'white',
-    fontSize: 13, // Texto más grande
-    lineHeight: 14, // Más espacio entre líneas
+    fontSize: 13,
+    lineHeight: 14,
     flex: 1,
   },
-  // SECCIÓN SELECCIONADOS
   selectedSection: {
     flex: 1,
   },
@@ -597,7 +581,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 14,
   },
-  // MENSAJE DE ERROR
   errorContainer: {
     backgroundColor: '#ff4757',
     padding: 14,
@@ -613,7 +596,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '500',
   },
-  // BOTONES MEJORADOS
   buttonsContainer: {
     padding: 16,
     borderTopWidth: 1,

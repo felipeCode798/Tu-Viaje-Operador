@@ -94,8 +94,6 @@ export default class TourismServices {
     const client = createApolloClient();
     
     try {
-      console.log("🔍 Obteniendo destinos para ID:", id);
-
       const response = await client.query({
         query: gql`
           query GetDestinationsWithoutPaginate($id: ID!) {
@@ -113,17 +111,14 @@ export default class TourismServices {
         },
       });
 
-      console.log("✅ Respuesta de destinos:", response.data);
-
       const data = response.data.getDestinationsWithoutPaginate;
       if (data.result != null) {
-        console.log(data.result);
         return data.result;
       } else {
         throw new Error(data.message);
       }
     } catch (error) {
-      console.error("❌ Error obteniendo destinos:", error);
+      console.error("Error obteniendo destinos:", error);
       throw error;
     }
   }

@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native';
 import { ActivityIndicator, Button } from 'react-native-paper';
-import ChatServices from '../services/ChatServices'; // Servicio para obtener pasajeros
+import ChatServices from '../services/ChatServices';
 import { Programming } from '../types';
 
 const { height, width } = Dimensions.get('window');
@@ -31,20 +31,17 @@ interface Passenger {
   selectOrigen?: string;
 }
 
-// Función para formatear fechas CORREGIDA
 const formatDate = (timestamp: string | number): string => {
   try {
-    // Si es un string numérico, convertirlo a número
+
     const timestampNum = typeof timestamp === 'string' ? parseInt(timestamp, 10) : timestamp;
-    
-    // Verificar si el timestamp es válido
+
     if (isNaN(timestampNum) || timestampNum <= 0) {
       return 'Fecha no disponible';
     }
     
     const date = new Date(timestampNum);
-    
-    // Verificar si la fecha es válida
+
     if (isNaN(date.getTime())) {
       return 'Fecha no disponible';
     }
@@ -60,20 +57,16 @@ const formatDate = (timestamp: string | number): string => {
   }
 };
 
-// Función para formatear hora CORREGIDA
 const formatTime = (timestamp: string | number): string => {
   try {
-    // Si es un string numérico, convertirlo a número
     const timestampNum = typeof timestamp === 'string' ? parseInt(timestamp, 10) : timestamp;
     
-    // Verificar si el timestamp es válido
     if (isNaN(timestampNum) || timestampNum <= 0) {
       return 'Hora no disponible';
     }
     
     const date = new Date(timestampNum);
     
-    // Verificar si la fecha es válida
     if (isNaN(date.getTime())) {
       return 'Hora no disponible';
     }
@@ -105,23 +98,19 @@ const ModalTableProgrammings: React.FC<ModalTableProgrammingsProps> = ({
           setIsLoading(true);
           setError(null);
           
-          console.log('🔄 Cargando pasajeros para programación:', item._id);
-          
-          // Obtener pasajeros del servicio real
           const passengers = await ChatServices.getPassengers(item._id, 'Programming');
           
           console.log('📊 Pasajeros recibidos:', passengers);
           
           setData(passengers || []);
         } catch (err) {
-          console.error('❌ Error cargando pasajeros:', err);
+          console.error('Error cargando pasajeros:', err);
           setError('Error al cargar los pasajeros');
           setData([]);
         } finally {
           setIsLoading(false);
         }
       } else {
-        // Reset cuando se cierra el modal
         setData([]);
         setIsLoading(true);
         setError(null);

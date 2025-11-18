@@ -55,8 +55,6 @@ declare module 'expo-image-manipulator' {
     options: ManipulateOptions
   ): Promise<ImageResult>;
 }
-
-// declarations.d.ts
 declare module 'react-native-image-picker' {
   export interface Asset {
     uri?: string;
@@ -99,7 +97,6 @@ declare module 'react-native-fs' {
     mkdir(filePath: string): Promise<void>;
     DocumentDirectoryPath: string;
     TemporaryDirectoryPath: string;
-    // Agrega otros métodos que uses
   };
   export default RNFS;
 }
@@ -108,7 +105,6 @@ declare module 'form-data' {
   class FormData {
     append(name: string, value: any, filename?: string): void;
     getHeaders(): { [key: string]: string };
-    // Agrega otros métodos que necesites
   }
   export = FormData;
 }

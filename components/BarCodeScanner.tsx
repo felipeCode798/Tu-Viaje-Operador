@@ -163,7 +163,6 @@ export default class BarcodeScanner extends React.Component<BarcodeScannerProps,
           flexDirection: 'column',
           justifyContent: 'flex-end',
         }}>
-        {/* Usar CameraView en lugar de BarCodeScanner */}
         <CameraView
           onBarcodeScanned={scanned ? undefined : this.handleBarCodeScanned}
           barcodeScannerSettings={{

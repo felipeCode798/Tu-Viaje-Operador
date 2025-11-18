@@ -2,7 +2,7 @@ import { SET_LOCATION, CLEAR_LOCATION } from "../ActionTypes";
 
 interface LocationData {
   status: string;
-  location: any; // Puedes reemplazar 'any' con una interfaz más específica para la ubicación
+  location: any; 
 }
 
 interface LocationState {

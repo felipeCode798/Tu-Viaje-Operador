@@ -4,18 +4,15 @@ import { Dimensions, StyleSheet, Text, View } from "react-native";
 
 const { height, width } = Dimensions.get("window");
 
-// Tipo para la referencia de Lottie
 type LottieRef = React.ElementRef<typeof LottieView>;
 
 interface LoaderProps {
-  // Puedes agregar props aquí si es necesario
 }
 
 export const Loader: React.FC<LoaderProps> = () => {
   const animationRef = useRef<LottieRef>(null);
 
   useEffect(() => {
-    // Usar aserción de tipo para acceder a los métodos
     const lottieInstance = animationRef.current as any;
     if (lottieInstance) {
       lottieInstance.play(0, 55);

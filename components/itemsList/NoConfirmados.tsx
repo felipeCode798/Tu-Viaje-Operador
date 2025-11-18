@@ -5,7 +5,6 @@ import { Dimensions, Text, View, StyleSheet } from "react-native";
 
 const { height, width } = Dimensions.get("window");
 
-// Type assertion para el componente Icon
 const FixedIcon = Icon as unknown as React.ComponentType<{
   name: string;
   color: string;
@@ -21,7 +20,6 @@ interface NoConfirmadosListProps {
 }
 
 interface NoConfirmadosListState {
-  // Puedes agregar estado si es necesario
 }
 
 export default class NoConfirmadosList extends Component<NoConfirmadosListProps, NoConfirmadosListState> {
@@ -130,12 +128,12 @@ const styles = StyleSheet.create({
   infoIcon: {
     marginHorizontal: width * 0.08,
   },
-  // colores de letras
+
   fz1: {
     fontSize: width * 0.05,
   },
 
-  // colores de letras
+
   colorW: {
     color: "#fff",
   },

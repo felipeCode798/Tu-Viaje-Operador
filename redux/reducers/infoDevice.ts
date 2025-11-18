@@ -1,12 +1,12 @@
 import { SET_INFODEVICE, CLEAR_INFODEVICE } from '../ActionTypes';
 
 interface InfoDeviceState {
-  infoDevice?: any; // Puedes reemplazar 'any' con una interfaz más específica para los datos del dispositivo
+  infoDevice?: any;
 }
 
 interface SetInfoDeviceAction {
   type: typeof SET_INFODEVICE;
-  infoDevice: any; // Puedes reemplazar 'any' con una interfaz más específica
+  infoDevice: any; 
 }
 
 interface ClearInfoDeviceAction {

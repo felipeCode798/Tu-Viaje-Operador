@@ -4,7 +4,6 @@ import { View, Text, StyleSheet, Modal, Dimensions } from "react-native";
 
 const { height, width } = Dimensions.get("window");
 
-// Definir interfaces para las props y la referencia
 interface Props {
   statustitle?: string;
   statusmessage: string;
@@ -54,7 +53,6 @@ const ModalConfirmedStatusResponse = React.forwardRef<ModalRef, Props>(
   }
 );
 
-// Añadir displayName para mejor debugging
 ModalConfirmedStatusResponse.displayName = "ModalConfirmedStatusResponse";
 
 const styles = StyleSheet.create({
@@ -80,4 +78,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ModalConfirmedStatusResponse; // Cambia a export default
+export default ModalConfirmedStatusResponse;

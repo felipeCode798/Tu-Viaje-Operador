@@ -98,7 +98,7 @@ const LoginScreen: React.FC = () => {
   };
   
   const handleOpenForgotPassword = (): void => {
-    setRecoveryEmail(formData.email); // Prellenar con el email del formulario
+    setRecoveryEmail(formData.email);
     setShowForgotPasswordModal(true);
   };
 
@@ -446,8 +446,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
     elevation: 5,
-    //shadowOpacity: 0.25,
-    //shadowRadius: 3.84,
   },
   logo: {
     width: 180,

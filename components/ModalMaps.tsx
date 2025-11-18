@@ -75,7 +75,6 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
   const [showPlacesModal, setShowPlacesModal] = useState<boolean>(false);
   const [routePoints, setRoutePoints] = useState<Point[]>(coords || []);
 
-  // Obtener ubicación del usuario
   useEffect(() => {
     if (showModal) {
       console.log('Modal opened, coords received:', coords);
@@ -159,7 +158,6 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
     });
   };
 
-  // Función para manejar cambios de estado desde el modal
   const handleStatusChange = async (newStatus: string) => {
     if (!itemData?._id) {
       Alert.alert('Error', 'No se pudo identificar el servicio');
@@ -168,7 +166,6 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
 
     const serviceType = 'tour' in itemData ? 'programming' : 'tourism';
     
-    // VERIFICACIÓN DE CONFIRMACIÓN (igual que en ServiceList)
     const currentStatusService = (itemData as any).statusService;
     const isConfirmed = currentStatusService === 'Confirmado';
 
@@ -180,7 +177,6 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
       newStatus: newStatus
     });
 
-    // Para conductores: verificar confirmación antes de iniciar viaje
     if (userType === 'Conductor' && !isConfirmed && newStatus === 'Progreso') {
       Alert.alert(
         'Servicio No Confirmado',
@@ -208,11 +204,11 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
         break;
       case 'Confirmado':
         confirmationMessage = '¿Confirmar este servicio para que el conductor pueda iniciarlo?';
-        confirmText = '✅ Confirmar';
+        confirmText = 'Confirmar';
         break;
       case 'NoConfirmado':
         confirmationMessage = '¿Marcar este servicio como no confirmado?';
-        confirmText = '❌ Desconfirmar';
+        confirmText = 'Desconfirmar';
         break;
       default:
         confirmationMessage = `¿Estás seguro de que quieres cambiar el estado a ${newStatus}?`;
@@ -235,12 +231,11 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
                 console.log(`🔄 Cambiando estado desde ModalMaps: ${newStatus}`);
                 await onStatusChange(itemData._id, newStatus, serviceType);
                 
-                // Cerrar modal después de cambiar estado
                 setTimeout(() => {
                   closeModal();
                 }, 1500);
               } else {
-                console.error('❌ onStatusChange no está definido en ModalMaps');
+                console.error('onStatusChange no está definido en ModalMaps');
                 Alert.alert('Error', 'No se pudo cambiar el estado del servicio');
               }
             } catch (error) {
@@ -253,7 +248,6 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
     );
   };
 
-  // Función para renderizar el botón de estado según el rol y estado del servicio
   const renderStatusButton = () => {
       if (!itemData) return null;
 
@@ -261,14 +255,6 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
       const currentStatusService = (itemData as any).statusService;
       const isConfirmed = currentStatusService === 'Confirmado';
 
-      console.log('🔍 Renderizando botón en ModalMaps:', {
-        currentStatus,
-        currentStatusService,
-        isConfirmed,
-        userType
-      });
-
-      // PARA EMPRESAS - CONFIRMACIONES (igual que en ServiceList)
       if (userType === 'Empresa') {
         if (!isConfirmed) {
           return (
@@ -291,7 +277,6 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
                 <Text style={styles.statusButtonText}>Revocar confirmacion</Text>
               </TouchableOpacity>
               
-              {/* Botón de cancelar viaje para empresas */}
               {(currentStatus === 'Pendiente' || currentStatus === 'Progreso' || currentStatus === 'Iniciado') && (
                 <TouchableOpacity 
                   style={[styles.statusButton, styles.cancelButton]}
@@ -306,7 +291,6 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
         }
       }
 
-      // PARA CONDUCTORES - mantener lógica existente pero con verificación de confirmación
       if (userType === 'Conductor') {
         if (!isConfirmed) {
           return (
@@ -386,12 +370,9 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
   };
 
   const handleGoToChat = () => {
-    console.log('🔄 Botón de chat presionado');
     if (onGoToChat) {
-      console.log('✅ Ejecutando onGoToChat callback');
       onGoToChat();
     } else {
-      console.log('❌ onGoToChat callback no definido');
       Alert.alert('Error', 'La funcionalidad de chat no está configurada correctamente');
     }
     closeModal();
@@ -455,7 +436,6 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
       statusBarTranslucent
     >
       <View style={styles.container}>
-        {/* Mapa (sin cambios) */}
         <View style={styles.mapContainer}>
           <MapView
             style={styles.map}
@@ -465,7 +445,6 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
             showsMyLocationButton={false}
             onRegionChangeComplete={setRegion}
           >
-            {/* Marcadores de la ruta */}
             {routePoints
               .filter(point => 
                 point && 
@@ -530,7 +509,6 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
           </MapView>
         </View>
 
-        {/* Panel de información inferior */}
         <View style={styles.bottomInfoPanel}>
 
           <View style={styles.panelHeader}>
@@ -553,7 +531,6 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
               <MaterialIcons name="my-location" size={24} color="white" />
             </TouchableOpacity>
           </View>
-          {/* Información del viaje */}
           <View style={styles.tripInfoContainer}>     
             <View style={styles.tripDetails}>
               <View style={styles.tripDetailRow}>
@@ -588,19 +565,16 @@ const ModalMaps: React.FC<ModalMapsProps> = ({
             </View>
           </View>
 
-          {/* Botones de acción actualizados */}
           <View style={styles.actionButtonsContainer}>
             <TouchableOpacity style={styles.chatButton} onPress={handleGoToChat}>
               <MaterialIcons name="chat" size={20} color="white" />
               <Text style={styles.chatButtonText}>Ir al chat grupal</Text>
             </TouchableOpacity>
             
-            {/* Botón de estado dinámico */}
             {renderStatusButton()}
           </View>
         </View>
 
-        {/* Resto del código sin cambios... */}
         {selectedPoint && (
           <View style={styles.passengersPanel}>
             <View style={styles.panelHeader}>

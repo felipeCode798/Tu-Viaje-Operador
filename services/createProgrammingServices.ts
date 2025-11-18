@@ -141,7 +141,7 @@ export default class CreateProgrammingServices {
               }
             }
           `,
-          fetchPolicy: 'network-only', // Forzar petición fresca
+          fetchPolicy: 'network-only',
         })
         .then((res) => {
           const data = res.data.getToursEnabled;
@@ -152,15 +152,13 @@ export default class CreateProgrammingServices {
           }
         })
         .catch((error) => {
-          console.error("❌ Error en getRoutesEnabled:", error);
+          console.error("Error en getRoutesEnabled:", error);
           reject(error);
         });
     });
   }
 
-  // ✅ CORREGIDO: Cambiar $id de String! a ID!
   static getBusesEnable(id: string): Promise<Bus[]> {
-    console.log("🔍 getBusesEnable llamado con ID:", id);
     return new Promise((resolve, reject) => {
       client
         .query<BusesResponse>({
@@ -182,31 +180,27 @@ export default class CreateProgrammingServices {
             }
           `,
           variables: {
-            id: id // Ya no necesita .toString() porque GraphQL lo manejará
+            id: id
           },
-          fetchPolicy: 'network-only', // Forzar petición fresca
+          fetchPolicy: 'network-only',
         })
         .then((res) => {
-          console.log("✅ Respuesta getBuses:", res);
           const data = res.data.getBusesByEnterpriseWithoutPaginate;
           if (data.result != null) {
-            console.log(`✅ ${data.result.length} buses obtenidos`);
             resolve(data.result);
           } else {
-            console.error("❌ No hay resultado en getBuses");
+            console.error("No hay resultado en getBuses");
             reject(new Error("No se pudieron obtener los buses"));
           }
         })
         .catch((error) => {
-          console.error("❌ Error fetching buses:", error);
+          console.error("Error fetching buses:", error);
           reject(error);
         });
     });
   }
 
-  // ✅ CORREGIDO: Cambiar $id de String! a ID!
   static getDriversEnable(id: string): Promise<Driver[]> {
-    console.log("🔍 getDriversEnable llamado con ID:", id);
     return new Promise((resolve, reject) => {
       client
         .query<DriversResponse>({
@@ -227,41 +221,35 @@ export default class CreateProgrammingServices {
             }
           `,
           variables: {
-            id: id // Ya no necesita .toString() porque GraphQL lo manejará
+            id: id 
           },
-          fetchPolicy: 'network-only', // Forzar petición fresca
+          fetchPolicy: 'network-only',
         })
         .then((res) => {
           console.log("✅ Respuesta getDrivers:", res);
           const data = res.data.getDriversByEnterpriseWithoutPaginate;
           if (data.result != null) {
-            console.log(`✅ ${data.result.length} conductores obtenidos`);
             resolve(data.result);
           } else {
-            console.error("❌ No hay resultado en getDrivers");
+            console.error("No hay resultado en getDrivers");
             reject(new Error(data.message || "Error al obtener conductores"));
           }
         })
         .catch((error) => {
-          console.error("❌ Error fetching drivers:", error);
+          console.error("Error fetching drivers:", error);
           reject(error);
         });
     });
   }
 
   static createProgramming(data: any): Promise<ProgrammingResponse> {
-    console.log("📝 Datos para crear programación:", data);
-
-    // Validar y convertir tipos
     const precio = data.precio ? parseFloat(data.precio) : 0;
     const precioDcto = data.precioDcto ? parseFloat(data.precioDcto) : 0;
     const disponibles = data.disponibles ? parseInt(data.disponibles, 10) : 0;
-    
-    // Convertir fechas a timestamps
+
     let startTimestamp: number;
     let endTimestamp: number;
 
-    // Manejar fechas que vienen como string ISO
     if (typeof data.start === 'string') {
       startTimestamp = new Date(data.start).getTime();
     } else if (data.start instanceof Date) {
@@ -282,23 +270,19 @@ export default class CreateProgrammingServices {
       return Promise.reject(new Error("Fechas inválidas"));
     }
 
-    // ✅ CORREGIDO: Preparar places según el schema GraphQL (sin address)
     const placesInput = (data.places || []).map((place: any) => ({
       name: place.name || '',
       latitude: place.latitude || 0,
       longitude: place.longitude || 0,
-      // ❌ REMOVER: address no está en el schema
     }));
 
-    // ✅ CORREGIDO: Preparar puntoFin según el schema GraphQL (sin address)
     const puntoFinInput = data.place ? {
       name: data.place.name || '',
       latitude: data.place.latitude || 0,
       longitude: data.place.longitude || 0,
-      // ❌ REMOVER: address no está en el schema
     } : {};
 
-    // ✅ CORREGIDO: Manejar imágenes correctamente - deben ser strings, no arrays
+
     const imagesInput = data.images && data.images !== "" ? data.images : "";
     const bannerInput = data.banner && data.banner !== "" ? data.banner : "";
 
@@ -319,11 +303,9 @@ export default class CreateProgrammingServices {
       enterprise: data.id,
       places: placesInput,
       descripcion: data.descripcion || "",
-      images: imagesInput, // ✅ Ahora es string, no array
-      banner: bannerInput, // ✅ Ahora es string, no null
+      images: imagesInput,
+      banner: bannerInput,
     };
-
-    console.log("📤 Input CORREGIDO para mutation:", JSON.stringify(input, null, 2));
 
     return new Promise((resolve, reject) => {
       client
@@ -343,7 +325,6 @@ export default class CreateProgrammingServices {
           },
         })
         .then((res) => {
-          console.log("✅ Respuesta de la mutación:", res);
           if (res.data && res.data.createProgramming) {
             resolve(res.data.createProgramming);
           } else {
@@ -351,7 +332,7 @@ export default class CreateProgrammingServices {
           }
         })
         .catch((error) => {
-          console.error("❌ Error en mutation:", error);
+          console.error("Error en mutation:", error);
           if (error.graphQLErrors) {
             console.error("GraphQL Errors:", error.graphQLErrors);
             error.graphQLErrors.forEach((graphQLError: any, index: number) => {

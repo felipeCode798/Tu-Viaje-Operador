@@ -36,7 +36,6 @@ const CustomGooglePlaces: React.FC<CustomGooglePlacesProps> = ({
   const [selectedPlaces, setSelectedPlaces] = useState<PlaceResult[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Función simulada de búsqueda - Reemplaza con tu API de Google Places
   const handleSearch = async (text: string) => {
     setSearchText(text);
     
@@ -48,7 +47,6 @@ const CustomGooglePlaces: React.FC<CustomGooglePlacesProps> = ({
     setLoading(true);
     
     try {
-      // SIMULACIÓN - Reemplaza con tu llamada real a Google Places API
       const mockResults: PlaceResult[] = [
         {
           name: `${text} - Punto 1`,
@@ -118,7 +116,6 @@ const CustomGooglePlaces: React.FC<CustomGooglePlacesProps> = ({
         </Text>
       </View>
 
-      {/* Buscador */}
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
@@ -132,7 +129,6 @@ const CustomGooglePlaces: React.FC<CustomGooglePlacesProps> = ({
         {loading && <ActivityIndicator size="small" color="orange" />}
       </View>
 
-      {/* Resultados de búsqueda */}
       {searchResults.length > 0 && (
         <View style={styles.searchResultsContainer}>
           <Text style={styles.resultsTitle}>Resultados de búsqueda:</Text>
@@ -153,7 +149,6 @@ const CustomGooglePlaces: React.FC<CustomGooglePlacesProps> = ({
         </View>
       )}
 
-      {/* Lugares seleccionados */}
       <View style={styles.selectedContainer}>
         <Text style={styles.resultsTitle}>
           {cantElements > 1 ? 'Puntos seleccionados' : 'Punto seleccionado'} 
@@ -193,8 +188,7 @@ const CustomGooglePlaces: React.FC<CustomGooglePlacesProps> = ({
           )}
         </ScrollView>
       </View>
-
-      {/* Botones */}
+      
       <View style={styles.buttonsContainer}>
         <TouchableOpacity
           style={[

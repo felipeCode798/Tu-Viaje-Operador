@@ -17,12 +17,10 @@ interface CardConfirmedProgrammingProps {
   refrescar: () => void;
 }
 
-// Type guard para Programming
 const isProgramming = (item: Programming | Tourism): item is Programming => {
   return (item as Programming).tipoProducto === 'program';
 };
 
-// Type guard para Tourism
 const isTourism = (item: Programming | Tourism): item is Tourism => {
   return (item as Tourism).tipoProducto === 'tour';
 };

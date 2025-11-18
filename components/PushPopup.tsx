@@ -48,7 +48,6 @@ export default class PushPopup extends React.Component<PushPopupProps, PushPopup
     }
   }
 
-  // Método para manejar la referencia (no retorna nada)
   private setPopupRef = (ref: NotificationPopup | null): void => {
     this.popup = ref;
   };

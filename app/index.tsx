@@ -13,7 +13,6 @@ export default function Index() {
     );
   }
 
-  // Redirigir basado en el estado de autenticación
   if (user) {
     return <Redirect href="/(tabs)/HomeScreen" />;
   } else {

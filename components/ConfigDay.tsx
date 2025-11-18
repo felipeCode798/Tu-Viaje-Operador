@@ -30,7 +30,6 @@ export const ConfigDay: React.FC<ConfigDayProps> = ({
   const [cupos, setCupos] = useState<string>("");
 
   const handleCuposChange = (text: string) => {
-    // Remover cualquier carácter que no sea dígito
     const numericText = text.replace(/\D/g, '');
     setCupos(numericText);
     
@@ -45,7 +44,6 @@ export const ConfigDay: React.FC<ConfigDayProps> = ({
   const formatCupos = (value: string): string => {
     if (!value) return '';
     
-    // Formatear con separadores de miles
     return value.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   };
 
@@ -103,6 +101,5 @@ const styles = StyleSheet.create({
     width: width * 0.3,
   },
   swichStyle: {
-    // Estilos adicionales para el switch si son necesarios
   },
 });

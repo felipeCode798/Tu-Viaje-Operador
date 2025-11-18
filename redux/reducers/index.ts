@@ -12,15 +12,6 @@ import infoProgrammingByDriver from "./infoProgrammingByDriver";
 import infoItems from "./infoItems";
 import infoStatusProgress from "./infoProgrammingStatusProgress";
 
-// Importa los tipos de cada reducer si los tienes definidos
-// import { SessionState } from "./session";
-// import { NavPagesState } from "./navPages";
-// ... y así para cada reducer
-
-// Si no tienes tipos definidos para cada reducer, puedes inferirlos:
-// type InferReducerType<T> = T extends (state: infer S, action: any) => S ? S : never;
-
-// Define el tipo del estado raíz basado en los reducers
 export interface RootState {
   session: ReturnType<typeof session>;
   navPages: ReturnType<typeof navPages>;

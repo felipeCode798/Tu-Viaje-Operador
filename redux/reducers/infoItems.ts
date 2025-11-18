@@ -1,12 +1,12 @@
 import { SET_INFO_ITEMS, CLEAR_INFO_ITEMS } from '../ActionTypes';
 
 interface InfoItemsState {
-  infoItems?: any; // Puedes reemplazar 'any' con una interfaz más específica
+  infoItems?: any; 
 }
 
 interface SetInfoItemsAction {
   type: typeof SET_INFO_ITEMS;
-  infoItems: any; // Puedes reemplazar 'any' con una interfaz más específica
+  infoItems: any; 
 }
 
 interface ClearInfoItemsAction {

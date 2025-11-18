@@ -22,7 +22,6 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
   const currentMonth = selectedDate.getMonth();
   const currentYear = selectedDate.getFullYear();
 
-  // Configurar moment en español
   moment.locale('es');
 
   const monthNames = [
@@ -32,9 +31,8 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
 
   const weekDays = ['LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB', 'DOM'];
 
-  // Generar días de la semana para mostrar (7 días desde el lunes más cercano)
   const getWeekDays = () => {
-    const startOfWeek = moment(selectedDate).startOf('isoWeek'); // Lunes más cercano
+    const startOfWeek = moment(selectedDate).startOf('isoWeek');
     const days = [];
     
     for (let i = 0; i < 7; i++) {
@@ -69,14 +67,12 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* Header del mes/año */}
       <View style={styles.monthHeader}>
         <Text style={styles.monthText}>
           {monthNames[currentMonth]} / {monthNames[currentMonth === 11 ? 0 : currentMonth + 1]} {currentYear}
         </Text>
       </View>
-
-      {/* Navegación de semana */}
+      
       <View style={styles.weekNavigation}>
         <TouchableOpacity 
           style={styles.navButton} 

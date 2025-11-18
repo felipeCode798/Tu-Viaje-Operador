@@ -1,7 +1,6 @@
 import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
 import { clientUrl } from '../constants/Urls';
 
-// Interfaces para tipado
 export interface Passenger {
   _id: string;
   cel: string;
@@ -77,8 +76,6 @@ export default class ChatServices {
   }
 
   static async getServicesForProgramming(idProgramming: string): Promise<Service[]> {
-    console.log("ide programin", idProgramming);
-    
     const client = createApolloClient();
     
     try {
@@ -135,7 +132,6 @@ export default class ChatServices {
         throw new Error("HAY UN ERROR");
       }
     } catch (error) {
-      console.log(error);
       throw new Error('Error fetching chat history');
     }
   }
@@ -155,7 +151,7 @@ export default class ChatServices {
         variables: {
           input: {
             msg: message,
-            user: typeUser, // "DRIVER"
+            user: typeUser,
             serviceId: idService,
           },
         },

@@ -3,7 +3,6 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import FormData from 'form-data';
 import { server } from '../constants/Urls';
 
-// Interfaces para tipar los datos
 interface Asset {
   uri?: string;
   width?: number;
@@ -16,9 +15,9 @@ interface Asset {
 
 interface ImageOption {
   name: string;
-  file: string;      // URI de la imagen
-  fileF: any;        // Objeto con metadata
-  base64: string;    // Base64 (opcional)
+  file: string;
+  fileF: any;
+  base64: string;
 }
 
 interface ImagePickerResponse {
@@ -48,20 +47,15 @@ interface UploadImagesParams {
   typeGalery: string;
 }
 
-// Función para seleccionar imágenes usando Expo Image Picker
 const pickImagesExpo = async (limit: number): Promise<PickImagesResult> => {
   try {
     const { launchImageLibraryAsync, MediaTypeOptions, requestMediaLibraryPermissionsAsync } = await import('expo-image-picker');
     
-    // Solicitar permisos
-    console.log("🔐 Solicitando permisos de galería...");
     const { status } = await requestMediaLibraryPermissionsAsync();
     
     if (status !== 'granted') {
       throw new Error('Se necesitan permisos para acceder a la galería');
     }
-
-    console.log("✅ Permisos de galería concedidos");
 
     const result = await launchImageLibraryAsync({
       mediaTypes: MediaTypeOptions.Images,
@@ -69,11 +63,6 @@ const pickImagesExpo = async (limit: number): Promise<PickImagesResult> => {
       quality: 0.8,
       allowsMultipleSelection: limit > 1,
       selectionLimit: limit,
-    });
-
-    console.log("📷 Resultado de Expo Image Picker:", {
-      canceled: result.canceled,
-      assetsCount: result.assets?.length
     });
 
     if (result.canceled) {
@@ -85,13 +74,6 @@ const pickImagesExpo = async (limit: number): Promise<PickImagesResult> => {
     }
 
     const firstAsset = result.assets[0];
-    
-    console.log("✅ Imagen seleccionada con Expo:", {
-      uri: firstAsset.uri,
-      width: firstAsset.width,
-      height: firstAsset.height,
-      hasBase64: !!firstAsset.base64
-    });
     
     return {
       uri: [firstAsset.uri],
@@ -106,12 +88,11 @@ const pickImagesExpo = async (limit: number): Promise<PickImagesResult> => {
       }
     };
   } catch (error) {
-    console.error("❌ Error con Expo Image Picker:", error);
+    console.error("Error con Expo Image Picker:", error);
     throw error;
   }
 };
 
-// Función para seleccionar imágenes usando React Native Image Picker
 const pickImagesRN = async (limit: number): Promise<PickImagesResult> => {
   try {
     const imagePicker = await import('react-native-image-picker');
@@ -129,18 +110,8 @@ const pickImagesRN = async (limit: number): Promise<PickImagesResult> => {
       includeBase64: true,
     };
 
-    console.log("🔧 Opciones de imagen RN:", options);
-
-    // ✅ CORREGIDO: Usar la API con Promise en lugar de callback
     const result: ImagePickerResponse = await imagePicker.launchImageLibrary(options);
     
-    console.log("📷 Resultado de RN Image Picker:", {
-      didCancel: result.didCancel,
-      errorCode: result.errorCode,
-      errorMessage: result.errorMessage,
-      assetsCount: result.assets?.length
-    });
-
     if (result.didCancel) {
       throw new Error('Usuario canceló la selección');
     }
@@ -162,26 +133,21 @@ const pickImagesRN = async (limit: number): Promise<PickImagesResult> => {
     };
     
   } catch (error) {
-    console.error("❌ Error con RN Image Picker:", error);
+    console.error("Error con RN Image Picker:", error);
     throw error;
   }
 };
 
 // Función principal para seleccionar imágenes
 const pickImages = async (limit: number | string, aspect?: [number, number]): Promise<PickImagesResult> => {
-  try {
-    console.log("📸 Iniciando pickImages...");
-    
+  try {  
     const actualLimit = typeof limit === 'string' ? parseInt(limit) : limit || 1;
 
-    // Usar EXCLUSIVAMENTE Expo Image Picker (más confiable en Expo)
-    console.log("🔄 Usando Expo Image Picker...");
     return await pickImagesExpo(actualLimit);
     
   } catch (error) {
-    console.error("❌ Error en pickImages:", error);
+    console.error("Error en pickImages:", error);
     
-    // Mensaje de error más específico
     let errorMessage = "No se pudo seleccionar la imagen";
     
     if (error instanceof Error) {
@@ -198,7 +164,6 @@ const pickImages = async (limit: number | string, aspect?: [number, number]): Pr
   }
 };
 
-// Función para comprimir imágenes
 const imageCompress = async (image: Asset): Promise<any> => {
   const maxWidth = 1024;
   const maxHeight = 1024;
@@ -228,8 +193,6 @@ const imageCompress = async (image: Asset): Promise<any> => {
       [{ resize: { width: newWidth, height: newHeight } }],
       { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
     );
-
-    console.log('✅ Imagen comprimida:', manipulatedImage.uri);
     
     return {
       uri: manipulatedImage.uri,
@@ -238,14 +201,13 @@ const imageCompress = async (image: Asset): Promise<any> => {
       base64: manipulatedImage.base64 || undefined
     };
   } catch (error) {
-    console.log('❌ Error al comprimir imagen:', error);
+    console.log('Error al comprimir imagen:', error);
     return image;
   }
 };
 
-// Función para subir imágenes
 const uploadImages = (
-  file: ImageOption,  // Siempre recibe ImageOption
+  file: ImageOption,
   id: string,
   type: string,
   nombrepaq: string,
@@ -253,45 +215,30 @@ const uploadImages = (
 ): Promise<string> => {
   return new Promise(async (resolve, reject) => {
     try {
-      console.log("🔍 DEBUG uploadImages - Parámetros recibidos:");
-      console.log("  - file:", JSON.stringify(file, null, 2));
-      console.log("  - id:", id);
-      console.log("  - type:", type);
-      console.log("  - nombrepaq:", nombrepaq);
-      console.log("  - typeGalery:", typeGalery);
-      
-      // ✅ Validación mejorada
+
       if (!file) {
         throw new Error('Objeto file es undefined o null');
       }
 
-      // ✅ Obtener la URI correctamente
       let imageUri: string;
       
       if (typeof file === 'string') {
-        // Si por alguna razón recibe un string directo
         imageUri = file;
-        console.log("📍 URI recibida como string:", imageUri);
       } else if (file.file && typeof file.file === 'string') {
-        // Si es un objeto ImageOption con propiedad file
         imageUri = file.file;
-        console.log("📍 URI desde file.file:", imageUri);
       } else {
-        console.error("❌ Estructura inválida. File recibido:", file);
+        console.error("Estructura inválida. File recibido:", file);
         throw new Error('No se pudo obtener la URI de la imagen');
       }
 
       // Validar que la URI es válida
       if (!imageUri || typeof imageUri !== 'string') {
-        console.error("❌ URI no válida:", imageUri);
+        console.error("URI no válida:", imageUri);
         throw new Error('URI de imagen no válida');
       }
 
-      console.log("✅ URI validada:", imageUri);
-
       const form = new FormData();
 
-      // Extraer extensión de archivo
       let fileExtension = 'jpeg';
       try {
         const cleanUri = imageUri.split('?')[0];
@@ -299,29 +246,24 @@ const uploadImages = (
         if (parts.length > 1) {
           fileExtension = parts.pop()?.toLowerCase() || 'jpeg';
         }
-        console.log("🔧 Extensión detectada:", fileExtension);
       } catch (error) {
-        console.warn("⚠️ No se pudo detectar extensión, usando jpeg por defecto");
+        console.warn("No se pudo detectar extensión, usando jpeg por defecto");
       }
 
       const timestamp = Date.now();
       const nombreArchivo = `${nombrepaq.trim().replace(/\s+/g, '_')}--${typeGalery}--${id}${timestamp}.${fileExtension}`;
       
-      // Preparar objeto para upload
       const fileToUpload = {
         uri: imageUri,
         name: nombreArchivo,
         type: `image/${fileExtension}`,
       };
 
-      console.log("📦 Preparando upload con:", fileToUpload);
-
       form.append('file', fileToUpload as any);
       form.append('nombreImagen', `${nombrepaq}${id}`);
       form.append('id', id.toString());
 
       const uploadUrl = `${server}upload/${type}`;
-      console.log("🚀 Enviando a:", uploadUrl);
 
       const response = await fetch(uploadUrl, {
         method: 'POST',
@@ -338,25 +280,21 @@ const uploadImages = (
       }
 
       const responseData = await response.json();
-      console.log("✅ Upload exitoso, respuesta:", responseData);
       
       const uploadedUrl = responseData.url || responseData.filename || nombreArchivo;
-      console.log("✅ URL final:", uploadedUrl);
       
       resolve(uploadedUrl);
       
     } catch (error) {
-      console.error('❌ Error en uploadImages:', error);
+      console.error('Error en uploadImages:', error);
       reject(error);
     }
   });
 };
 
 
-// ✅ Función para verificar disponibilidad
 const checkImagePickerAvailability = async () => {
   try {
-    // Verificar si expo-image-picker está disponible
     try {
       await import('expo-image-picker');
       return {
@@ -368,7 +306,6 @@ const checkImagePickerAvailability = async () => {
       console.log("Expo Image Picker no disponible");
     }
 
-    // Verificar si react-native-image-picker está disponible
     try {
       const rnImagePicker = await import('react-native-image-picker');
       const isAvailable = !!rnImagePicker.launchImageLibrary;
@@ -378,7 +315,7 @@ const checkImagePickerAvailability = async () => {
         type: 'react-native'
       };
     } catch (rnError) {
-      console.log("React Native Image Picker no disponible");
+
     }
 
     return {
@@ -387,7 +324,7 @@ const checkImagePickerAvailability = async () => {
       type: 'none'
     };
   } catch (error) {
-    console.error("❌ Error verificando disponibilidad:", error);
+    console.error("Error verificando disponibilidad:", error);
     return {
       launchImageLibrary: false,
       platform: Platform.OS,

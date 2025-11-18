@@ -19,14 +19,12 @@ import { useAuth } from '../../contexts/AuthContext';
 const { height, width } = Dimensions.get('window');
 
 const SettingsScreen: React.FC = () => {
-  // TODOS LOS HOOKS DEBEN ESTAR AL INICIO
   const { user, logout } = useAuth();
   const [viewTerms, setViewTerms] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  // Función mejorada para cerrar sesión
   const handleLogout = async () => {
-    if (isLoggingOut) return; // Prevenir múltiples ejecuciones
+    if (isLoggingOut) return;
     
     Alert.alert(
       'Cerrar Sesión',
@@ -63,24 +61,19 @@ const SettingsScreen: React.FC = () => {
     return type === 'Conductor' ? 'Conductor' : 'Empresa';
   };
 
-  // Función para obtener la URL correcta de la imagen de perfil
   const getProfileImageUrl = () => {
-    // Primero intenta con la imagen de la empresa
     if (user?.enterprise?.image) {
       return { uri: user.enterprise.image };
     }
     
-    // Luego intenta con la lógica del archivo antiguo
     if (user?.id || user?._id) {
       const userId = user.idUser || user.id || user._id;
       return { uri: `${imageUrl}${userId}.png` };
     }
     
-    // Si no hay imagen, usa un placeholder
     return { uri: 'https://via.placeholder.com/120x120/FF9500/FFFFFF?text=Usuario' };
   };
 
-  // Modal de Términos y Condiciones
   const renderTermsModal = () => (
     <Modal
       animationType="fade"
@@ -90,7 +83,6 @@ const SettingsScreen: React.FC = () => {
     >
       <View style={styles.modalOverlay}>
         <View style={styles.termsModal}>
-          {/* Header del Modal */}
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Términos y Condiciones</Text>
             <TouchableOpacity 
@@ -100,15 +92,13 @@ const SettingsScreen: React.FC = () => {
               <MaterialIcons name="close" size={24} color="#000" />
             </TouchableOpacity>
           </View>
-          
-          {/* Contenido del Modal */}
+
           <ScrollView style={styles.modalContent}>
             <Text style={styles.termsText}>
               {POLITICAS?.politicas || 'Términos y condiciones no disponibles.'}
             </Text>
           </ScrollView>
-          
-          {/* Footer del Modal */}
+
           <View style={styles.modalFooter}>
             <TouchableOpacity 
               style={styles.acceptButton}
@@ -122,7 +112,6 @@ const SettingsScreen: React.FC = () => {
     </Modal>
   );
 
-  // CONTENIDO CONDICIONAL DESPUÉS DE TODOS LOS HOOKS
   const loadingView = (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
@@ -139,7 +128,6 @@ const SettingsScreen: React.FC = () => {
     </View>
   );
 
-  // Si no hay usuario, mostrar vista de carga o error
   if (!user) {
     return loadingView;
   }
@@ -148,7 +136,6 @@ const SettingsScreen: React.FC = () => {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
       
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Tu Perfil</Text>
         <TouchableOpacity 
@@ -165,7 +152,6 @@ const SettingsScreen: React.FC = () => {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Profile Section */}
         <View style={styles.profileSection}>
           <View style={styles.profileImageContainer}>
             <Image
@@ -183,7 +169,6 @@ const SettingsScreen: React.FC = () => {
             {user?.type ? formatUserType(user.type) : 'Usuario'}
           </Text>
 
-          {/* Contact Info Card */}
           <View style={styles.contactCard}>
             <View style={styles.contactRow}>
               <MaterialIcons name="phone" size={18} color="#333" />
@@ -201,9 +186,7 @@ const SettingsScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Settings Section */}
         <View style={styles.settingsSection}>
-          {/* Terms and Conditions */}
           <TouchableOpacity 
             style={styles.settingItemClickable}
             onPress={handleTermsAndConditions}
@@ -216,11 +199,9 @@ const SettingsScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Bottom spacing */}
         <View style={styles.bottomSpacing} />
       </ScrollView>
 
-      {/* Modal de Términos y Condiciones */}
       {renderTermsModal()}
     </View>
   );
@@ -358,7 +339,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
     textAlign: 'center',
   },
-  // Estilos del Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.8)',

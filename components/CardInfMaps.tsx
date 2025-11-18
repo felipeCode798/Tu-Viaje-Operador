@@ -11,7 +11,6 @@ import CondicionalButtonApp from "./CondicionalButtonApp";
 
 const { height, width } = Dimensions.get("window");
 
-// Solución temporal para el icono - usar emoji o texto
 const BusIcon = () => (
   <Text style={{ fontSize: width * 0.04, color: "white" }}>🚌</Text>
 );

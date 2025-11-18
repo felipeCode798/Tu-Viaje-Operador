@@ -11,7 +11,6 @@ interface BackgroundImageProps {
 }
 
 interface BackgroundImageState {
-  // Puedes agregar estado si es necesario
 }
 
 export default class BackgroundImage extends Component<BackgroundImageProps, BackgroundImageState> {

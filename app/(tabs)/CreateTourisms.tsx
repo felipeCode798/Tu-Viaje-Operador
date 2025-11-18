@@ -32,6 +32,7 @@ import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import { helpers } from '../../utils/helpers';
 
 import { Picker } from '@react-native-picker/picker';
+import { useIsFocused } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import { Loader } from '../../components/Loader';
 import { useAuth } from '../../contexts/AuthContext';
@@ -39,9 +40,6 @@ import { RootState } from '../../redux/store';
 
 const { height, width } = Dimensions.get('window');
 const colorScheme = Appearance.getColorScheme();
-import { useFocusEffect, useIsFocused } from '@react-navigation/native';
-
-// Interfaces
 interface ImageOption {
   name: string;
   file: string;
@@ -118,7 +116,6 @@ const CreateTourisms: React.FC = () => {
   const { user } = useAuth();
   const params = useLocalSearchParams();
 
-  // ✅ CORRECCIÓN: Obtener userId directamente
   const getUserId = () => {
     const userIdFromParams = params.userId as string;
     const idState = useSelector((state: RootState) => state.id);
@@ -220,8 +217,6 @@ const CreateTourisms: React.FC = () => {
   const isFocused = useIsFocused();
 
   const resetForm = React.useCallback(() => {
-    console.log("🔄 Reseteando formulario de turismo...");
-    
     setState({
       user: userId || '',
       nombrePaquete: '',
@@ -305,7 +300,6 @@ const CreateTourisms: React.FC = () => {
       showDestinationModal: false,
     });
     
-    console.log("✅ Formulario de turismo reseteado completamente");
   }, [userId]);
 
   // Helper para actualizar el estado
@@ -388,15 +382,9 @@ const CreateTourisms: React.FC = () => {
     }
   };
 
-  // ✅ CORRECCIÓN: useEffect mejorado
   useEffect(() => {
     if (isFocused) {
-      console.log("🎯 Pantalla de creación de turismo enfocada - Reseteando formulario");
-      
-      // Resetear el formulario cada vez que se entra a la pantalla
       resetForm();
-      
-      console.log("🆔 User ID disponible:", userId);
       
       if (userId) {
         setStateValue('user', userId);
@@ -408,10 +396,8 @@ const CreateTourisms: React.FC = () => {
     }
   }, [isFocused, userId, resetForm]);
 
-  // ✅ CORRECCIÓN: getDestinations recibe userId como parámetro
+
   const getDestinations = (currentUserId: string) => {
-    console.log("🛣 Obteniendo destinos para usuario:", currentUserId);
-    
     TourismServices.getDestinationsWithoutPaginate(currentUserId)
       .then((data: Destination[]) => {
         if (!data || !Array.isArray(data)) {
@@ -425,10 +411,8 @@ const CreateTourisms: React.FC = () => {
         }));
         
         setStateValue('destinos', destinations);
-        console.log("✅ Destinos cargados:", destinations.length);
       })
       .catch(error => {
-        console.error("❌ Error obteniendo destinos:", error);
         Alert.alert("Error", "No se pudieron cargar los destinos. Verifica tu conexión.");
       });
   };
@@ -443,18 +427,14 @@ const CreateTourisms: React.FC = () => {
       }
       let url = resp.uri[0];
 
-      // Verifica que la URI sea válida
       if (!url || typeof url !== 'string' || !url.startsWith('file://')) {
-        console.error("❌ URI de imagen no válida:", url);
         Alert.alert("Error", "La imagen seleccionada no es válida");
         return;
       }
-
-      // ✅ Asegúrate de que el objeto tenga la estructura que espera uploadImages
       let options = {
         name: type,
         file: url,
-        fileF: resp.file || { assets: [{ uri: url }] }, // Estructura compatible
+        fileF: resp.file || { assets: [{ uri: url }] }, 
         base64: resp.base64 || '',
       };
 
@@ -557,7 +537,6 @@ const CreateTourisms: React.FC = () => {
     if (!number || number === '' || number === 'NaN') return 0;
     
     try {
-      // Remover puntos de formato y solo dejar números
       const numeroSinFormato = number.replace(/\./g, '').replace(/\D/g, "");
       const precio = parseInt(numeroSinFormato, 10);
       
@@ -573,16 +552,12 @@ const CreateTourisms: React.FC = () => {
     }
   };
 
-  // ✅ CORRECCIÓN: Función sendUpload mejorada con mejor manejo de errores
   const sendUpload = async (id: string): Promise<{imgPrincipal: string, imgBanner: string, imgGallery: string[]}> => {
-    console.log("🔼 Iniciando subida de imágenes para ID:", id);
-    
     try {
       let imgPrincipal = '';
       let imgBanner = '';
       let imgGallery: string[] = [];
 
-      // ✅ Subir imagen principal con validación
       if (state.imgPrincipal && state.imgPrincipal.file) {
         console.log("📷 Subiendo imagen principal...");
         try {
@@ -602,7 +577,6 @@ const CreateTourisms: React.FC = () => {
         console.warn("⚠️ No hay imagen principal para subir");
       }
 
-      // ✅ Subir imagen banner con validación
       if (state.imgBanner && state.imgBanner.file) {
         console.log("🖼 Subiendo imagen banner...");
         try {
@@ -613,7 +587,6 @@ const CreateTourisms: React.FC = () => {
             state.nombrePaquete || 'paquete-turismo',
             'banner'
           );
-          console.log("✅ Imagen banner subida:", imgBanner);
         } catch (error) {
           console.error("❌ Error subiendo imagen banner:", error);
           throw new Error("No se pudo subir la imagen banner");
@@ -624,7 +597,6 @@ const CreateTourisms: React.FC = () => {
 
       // ✅ Subir galería de imágenes
       if (state.imgGallery && Array.isArray(state.imgGallery) && state.imgGallery.length > 0) {
-        console.log("🖼️ Subiendo galería de imágenes...");
         for (let i = 0; i < state.imgGallery.length; i++) {
           const galleryItem = state.imgGallery[i];
           
@@ -639,15 +611,12 @@ const CreateTourisms: React.FC = () => {
               );
               
               imgGallery.push(galleryImage);
-              console.log(`✅ Imagen ${i + 1} de galería subida`);
             } catch (error) {
-              console.error(`❌ Error subiendo imagen ${i + 1} de galería:`, error);
+              console.error(`Error subiendo imagen ${i + 1} de galería:`, error);
               // Continuar con las demás imágenes
             }
           }
         }
-      } else {
-        console.log("ℹ️ No hay imágenes en la galería para subir");
       }
 
       const result = {
@@ -656,22 +625,18 @@ const CreateTourisms: React.FC = () => {
         imgGallery
       };
 
-      console.log("✅ Subida de imágenes completada:", result);
       return result;
       
     } catch (error) {
-      console.error("❌ Error crítico en sendUpload:", error);
+      console.error("Error crítico en sendUpload:", error);
       throw error;
     }
   };
 
-  // ✅ CORRECCIÓN: onHandleSubmit mejorado con mejor manejo de errores
+
   const onHandleSubmit = async () => {
-    console.log("🚀 Iniciando creación de paquete turístico...");
-    
-    // Validación de usuario
     if (!userId) {
-      Alert.alert("Error", "No se pudo identificar al usuario");
+      Alert.alert("Error", "No se pudo identificar al usuario por que el conductor o el vehiculo no se encuentran disponibles");
       return;
     }
 
@@ -687,7 +652,7 @@ const CreateTourisms: React.FC = () => {
     let mensaje: string[] = [];
     
     let obj: any = {
-      empresa: userId, // ✅ Usar userId directamente
+      empresa: userId,
       nombrePaquete: '',
       transpote: '',
       nombreAuto: '',
@@ -903,15 +868,13 @@ const CreateTourisms: React.FC = () => {
       }
     }
 
-    // ✅ CORRECCIÓN CRÍTICA: Formato correcto de fechas
     if (state.startDate.trim().length !== 0 && state.horaSalida.trim().length !== 0) {
       try {
         // Formato ISO 8601 correcto
         const fechaHoraSalida = `${state.startDate}T${state.horaSalida}:00.000Z`;
-        console.log("📅 Fecha salida formateada:", fechaHoraSalida);
         obj.ida = fechaHoraSalida;
       } catch (error) {
-        console.error("❌ Error formateando fecha de salida:", error);
+        console.error("Error formateando fecha de salida:", error);
         mensaje.push('*Formato de fecha/hora de salida inválido.');
       }
     } else {
@@ -920,12 +883,10 @@ const CreateTourisms: React.FC = () => {
 
     if (state.endDate.trim().length !== 0 && state.horaLlegada.trim().length !== 0) {
       try {
-        // Formato ISO 8601 correcto
         const fechaHoraLlegada = `${state.endDate}T${state.horaLlegada}:00.000Z`;
-        console.log("📅 Fecha llegada formateada:", fechaHoraLlegada);
         obj.vuelta = fechaHoraLlegada;
       } catch (error) {
-        console.error("❌ Error formateando fecha de llegada:", error);
+        console.error("Error formateando fecha de llegada:", error);
         mensaje.push('*Formato de fecha/hora de llegada inválido.');
       }
     } else {
@@ -974,17 +935,12 @@ const CreateTourisms: React.FC = () => {
     obj.precioDcto = changeFormat(state.precioDcto);
 
     if (mensaje.length !== 0) {
-      console.warn("⚠️ Errores de validación:", mensaje);
+      console.warn("Errores de validación:", mensaje);
       Alert.alert('Alerta', mensaje.join('\n'));
     } else {
-      console.log("✅ Todas las validaciones pasadas, creando paquete...");
       setStateValue('loading', true);
       
       try {
-        console.log("📤 Datos a enviar:", JSON.stringify(obj, null, 2));
-        
-        // ✅ CORRECCIÓN: Subir imágenes primero
-        console.log("🔼 Iniciando subida de imágenes...");
         const uploadedImages = await sendUpload(userId);
         
         // Preparar objeto con las URLs de imágenes subidas
@@ -992,9 +948,6 @@ const CreateTourisms: React.FC = () => {
         obj.banner = uploadedImages.imgBanner;
         obj.gallery = uploadedImages.imgGallery;
 
-        console.log("✅ Imágenes subidas, creando paquete turístico...");
-
-        // ✅ CORRECCIÓN: Formatear cuposPorDiaConfig correctamente
         const diasSinTildes: any = {};
         for (let dia in state.cuposPorDiaConfig) {
           const diaSinTildes = dia.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -1003,57 +956,40 @@ const CreateTourisms: React.FC = () => {
           }
         }
         obj.cuposPorDiaConfig = diasSinTildes;
-
-        console.log("📦 Enviando datos finales al servicio...");
         
-        // ✅ CORRECCIÓN: Llamar al servicio con manejo mejorado de respuesta
         const resp = await TourismServices.createTourism(obj) as TourismResponse;
-        
-        console.log("🔍 ESTRUCTURA COMPLETA de la respuesta:", JSON.stringify(resp, null, 2));
-        
-        // ✅ VERIFICACIÓN FLEXIBLE DEL ID
+
         let tourismId: string | null = null;
 
-        // Intentar diferentes formas de obtener el ID
         if (resp?._id) {
           tourismId = resp._id;
-          console.log("✅ ID encontrado en resp._id");
         } else if (resp?.id) {
           tourismId = resp.id;
-          console.log("✅ ID encontrado en resp.id");
         } else if (resp?.result?._id) {
           tourismId = resp.result._id;
-          console.log("✅ ID encontrado en resp.result._id");
         } else if (resp?.result?.id) {
           tourismId = resp.result.id;
-          console.log("✅ ID encontrado en resp.result.id");
         } else if (resp?.data?.createTourism?.result?._id) {
           tourismId = resp.data.createTourism.result._id;
-          console.log("✅ ID encontrado en resp.data.createTourism.result._id");
         } else if (resp?.createTourism?.result?._id) {
           tourismId = resp.createTourism.result._id;
-          console.log("✅ ID encontrado en resp.createTourism.result._id");
         }
 
-        console.log("🔍 ID extraído del turismo:", tourismId);
-
         if (!tourismId) {
-          console.warn("⚠️ No se pudo extraer el ID, pero el turismo puede haberse creado");
-          console.warn("📋 Respuesta completa:", JSON.stringify(resp, null, 2));
+          console.warn("No se pudo extraer el ID, pero el turismo puede haberse creado");
+          console.warn("Respuesta completa:", JSON.stringify(resp, null, 2));
           
-          // Mostrar éxito de todas formas si no hay mensaje de error
           if (!resp?.message || resp.message === "null" || resp.message === "") {
-            console.log("✅ Turismo creado exitosamente (sin ID en respuesta)");
+            console.log("Turismo creado exitosamente (sin ID en respuesta)");
             
-            // ✅ RESETEAR DESPUÉS DE CREAR EXITOSAMENTE
             Alert.alert(
-              "✅ Éxito", 
+              "Éxito", 
               "Paquete turístico creado correctamente",
               [
                 {
                   text: "OK",
                   onPress: () => {
-                    resetForm(); // ✅ AGREGADO: Resetear formulario
+                    resetForm();
                   }
                 }
               ]
@@ -1064,28 +1000,26 @@ const CreateTourisms: React.FC = () => {
           }
         }
 
-        console.log("✅ Turismo creado con ID:", tourismId);
+        console.log("Turismo creado con ID:", tourismId);
         
-        // ✅ RESETEAR DESPUÉS DE CREAR EXITOSAMENTE
         Alert.alert(
-          "✅ Éxito", 
+          "Éxito", 
           "Paquete turístico creado correctamente",
           [
             {
               text: "OK",
               onPress: () => {
-                resetForm(); // ✅ AGREGADO: Resetear formulario
+                resetForm();
               }
             }
           ]
         );
         
       } catch (error: any) {
-        console.error('❌ Error completo creando turismo:', error);
+        console.error('Error completo creando turismo:', error);
         
         let errorMessage = "No se pudo crear el paquete turístico.";
         
-        // Mensajes de error más específicos
         if (error.message?.includes('network') || error.message?.includes('Network')) {
           errorMessage = "Error de conexión. Verifica tu internet.";
         } else if (error.message?.includes('timeout')) {
@@ -1099,13 +1033,12 @@ const CreateTourisms: React.FC = () => {
         } else if (error.message?.includes('imagen')) {
           errorMessage = "Error al subir las imágenes. Verifica que sean válidas.";
         } else if (error.message?.includes('No se recibió un ID válido')) {
-          // Si es solo el error del ID, verificar si realmente falló
           errorMessage = "Error al verificar la creación. El paquete pudo haberse creado.";
         } else if (error.message?.includes('fecha') || error.message?.includes('timestamp')) {
           errorMessage = "Error en las fechas proporcionadas. Verifica las fechas y horarios.";
         }
         
-        Alert.alert("❌ Error", errorMessage);
+        Alert.alert("Error", errorMessage);
       } finally {
         setStateValue('loading', false);
       }
@@ -1143,7 +1076,6 @@ const CreateTourisms: React.FC = () => {
     <View style={styles.container}>
       <StatusBar barStyle={'light-content'} />
       
-      {/* HEADER MEJORADO */}
       <View style={styles.headerContainer}>
         <TouchableOpacity 
           style={styles.backButton}
@@ -1170,7 +1102,6 @@ const CreateTourisms: React.FC = () => {
         
         <View style={styles.formContainer}>
           
-          {/* SECCIÓN INFORMACIÓN BÁSICA */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Información básica</Text>
             
@@ -1199,7 +1130,6 @@ const CreateTourisms: React.FC = () => {
             </View>
           </View>
 
-          {/* SECCIÓN TRANSPORTE */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Transporte</Text>
             
@@ -1264,7 +1194,6 @@ const CreateTourisms: React.FC = () => {
             )}
           </View>
 
-          {/* SECCIÓN SERVICIOS INCLUIDOS */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Servicios incluidos</Text>
             
@@ -1303,7 +1232,6 @@ const CreateTourisms: React.FC = () => {
             ))}
           </View>
 
-          {/* SECCIÓN DESTINO Y RECOGIDA */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Destino y recogida</Text>
             
@@ -1344,7 +1272,6 @@ const CreateTourisms: React.FC = () => {
             </View>
           </View>
 
-          {/* SECCIÓN PAQUETE DIARIO CON CUPOS */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Configuración del paquete</Text>
             
@@ -1366,7 +1293,6 @@ const CreateTourisms: React.FC = () => {
                     selectedValue={state.configurationDay}
                     onValueChange={(itemValue) => {
                       setStateValue('configurationDay', itemValue);
-                      // Lógica para configurar días según la selección
                       if (itemValue === 'everyDay') {
                         setState(prev => ({
                           ...prev,
@@ -1403,12 +1329,10 @@ const CreateTourisms: React.FC = () => {
                   </Picker>
                 </View>
 
-                {/* CONFIGURACIÓN DE DÍAS Y CUPOS */}
                 {state.configurationDay && state.configurationDay !== 'nothing' && (
                   <View style={styles.cuposConfiguration}>
                     <Text style={styles.configurationTitle}>Cupos por día:</Text>
-                    
-                    {/* Para configuración personalizada */}
+
                     {state.configurationDay === 'configDay' && (
                       <View style={styles.diasConfig}>
                         {[
@@ -1446,7 +1370,6 @@ const CreateTourisms: React.FC = () => {
                       </View>
                     )}
 
-                    {/* Para configuraciones predefinidas */}
                     {state.configurationDay !== 'configDay' && (
                       <View style={styles.diasConfig}>
                         {getDiasSeleccionados().map(dia => (
@@ -1474,7 +1397,6 @@ const CreateTourisms: React.FC = () => {
               </View>
             )}
 
-            {/* CUPOS DISPONIBLES (solo si NO es paquete diario) */}
             {!state.paqueteDiario && (
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Cupos disponibles totales</Text>
@@ -1490,7 +1412,6 @@ const CreateTourisms: React.FC = () => {
             )}
           </View>
 
-          {/* SECCIÓN FECHAS Y HORAS */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Fechas y horarios</Text>
             
@@ -1543,7 +1464,6 @@ const CreateTourisms: React.FC = () => {
             </View>
           </View>
 
-          {/* SECCIÓN ACOMODACIÓN */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Acomodación</Text>
             
@@ -1578,7 +1498,6 @@ const CreateTourisms: React.FC = () => {
             </View>
           </View>
 
-          {/* SECCIÓN INFORMACIÓN ADICIONAL */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Información adicional</Text>
             
@@ -1620,7 +1539,6 @@ const CreateTourisms: React.FC = () => {
             </View>
           </View>
 
-          {/* SECCIÓN PRECIOS */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Precios</Text>
             
@@ -1682,7 +1600,6 @@ const CreateTourisms: React.FC = () => {
             )}
           </View>
 
-          {/* SECCIÓN IMÁGENES */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Imágenes</Text>
             
@@ -1757,7 +1674,6 @@ const CreateTourisms: React.FC = () => {
             </View>
           </View>
 
-          {/* BOTÓN CREAR */}
           <TouchableOpacity 
             style={styles.createButton}
             onPress={onHandleSubmit}
@@ -1768,7 +1684,6 @@ const CreateTourisms: React.FC = () => {
         </View>
       </KeyboardAwareScrollView>
 
-      {/* MODAL DE DESTINOS */}
       <Modal
         visible={state.showDestinationModal}
         transparent={true}
@@ -1816,7 +1731,6 @@ const CreateTourisms: React.FC = () => {
         </View>
       </Modal>
 
-      {/* MODALES EXISTENTES */}
       <DateTimePickerModal
         isVisible={state.DatePickerVisibility}
         mode="time"
@@ -1904,7 +1818,6 @@ const CreateTourisms: React.FC = () => {
   );
 };
 
-// ESTILOS MEJORADOS CON LAS CORRECCIONES
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -2241,7 +2154,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-  // NUEVOS ESTILOS PARA MODAL DE DESTINOS
   destinationModal: {
     backgroundColor: '#2d2d2d',
     margin: 20,
